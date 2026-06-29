@@ -837,6 +837,103 @@ them, with a single regenerated line (`FROM`) and at most one added or
 removed apt line, keeping the reproducibility-relevant configuration
 constant.
 
+## 10. The ephemeral-library model and where validation may run
+
+This section records an architectural invariant that constrains how the
+runtime workflow may be wired. It is not a defect; it is a property that any
+future change to the `make r` workflow or the dependency-validation targets
+must respect. It follows from environment choices the generated Dockerfile
+makes (Sections 4 and 9.3), so it belongs with the rest of the Dockerfile's
+documentation even though it manifests in the Makefile.
+
+### 10.1 The baked-library, ephemeral-install model
+
+The Dockerfile sites the renv library at `RENV_PATHS_LIBRARY=/opt/renv/library`
+inside the image and sets `ZZCOLLAB_AUTO_RESTORE=false`, so the baked library
+is the authoritative source of installed packages. The interactive `make r`
+container bind-mounts the renv *cache* (`/opt/renv/cache`) from the host, but
+not the *library*. A package a user installs during an interactive session
+therefore lands in that container's `/opt/renv/library`, which is ephemeral:
+the container runs with `--rm`, so the library and any session installs are
+discarded when it exits. Session installs are transient by design; the image
+library changes only on a rebuild.
+
+### 10.2 Two automatic operations on session exit, in two places
+
+Leaving an interactive `make r` session triggers two steps, by two different
+mechanisms and in two different locations:
+
+- **`renv::snapshot()` runs inside the container, via R's `.Last` hook.**
+  The project `.Rprofile` defines `.Last`, which R calls during its own
+  shutdown; it runs `renv::snapshot(prompt = FALSE)` to record installed
+  versions into the bind-mounted `renv.lock`. This happens before the
+  container is torn down.
+- **`zzrenvcheck::check_packages()` runs afterward, as the next Makefile
+  recipe line.** The interactive `docker run ... R` blocks until R exits; the
+  container (whose only process is R) then stops, control returns to the
+  host `make` recipe, and the recipe's next command runs `check_packages()`.
+  There is no in-container step between R exiting and the container stopping;
+  the two are the same event.
+
+### 10.3 The governing principle: reads-the-library vs reads-the-files
+
+The two steps cannot be wired interchangeably, because they read different
+things:
+
+- `renv::snapshot()` reads the **installed library** to record exact
+  versions. That state exists only in the live session, so snapshot must run
+  **in that session, at exit** (`.Last`). A fresh container started after the
+  session begins from the baked image library and the bind-mounted cache; it
+  does not contain the session's installs, so a snapshot taken there would
+  silently omit them.
+- `zzrenvcheck::check_packages()` reads **files** (`renv.lock`,
+  `DESCRIPTION`, source code), all bind-mounted. It does not need the session
+  library, so it can run in any container that mounts the project, via
+  `$(DOCKER_RUN)` (`docker run --rm -v project ... <image> Rscript -e ...`).
+
+| Step | Reads | Must run | Mechanism |
+|------|-------|----------|-----------|
+| `renv::snapshot()` | installed library (live session state) | in the session, at exit | `.Last` |
+| `check_packages()` | project files | any container mounting the project | `$(DOCKER_RUN)` |
+
+### 10.4 Consequences for future modifications
+
+- **Do not move `renv::snapshot()` to a post-session `$(DOCKER_RUN)` call.**
+  A fresh container has the baked library, not the session's installs, so the
+  snapshot would omit newly installed packages and break the intended loop:
+  install in session, `.Last` snapshots the version into `renv.lock`, the
+  next image build's `renv::restore()` bakes it in. The only way to make a
+  fresh-container snapshot correct would be to bind-mount the library as well,
+  which trades away the baked-library reproducibility model for no benefit,
+  since `.Last` already captures the state at the one moment it exists.
+- **Do move the host-side `check_packages()` to `$(DOCKER_RUN)`.** It reads
+  files, needs no session library, and running it on the host requires R on
+  the host. That requirement breaks zzcollab's host-independence and, when no
+  host R is present, the post-session validation silently does not run at all
+  (the most common case for zzcollab users). The on-demand `make check-renv`
+  targets already use `$(DOCKER_RUN)` correctly; only the `make r`
+  post-session call runs on the host. This change is tracked in
+  `docs/zzrenvcheck-validation-plan.md`.
+- **Do not move `check_packages()` (or other validations) into `.Last`,**
+  even though that would also run it in-container and solve the
+  host-independence problem. `.Last` runs at the end of *every* container R
+  process, not just interactive sessions: the project `.Rprofile` is sourced
+  for `Rscript` too, so `.Last` would fire after `make render`, `make test`,
+  `R CMD build`, and even the validation call itself. With `auto_fix = TRUE`
+  that would silently edit `DESCRIPTION`/`renv.lock` after routine automated
+  tasks, run redundantly, and couple a deliberate lint to R's shutdown path.
+  `.Last` is the right home for snapshot only because snapshot *must* run
+  in-session (a necessity, not a convenience); a file-reading validation has
+  no such constraint, so it belongs in the make recipe, where its scope
+  (after an interactive `make r`) and location (a fresh `$(DOCKER_RUN)`
+  container) are both correct.
+- **General rule for new validation or maintenance steps:** a step that reads
+  the *installed library* must run in the live session (`.Last`); a step that
+  reads *project files* should run via `$(DOCKER_RUN)` at an explicit point in
+  the make recipe, not in `.Last`. Choosing the wrong location yields a step
+  that either misses session state, fires on every R exit, or silently
+  no-ops off-container.
+
 ## Appendix A: the generated specimen (peng1 Dockerfile, final optimized form)
 
 This is the Dockerfile after the F-8 and F-9 changes (Section 9 walks
@@ -1034,5 +1131,5 @@ statistics but not necessarily in container tooling.
   block; the generator uses one to write the Dockerfile.
 
 ---
-*Rendered on 2026-06-28 at 17:39 PDT.*<br>
+*Rendered on 2026-06-28 at 18:15 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/dockerfile-template-optimization-whitepaper.md*
