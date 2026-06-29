@@ -36,8 +36,12 @@ knitr::opts_chunk$set(
   fig.path = "../figures/",
   dpi = 300
 )
-library(${PKG_NAME})
-# other packages
+# Load this compendium's package to use its analysis functions. It must be
+# available in the rendering environment: install it in the image, or load it
+# from source from the project root during development with
+# pkgload::load_all(). Left commented so the scaffold renders before the
+# package has any functions.
+# library(${PKG_NAME})
 library(rmarkdown)
 library(knitr)
 ```
