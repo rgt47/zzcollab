@@ -1139,5 +1139,5 @@ statistics but not necessarily in container tooling.
   block; the generator uses one to write the Dockerfile.
 
 ---
-*Rendered on 2026-06-28 at 18:56 PDT.*<br>
+*Rendered on 2026-06-28 at 19:28 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/dockerfile-template-optimization-whitepaper.md*
