@@ -50,9 +50,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # Always install languageserver for IDE support and yaml for R Markdown
+    # Always install languageserver for IDE support and yaml for R Markdown.
+    # Ncpus parallelises the ~40-package binary install, which otherwise runs
+    # serially at ~1.5s/package (white paper F-8).
     cmds+="# Install languageserver for IDE support and yaml for R Markdown dependencies
-RUN R -e \"install.packages(c('languageserver', 'yaml'))\"
+RUN R -e \"install.packages(c('languageserver', 'yaml'), Ncpus = max(1L, parallel::detectCores()))\"
 "
 
     echo "$cmds"
@@ -727,7 +729,7 @@ ARG RENV_LOCK_HASH=unknown
 # renv::init creates the platform-specific library directory structure that
 # renv::restore() requires to link packages from the cache.
 RUN echo "renv.lock hash: ${RENV_LOCK_HASH}" && \
-    R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
+    R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore(exclude = 'renv')"
 IRENV
 )
     else
@@ -746,9 +748,10 @@ IDESC
 # syntax=docker/dockerfile:1.4
 # zzcollab Dockerfile v${ZZCOLLAB_TEMPLATE_VERSION}
 
+# BASE_IMAGE is parsed out of this file by the project Makefile ('make r'
+# derives the profile label from it); keep it even though the FROM below uses
+# a fully-substituted literal and does not reference the ARG.
 ARG BASE_IMAGE=${base_image}
-ARG R_VERSION=${r_version}
-ARG USERNAME=analyst
 
 FROM ${from_spec}
 
@@ -765,7 +768,6 @@ LABEL org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \\
       zzcollab.install.mode="${install_mode}"
 
 ARG USERNAME=analyst
-ARG INSTALL_MODE=${install_mode}
 ARG DEBIAN_FRONTEND=noninteractive
 
 # RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library
