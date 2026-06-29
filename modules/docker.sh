@@ -768,7 +768,6 @@ LABEL org.opencontainers.image.created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \\
       zzcollab.install.mode="${install_mode}"
 
 ARG USERNAME=analyst
-ARG INSTALL_MODE=${install_mode}
 ARG DEBIAN_FRONTEND=noninteractive
 
 # RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library

@@ -124,8 +124,13 @@ build ignores but the tooling reads. The regression was caught before the
 change was pushed.
 
 Resolution (applied): keep `ARG BASE_IMAGE` (with a comment explaining the
-Makefile reads it), and remove only `R_VERSION` and the duplicate pre-`FROM`
-`USERNAME`. A cleaner long-term design would have the Makefile recover the
+Makefile reads it), and remove the inert args: the pre-`FROM` `R_VERSION`
+and the duplicate pre-`FROM` `USERNAME`, plus the post-`FROM` `INSTALL_MODE`,
+which nothing references either (the install mode is recorded in the
+`zzcollab.install.mode` `LABEL` and the `ZZCOLLAB_INSTALL_MODE` `ENV` that the
+runtime actually reads). Each removal was checked against the Makefile and
+other tooling, not just the build. A cleaner long-term design would have the
+Makefile recover the
 base image from the `FROM` line or the `zzcollab.base.image` `LABEL` rather
 than from an `ARG`, after which `BASE_IMAGE` could also be dropped; that
 Makefile change is deferred. Lesson recorded: 'the build does not reference
@@ -742,10 +747,14 @@ Appendix A.
   date, and the dependency-install mode. This makes the image
   self-describing; tools and humans can read its provenance without the
   source. The base-image and digest fields vary by profile.
-- `ARG USERNAME` / `ARG INSTALL_MODE` / `ARG DEBIAN_FRONTEND` (lines 22-24).
-  Build arguments do not survive a `FROM`, so `USERNAME` is re-declared.
-  `INSTALL_MODE` records renv versus DESCRIPTION mode; `DEBIAN_FRONTEND=
-  noninteractive` suppresses interactive prompts during apt installs.
+- `ARG USERNAME` / `ARG DEBIAN_FRONTEND` (lines 22-23). Build arguments do
+  not survive a `FROM`, so `USERNAME` is re-declared (`useradd`/`USER` read
+  it); `DEBIAN_FRONTEND=noninteractive` suppresses interactive prompts during
+  apt installs (apt reads it from the build environment). A former
+  `ARG INSTALL_MODE` here was removed as inert (F-1): the install mode is
+  recorded only in the `LABEL` and the runtime `ENV`, which are what consume
+  it. The line-number references below the ENV block are therefore one line
+  lower than shown; they are not re-numbered here.
 
 ### 9.3 Environment
 
@@ -961,7 +970,6 @@ LABEL org.opencontainers.image.created="2026-06-28T02:13:26Z" \
       zzcollab.install.mode="renv"
 
 ARG USERNAME=analyst
-ARG INSTALL_MODE=renv
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \
@@ -1131,5 +1139,5 @@ statistics but not necessarily in container tooling.
   block; the generator uses one to write the Dockerfile.
 
 ---
-*Rendered on 2026-06-28 at 18:15 PDT.*<br>
+*Rendered on 2026-06-28 at 18:56 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/dockerfile-template-optimization-whitepaper.md*
