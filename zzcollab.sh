@@ -633,13 +633,26 @@ EOF
     if [[ ! -f "renv/activate.R" ]]; then
         # Create minimal activate.R that will bootstrap renv
         cat > renv/activate.R << 'EOF'
-# Minimal renv activation - will bootstrap full renv on first use
+# Minimal renv activation - bootstraps renv on first use, then hands off to it.
+# Guards mirror renv's real activate.R:
+#  - Bail inside renv's own subprocesses (R CMD INSTALL sets R_CMD and R_LIBS).
+#    Without this, every package-install subprocess re-enters this bootstrap,
+#    reinstalling renv on a loop until the process is killed (OOM).
+#  - Guard against recursive autoloading via an option flag.
+#  - utils:: qualifies install.packages because only the base package is
+#    attached while .Rprofile is sourced (see ?Startup).
 local({
+    if (!is.na(Sys.getenv("R_CMD", unset = NA)) &&
+        !is.na(Sys.getenv("R_LIBS", unset = NA)))
+        return(invisible())
+
+    if (isTRUE(getOption("renv.autoloader.running")))
+        return(invisible())
+    options(renv.autoloader.running = TRUE)
+    on.exit(options(renv.autoloader.running = NULL), add = TRUE)
+
     if (!requireNamespace("renv", quietly = TRUE)) {
         message("Installing renv...")
-        # utils:: qualifier: this runs while .Rprofile is sourced, when only
-        # the base package is attached, so bare install.packages() is not yet
-        # on the search path (see ?Startup).
         utils::install.packages("renv", repos = "https://cloud.r-project.org")
     }
     renv::load()
