@@ -566,7 +566,7 @@ EOF
                     *) log_error "Unknown runtime: $value (valid: docker, podman, apptainer)"
                        return 1 ;;
                 esac ;;
-            validate_strict|validate_fix)
+            validate_strict|validate_fix|auto_github)
                 case "$value" in
                     true|false) ;;
                     *) log_error "Expected true or false for $key (got: $value)"

@@ -415,7 +415,8 @@ run_feature_wizard() {
     # user opted into auto-creation via config (auto_github -> CONFIG_AUTO_GITHUB);
     # this is the only wiring that makes that preference take effect. The actual
     # creation still runs through the guarded path below (show_remote requires a
-    # real forge, an interactive session, the forge CLI, and remote_allowed).
+    # real forge, an interactive session, an installed+authenticated forge CLI,
+    # and remote_allowed).
     local cur_git=off cur_remote=off def_git=on def_remote=off
     [[ "${CONFIG_AUTO_GITHUB:-false}" == true ]] && def_remote=on
     local show_git=false show_remote=false
@@ -424,12 +425,21 @@ run_feature_wizard() {
         git remote get-url origin &>/dev/null && cur_remote=on
         show_git=true
         # remote is offered only when it can actually succeed: a real forge, an
-        # interactive session, the forge CLI present, and the confidential-repo
-        # guard permitting it. Otherwise it is hidden and stays off.
+        # interactive session, the forge CLI installed and authenticated, and
+        # the confidential-repo guard permitting it. When the only thing missing
+        # is a fixable tooling/auth step, say so rather than hiding the option
+        # with no explanation (a confidential denial stays quiet, by design).
         if [[ "$want_forge" != none ]] && [[ -t 0 ]] && remote_allowed; then
             local _forge_cli=gh
             [[ "$want_forge" == gitlab ]] && _forge_cli=glab
-            command -v "$_forge_cli" >/dev/null 2>&1 && show_remote=true
+            if ! command -v "$_forge_cli" >/dev/null 2>&1; then
+                echo "  Note: 'create remote' hidden - $_forge_cli is not installed."
+            elif ! "$_forge_cli" auth status >/dev/null 2>&1; then
+                echo "  Note: 'create remote' hidden - not logged in to $_forge_cli."
+                echo "        Run '$_forge_cli auth login', then 'zzc github' from the project root."
+            else
+                show_remote=true
+            fi
         fi
     fi
 

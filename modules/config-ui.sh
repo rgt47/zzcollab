@@ -1009,6 +1009,11 @@ _setup_change_existing() {
         { _save_and_exit; return 0; }
     yaml_set "$CONFIG_USER" "github.default_branch" "$val"
 
+    prompt_yesno "Auto-create the remote repository during 'zzc init'" \
+        "${CONFIG_AUTO_GITHUB:-false}" val || \
+        { _save_and_exit; return 0; }
+    yaml_set "$CONFIG_USER" "defaults.auto_github" "$val"
+
     print_section "Team Defaults"
 
     prompt_input "Default team name" "${CONFIG_TEAM_NAME:-}" val || { _save_and_exit; return 0; }
