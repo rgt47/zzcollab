@@ -1601,7 +1601,34 @@ Generated with zzcollab" || {
     fi
 }
 
+# Locate the zzcollab workspace root by walking up from the current directory
+# and cd into it, so forge operations always act on the project root even when
+# invoked from a subdirectory (e.g. .github/workflows). Without this, git init,
+# the repo name, and `gh repo create --source=.` key to whatever subtree the
+# command was run in, publishing the wrong files under the wrong name. A root
+# is marked by a .zzcollab file or a DESCRIPTION+Makefile pair (the same test
+# cmd_validate uses). Refuse only if no root exists between here and /.
+_cd_workspace_root() {
+    local dir
+    dir=$(pwd)
+    while [[ "$dir" != "/" ]]; do
+        if [[ -f "$dir/.zzcollab" || ( -f "$dir/DESCRIPTION" && -f "$dir/Makefile" ) ]]; then
+            if [[ "$dir" != "$(pwd)" ]]; then
+                log_success "Found workspace root, running from: $dir"
+                cd "$dir" || { log_error "Could not enter workspace root: $dir"; return 1; }
+            fi
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    log_error "Not inside a zzcollab workspace (no .zzcollab or DESCRIPTION+Makefile found above $(pwd))"
+    log_info "Run this from within a zzcollab project."
+    return 1
+}
+
 cmd_github() {
+    _cd_workspace_root || return 1
+
     # Confidential-repo guard: refuse before any git/gh action when remotes are
     # denied for this project (marker file, remote.allow=false, or a blocked
     # path prefix). See docs/git-setup-flow-spec.md.
@@ -1703,6 +1730,7 @@ cmd_github() {
 # (gitlab.default_visibility, default private; GitLab also allows internal).
 cmd_gitlab() {
     # Confidential-repo guard (see cmd_github and docs/git-setup-flow-spec.md).
+    _cd_workspace_root || return 1
     if ! remote_allowed; then
         log_error "Remote creation is disabled for this project"
         log_info "Reason: ${ZZCOLLAB_REMOTE_DENY_REASON}"
