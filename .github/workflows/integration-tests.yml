@@ -93,9 +93,11 @@ jobs:
       run: |
         cd test-project
 
-        # Run zzcollab to create Dockerfile and project structure
-        # New CLI: profile as command, -Y for auto-yes-all, --no-build to skip build
-        zzcollab ${{ matrix.profile }} -Y --no-build
+        # Run zzcollab to create Dockerfile and project structure.
+        # Profile is a command; global flags (-y auto-yes, --no-build) are
+        # pre-scanned and must precede the profile (the profile command
+        # rejects trailing flags).
+        zzcollab -y --no-build ${{ matrix.profile }}
 
         # Verify Dockerfile was created
         test -f Dockerfile
@@ -240,16 +242,17 @@ jobs:
       run: |
         zzcollab config init
         zzcollab config set team-name testteam
-        zzcollab config set project-name testproject
+        # 'project-name' is not a config key; the project name derives from
+        # the project directory, so nothing to set here.
 
     - name: Create test project
       run: |
         mkdir -p ~/test-workflow
         cd ~/test-workflow
 
-        # Initialize with zzcollab using new CLI syntax
-        # Profile as command, -Y for auto-yes-all, --no-build to skip build
-        zzcollab minimal -Y --no-build
+        # Initialize with zzcollab: global flags (-y auto-yes, --no-build)
+        # precede the profile command.
+        zzcollab -y --no-build minimal
 
         # Verify files were created
         test -f Dockerfile
