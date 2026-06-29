@@ -152,7 +152,6 @@ R_VERSION=""  # R version for Docker build (extracted from renv.lock or specifie
 
 # Initialization mode variables
 SKIP_CONFIRMATION=false
-CREATE_GITHUB_REPO=false
 FORCE_DIRECTORY=false    # Skip directory validation (advanced users)
 WITH_EXAMPLES=false      # Include example files and templates in workspace
 

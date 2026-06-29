@@ -411,7 +411,13 @@ run_feature_wizard() {
     # actions, not steady-state toggles: removal is owned by `zzc rm git` /
     # `zzc rm github`. They are therefore offered only during `zzc init`, never
     # in a later `zzc toggle`. See docs/git-setup-flow-spec.md.
+    # def_remote pre-selects the "create remote" checkbox. It is off unless the
+    # user opted into auto-creation via config (auto_github -> CONFIG_AUTO_GITHUB);
+    # this is the only wiring that makes that preference take effect. The actual
+    # creation still runs through the guarded path below (show_remote requires a
+    # real forge, an interactive session, the forge CLI, and remote_allowed).
     local cur_git=off cur_remote=off def_git=on def_remote=off
+    [[ "${CONFIG_AUTO_GITHUB:-false}" == true ]] && def_remote=on
     local show_git=false show_remote=false
     if [[ "$mode" == init ]]; then
         [[ -d .git ]] && cur_git=on

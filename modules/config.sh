@@ -447,7 +447,6 @@ apply_config_defaults() {
         R_VERSION="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
     fi
 
-    [[ "$CONFIG_AUTO_GITHUB" == "true" ]] && CREATE_GITHUB_REPO=true
     [[ "$CONFIG_SKIP_CONFIRMATION" == "true" ]] && SKIP_CONFIRMATION=true
     [[ "${WITH_EXAMPLES:-false}" == "false" && "$CONFIG_WITH_EXAMPLES" == "true" ]] && WITH_EXAMPLES=true
     return 0
