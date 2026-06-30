@@ -13,11 +13,12 @@
 #                          installed from DESCRIPTION via pak (L0).
 #
 # Renders every analysis/**/report.Rmd plus, for the blog archetype, every
-# analysis/posts/*.Rmd. HTML output validates R code execution and package
-# reproducibility without requiring a LaTeX installation in CI. PDF rendering is
-# performed on the host with the local xelatex toolchain. Path-filtered to run
-# only when analysis
-# code or the environment definition changes.
+# analysis/posts/*.Rmd. The output format self-adapts to the environment: PDF
+# when a LaTeX engine is present (the verse/publishing base bakes one), HTML
+# otherwise (minimal/tidyverse/rstudio), so the same workflow renders a
+# manuscript PDF for publishing projects and a LaTeX-free HTML elsewhere.
+# Path-filtered to run only when analysis code or the environment definition
+# changes.
 #
 name: Render Reports
 
@@ -84,7 +85,7 @@ jobs:
               cat("=== Rendering:", rmd, "===\n")
               old_wd <- setwd(dirname(rmd))
               tryCatch(
-                rmarkdown::render(basename(rmd), output_format = "html_document"),
+                rmarkdown::render(basename(rmd), output_format = if (nzchar(Sys.which("pdflatex"))) "pdf_document" else "html_document"),
                 error = function(e) {
                   cat("FAILED:", conditionMessage(e), "\n")
                   failed <<- c(failed, rmd)
@@ -119,6 +120,10 @@ jobs:
             -v ${{ github.workspace }}:/project \
             -w /project compendium-env \
             Rscript --vanilla -e '
+              # PDF mode (LaTeX present, e.g. the verse/publishing base): let
+              # tinytex auto-install any LaTeX package the image did not pre-bake
+              # (the verse TeX tree is world-writable). Harmless for HTML output.
+              options(tinytex.install_packages = TRUE)
               baked_lib <- Sys.glob("/opt/renv/library/*/*")[1]
               if (!is.na(baked_lib) && nzchar(baked_lib)) {
                 .libPaths(c(baked_lib, .libPaths()))
@@ -135,7 +140,7 @@ jobs:
                 cat("=== Rendering:", rmd, "===\n")
                 old_wd <- setwd(dirname(rmd))
                 tryCatch(
-                  rmarkdown::render(basename(rmd), output_format = "html_document"),
+                  rmarkdown::render(basename(rmd), output_format = if (nzchar(Sys.which("pdflatex"))) "pdf_document" else "html_document"),
                   error = function(e) {
                     cat("FAILED:", conditionMessage(e), "\n")
                     failed <<- c(failed, rmd)
@@ -193,7 +198,7 @@ jobs:
               cat("=== Rendering:", rmd, "===\n")
               old_wd <- setwd(dirname(rmd))
               tryCatch(
-                rmarkdown::render(basename(rmd), output_format = "html_document"),
+                rmarkdown::render(basename(rmd), output_format = if (nzchar(Sys.which("pdflatex"))) "pdf_document" else "html_document"),
                 error = function(e) {
                   cat("FAILED:", conditionMessage(e), "\n")
                   failed <<- c(failed, rmd)
@@ -210,12 +215,13 @@ jobs:
             }
           '
 
-      - name: Upload rendered HTML
+      - name: Upload rendered reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rendered-html
+          name: rendered-reports
           path: |
+            analysis/**/*.pdf
             analysis/**/*.html
           retention-days: 30
           if-no-files-found: warn
