@@ -101,7 +101,7 @@ jobs:
       - name: Run R CMD check
         run: |
           Rscript --no-init-file -e "\
-            rlib <- normalizePath(Sys.glob('renv/library/*/*')[1], mustWork = FALSE); \
+            rlib <- tryCatch(renv::paths[['library']](), error = function(e) normalizePath(Sys.glob('renv/library/*/*')[1], mustWork = FALSE)); \
             libs <- c(Sys.getenv('CI_TOOLS_LIB'), rlib, .libPaths()); \
             .libPaths(libs[!is.na(libs) & nchar(libs) > 0]); \
             rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'error')"
