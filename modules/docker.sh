@@ -50,12 +50,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # Always install languageserver (IDE support), yaml (R Markdown), and here
-    # (project-root path resolution, used by compendium reports). Ncpus
-    # parallelises the binary install, which otherwise runs serially at
-    # ~1.5s/package (white paper F-8).
-    cmds+="# Install languageserver (IDE), yaml (R Markdown), here (path resolution)
-RUN R -e \"install.packages(c('languageserver', 'yaml', 'here'), Ncpus = max(1L, parallel::detectCores()))\"
+    # R dev-tooling install (none of these belong in renv.lock; see the
+    # package-placement white paper). yaml and here are always installed: yaml
+    # is needed by renv's R Markdown dependency parser, here is the common
+    # compendium path-resolution helper. languageserver (in-container LSP) is
+    # installed unless disabled (zzc config set languageserver false). styler
+    # and lintr are added when the code-quality feature is active, since with no
+    # host R the linters must run in the container. Ncpus parallelises the
+    # binary install (white paper F-8).
+    load_config 2>/dev/null || true
+    local pkgs="'yaml', 'here'"
+    [[ "${CONFIG_LANGUAGESERVER:-true}" == "true" ]] && pkgs="'languageserver', ${pkgs}"
+    if [[ -f .pre-commit-config.yaml || "${CONFIG_FEAT_CODE_QUALITY:-off}" == "on" ]]; then
+        pkgs="${pkgs}, 'styler', 'lintr'"
+    fi
+    cmds+="# Install R dev tooling (languageserver/styler/lintr are config-gated)
+RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores()))\"
 "
 
     # For LaTeX-capable bases (rocker/verse, the publishing profile), pre-bake

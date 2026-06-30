@@ -37,6 +37,9 @@ CONFIG_R_VERSION=""
 CONFIG_AUTO_GITHUB="false"
 CONFIG_SKIP_CONFIRMATION="false"
 CONFIG_WITH_EXAMPLES="false"
+# Install the R language server in the image for in-container LSP completion.
+# Default true; set false for REPL-only workflows (no editor LSP).
+CONFIG_LANGUAGESERVER="true"
 # Research archetype (init-time scaffolding axis): manuscript | analysis |
 # package | simulation | blog. Empty -> analysis.
 CONFIG_ARCHETYPE=""
@@ -236,6 +239,7 @@ load_config() {
     CONFIG_AUTO_GITHUB="false"
     CONFIG_SKIP_CONFIRMATION="false"
     CONFIG_WITH_EXAMPLES="false"
+    CONFIG_LANGUAGESERVER="true"
     CONFIG_ARCHETYPE=""
     CONFIG_VALIDATE_STRICT=""
     CONFIG_VALIDATE_FIX=""
@@ -299,6 +303,7 @@ defaults.r_version              CONFIG_R_VERSION
 defaults.auto_github            CONFIG_AUTO_GITHUB
 defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
 defaults.with_examples          CONFIG_WITH_EXAMPLES
+defaults.languageserver         CONFIG_LANGUAGESERVER
 defaults.archetype              CONFIG_ARCHETYPE
 validate.strict                 CONFIG_VALIDATE_STRICT
 validate.fix                    CONFIG_VALIDATE_FIX
@@ -566,7 +571,7 @@ EOF
                     *) log_error "Unknown runtime: $value (valid: docker, podman, apptainer)"
                        return 1 ;;
                 esac ;;
-            validate_strict|validate_fix|auto_github)
+            validate_strict|validate_fix|auto_github|languageserver)
                 case "$value" in
                     true|false) ;;
                     *) log_error "Expected true or false for $key (got: $value)"
