@@ -1020,7 +1020,30 @@ build_docker_image() {
     log_info "Building image with $runtime..."
 
     local _built=false
-    if [[ "$runtime" == "docker" ]]; then
+    local _log=""
+    # Interactive + gum available: show a spinner instead of a flood of build
+    # output, capture the full log to a file, and offer to view it (errors are
+    # surfaced automatically on failure). Otherwise stream the build directly,
+    # so CI and no-TTY runs - where the streamed log is the only feedback - are
+    # unchanged.
+    if has_gum && [[ -t 1 ]]; then
+        if mkdir -p .zzcollab 2>/dev/null; then _log=".zzcollab/docker-build.log"; else _log="docker-build.log"; fi
+        local _script
+        _script=$(mktemp "${TMPDIR:-/tmp}/zzc-build.XXXXXX")
+        {
+            printf 'cd %q\n' "$PWD"
+            [[ "$runtime" == "docker" ]] && printf 'export DOCKER_BUILDKIT=1\n'
+            printf '%q build' "$runtime"
+            [[ ${#build_args[@]} -gt 0 ]] && printf ' %q' "${build_args[@]}"
+            printf ' -t %q . > %q 2>&1\n' "$project_name" "$_log"
+        } > "$_script"
+        if gum spin --spinner dot \
+            --title "Building image with $runtime (this can take a few minutes)…" -- \
+            bash "$_script"; then
+            _built=true
+        fi
+        rm -f "$_script"
+    elif [[ "$runtime" == "docker" ]]; then
         DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" . && _built=true
     else
         "$runtime" build ${build_args[@]+"${build_args[@]}"} -t "$project_name" . && _built=true
@@ -1028,9 +1051,18 @@ build_docker_image() {
 
     if [[ "$_built" == true ]]; then
         log_success "Image '$project_name' built successfully ($runtime)"
+        if [[ -n "$_log" ]]; then
+            log_info "Build log saved: $_log"
+            gum_confirm "View the build log?" no && { less "$_log" 2>/dev/null || cat "$_log"; }
+        fi
         log_info "Run: $runtime run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
         log_error "Image build failed ($runtime)"
+        if [[ -n "$_log" && -f "$_log" ]]; then
+            log_error "Last 30 lines of the build log:"
+            tail -n 30 "$_log" >&2
+            log_info "Full log: $_log"
+        fi
         return 1
     fi
 }
