@@ -48,7 +48,8 @@ library(knitr)
 
 # Introduction
 
-Here is the text of your introduction.
+Here is the text of your introduction. This compendium follows established
+principles of computational reproducibility in research [@marwick2017].
 
 # Materials and methods
 
