@@ -276,6 +276,148 @@ remains a latent staleness, tracked separately (Section 5, open). This
 finding also qualifies Section 8.2: PPM having a renv binary did not mean a
 binary was installed for this package. Profile-independent.
 
+### F-10. PDF rendering on the verse (publishing) profile fails for the non-root user (fixed)
+
+The publishing profile builds on `rocker/verse`, which bakes a LaTeX
+toolchain, so its images are meant to render manuscripts to PDF. A PDF
+render nonetheless failed at `! LaTeX Error: File 'amssymb.sty' not found`.
+The cause has two parts, established by probing the image. First,
+`rocker/verse` ships a minimal TeX Live: common packages such as `amsfonts`
+(which provides `amssymb.sty`) are absent and fetched on first use. Second,
+the verse default leaves `tinytex`'s auto-install of missing packages off,
+so a plain `rmarkdown::render` does not fetch them. Permissions were not the
+obstacle: the TeX tree is world-writable (`0777`, group `staff`) and the
+failure reproduced as root. Setting `options(tinytex.install_packages =
+TRUE)` restores the fetch.
+
+Fix (applied): a build-time warm-up. When the base image is `rocker/verse`,
+the generator emits a `RUN` (before the `renv.lock` COPY, so the layer
+caches across lockfile changes) that renders two throwaway documents with
+auto-install enabled, as root, installing the LaTeX closure into the image.
+One mirrors the report format (`bookdown::pdf_document2`, `setspace`, a
+`booktabs` table, math); the other loads, via `extra_dependencies`, a
+kitchen-sink of packages common to statistical manuscripts (tables:
+`booktabs`, `longtable`, `multirow`, `threeparttable`, `makecell`; math:
+`amsmath`, `amssymb`, `mathtools`; layout and graphics: `geometry`,
+`caption`, `tikz`, `pgfplots`, `siunitx`). The render step also sets
+`tinytex.install_packages = TRUE` as a runtime fallback for any package not
+pre-baked. Verified: a built image resolves `amssymb`, `booktabs`, `tikz`,
+and `siunitx` via `kpsewhich`, and the peng1 CI render produced `report.pdf`
+(`rendered: 1, failed: 0`). Profile-specific (publishing / verse). Gated on
+the exact `verse` image name so `tidyverse`, which has no LaTeX, is not
+matched.
+
+### F-11. The generated renv activate.R recurses in renv's subprocesses (fixed)
+
+The scaffold writes a minimal `renv/activate.R` that bootstraps renv on
+first use: if renv is absent it installs it, then calls `renv::load()`. In
+the package-check workflow this looped. `renv::restore()` (and the initial
+`install.packages('renv')`) spawn child R processes via `R CMD INSTALL`;
+each child re-sourced the project `.Rprofile`, which re-ran `activate.R`,
+which found renv not yet on that process's library path and reinstalled it,
+spawning further children. The job printed 'Installing renv...' repeatedly
+and was killed with exit 137 (out of memory). An earlier change, qualifying
+the call as `utils::install.packages` (the unqualified call failed because
+only the base package is attached while `.Rprofile` is sourced; see
+`?Startup`), removed the first error but exposed this deeper recursion.
+
+Fix (applied): port the two guards from renv's own `activate.R`. Bail when
+`R_CMD` and `R_LIBS` are both set, which marks renv's install subprocesses;
+and guard re-entry with an `renv.autoloader.running` option. Verified by
+reproducing the loop in a container and confirming, with the guarded stub, a
+single renv install and a clean startup; the package-check workflow then
+passed. Profile-independent (affects any renv-backed project's check
+workflow, not the image build itself).
+
+### F-12. The tools install bundles three packages under one justification
+
+The unconditional tools layer installs `languageserver`, `yaml`, and (after
+CL-4) `here`, commented "as needed". Inspection shows the three earn their
+place differently, and only one is a hard dependency of what the image is
+for:
+
+- `languageserver` is the R Language Server Protocol implementation,
+  required by the in-container vim / zzvim-r editing workflow this profile
+  targets (completion, diagnostics, hover). It is a hard dependency *for
+  interactive editing inside the container* only: CI image builds (render,
+  package check) never open an editor, and users who edit on the host never
+  load it, so for those paths it is the largest single build cost (F-8) spent
+  on an unused package. Baking it is still correct for the editing workflow
+  (installing it on each `make r` would be slow); the qualification is that
+  it is conditional value presented as unconditional need.
+- `yaml` is redundant where it is justified and unused where it is not.
+  "yaml for R Markdown dependencies" is moot: `yaml` is a transitive
+  `Imports` of both `rmarkdown` and `knitr` (verified), so it is already
+  present on any base that can render Rmd (`verse`, `tidyverse`). On
+  `minimal`/`rstudio`, which have neither, the explicit line installs it, but
+  no zzcollab R code loads it (no `library(yaml)`/`yaml::`/`read_yaml` in
+  templates, modules, or `.Rprofile`; `zzcollab.yaml` is parsed by `yq`, a
+  shell tool, not R). Candidate for removal.
+- `here` resolves paths from the project root (`here::here()`), the common
+  compendium idiom. It was added (CL-4) as cheap insurance because user
+  analysis code routinely uses it, but the stock scaffold report does not
+  (zero `here::` occurrences in `templates/report.Rmd`). It is a
+  convenience for likely user code, not a requirement of what ships.
+
+Confirmed by inspection and a dependency query; not yet acted on beyond the
+`here` addition. The defensible end state is to drop `yaml`, keep `here` as
+declared insurance, and make `languageserver` conditional on an in-container
+editing mode so CI and host-edit builds do not pay for it. Profile-relevant:
+the `languageserver` cost lands on every profile, the `yaml` redundancy on
+the rmarkdown-bearing ones.
+
+### F-13. Dependency validation enforces the renv-manifest model, is advisory-only, and is absent from CI
+
+`make check-renv` runs `zzrenvcheck::check_packages(strict = TRUE)` in the
+container. Reading its source establishes three properties that together
+leave codebase reproducibility unguarded.
+
+First, the model it enforces. It scans `.R`/`.Rmd`/`.qmd`/`.Rnw` files in
+`R/`, `scripts/`, `analysis/`, and the project root (strict mode adds
+`tests/`, `vignettes/`, `inst/`), extracts package usage, and compares it
+against two declarations only: `DESCRIPTION` (Imports+Suggests) and
+`renv.lock`. Base R packages are exempt via a fixed allowlist. It does **not**
+consult `installed.packages()`, the site-library, or the base image. A
+package is "declared" only if it is in DESCRIPTION/renv.lock; one present
+solely because the Dockerfile installed it, or because the base image baked
+it, is reported as missing. This is the renv-as-manifest model: renv.lock is
+the source of truth for what the analysis needs.
+
+Second, it does not enforce. `check_packages` sets an internal
+`status` of `"pass"` or `"fail"`, prints warnings, and returns
+`invisible(result)`. It never calls `stop`, `quit`, or `cli_abort`, and has
+no error-on-failure option. `Rscript -e "zzrenvcheck::check_packages(...)"`
+therefore exits 0 even on `"fail"`. `strict = TRUE` widens the scanned
+directories, not the consequence; both modes are report-only (with
+`auto_fix` optionally editing DESCRIPTION). It is a linter, not a gate.
+
+Third, it is not in CI. `r-package.yml` runs `rcmdcheck` and the tinytest
+suite but never calls `check_packages`; its "validate" steps only assert that
+`DESCRIPTION` and the expected directories exist. So the dependency-manifest
+check runs only when a developer invokes `make check-renv` locally, as the
+target's "run before commit" help text intends.
+
+The consequence is a contradiction with the publishing profile (F-10). The
+verse base supplies the analysis stack (`dplyr`, `ggplot2`, `rmarkdown`,
+`here`, ...) from the image, outside renv.lock, by design. Running
+`check_packages` against such a project would flag every one of those as
+missing from DESCRIPTION and renv.lock, because the validator cannot see the
+image. The validator assumes the renv-manifest model; the verse profile uses
+the image-as-environment model (Section 10); the two disagree, and the
+disagreement is currently masked only because the check is advisory and
+unrun in CI.
+
+Making CI gate on captured reproducibility (the stated goal) therefore needs
+two things, not one: a wrapper that exits non-zero when `status == "fail"`,
+and a decision on the model. Either declare analysis dependencies in
+DESCRIPTION/renv.lock so the manifest is complete (natural for `minimal`; on
+verse it means re-pinning the baked stack, eroding the reason to use verse),
+or teach `check_packages` to treat image-provided/installed packages as
+satisfied (an image-aware mode), so the manifest check coexists with the
+baked-base profiles. Confirmed by source inspection; not yet acted on.
+Profile-relevant: the conflict is acute on the baked-base profiles
+(`verse`, `tidyverse`) and benign on `minimal`.
+
 ## 4. Confirmed strengths
 
 To avoid optimization regressing what already works, the following are
@@ -348,6 +490,25 @@ done), not by removal or caching.
   removes the staleness at its source, complementing F-9's restore-time fix.
 - **Layer consolidation.** Low priority; needs measurement, since merging
   `RUN` layers trades rebuild granularity for fewer layers.
+- **F-10, CI build cache for the verse warm-up.** The render workflow
+  rebuilds the project image on each run on a fresh runner, so the LaTeX
+  warm-up (~8 minutes, measured in peng1 CI) re-executes every time. A
+  BuildKit GitHub Actions cache (`cache-from`/`cache-to: type=gha`) would
+  persist the warm-up layer across runs; alternatively, building the image
+  once and pulling it from a registry (the team-image model) avoids the
+  per-run build entirely.
+- **F-12, drop `yaml`.** No R consumer in zzcollab and a transitive
+  `rmarkdown`/`knitr` import on bases that render Rmd; removable with a build
+  to confirm no regression.
+- **F-12, make `languageserver` conditional.** Gate it behind an
+  in-container editing mode so CI and host-edit image builds do not pay for
+  the largest single install line on a package they never load.
+- **F-13, CI gate on captured reproducibility.** Add a wrapper that exits
+  non-zero when `check_packages` returns `status == "fail"`, and run it in
+  `r-package.yml`, so a commit whose code uses an undeclared package fails CI.
+  Blocked on resolving the model (F-13): declare analysis deps in renv.lock,
+  or give `check_packages` an image-aware mode, so baked-base (`verse`,
+  `tidyverse`) projects are not failed for their own provided packages.
 
 ## 6. Change log
 
@@ -434,6 +595,41 @@ release like `ZZCOLLAB_DEFAULT_R_VERSION`. Verified: a freshly generated
 `renv.lock` pins renv 1.2.3; shellcheck-clean. The F-9 restore-time fix
 (`exclude = 'renv'`) remains as defence for user-supplied lockfiles that
 still pin an archived renv.
+
+### CL-4. Publishing-profile rendering and CI (separate branch)
+
+A batch addressing PDF rendering on the publishing (`rocker/verse`) profile
+and related CI defects, verified against a live project (peng1) whose
+package-check and render workflows both pass.
+
+- **F-10, verse LaTeX warm-up.** `generate_tools_install` emits a build-time
+  warm-up render for `rocker/verse` bases, baking the LaTeX closure. Placed
+  before the `renv.lock` COPY for cache stability; gated on the exact `verse`
+  image name so `tidyverse` is not matched.
+- **F-11, activate.R recursion guard.** The scaffolded `renv/activate.R`
+  gains the `R_CMD`/`R_LIBS` subprocess bail and the autoloader-running
+  recursion guard, ending the exit-137 loop. Verified by reproducing the loop
+  in a container, then a single clean install with the guard.
+- **F-12 (partial), add `here` to the tools install.** `here` joins
+  `languageserver` and `yaml` so compendium reports that use `here::here()`
+  resolve. The `yaml`-removal and `languageserver`-conditional candidates from
+  F-12 remain open (Section 5).
+- **Self-adapting render format (workflow, not the Dockerfile).** The render
+  workflow chooses `pdf_document` when `Sys.which('pdflatex')` finds a LaTeX
+  engine and `html_document` otherwise, so one template renders a manuscript
+  PDF for publishing projects and LaTeX-free HTML on `minimal`/`tidyverse`/
+  `rstudio`. Recorded here for context; it is not a Dockerfile change.
+- **Citation-style scaffolding (scaffold, not the Dockerfile).** The setup now
+  installs the CSL the report references into `analysis/templates/`, and the
+  template report cites its one bundled reference, so a fresh project renders
+  a complete citation-to-reference chain rather than failing on a missing CSL
+  with an empty References section. Recorded for context; not a Dockerfile
+  change.
+
+Verification: building the verse image confirms the LaTeX packages resolve
+(`kpsewhich` finds `amssymb`, `booktabs`, `tikz`, `siunitx`); peng1's R
+Package Check passes (recursion fixed) and its Render Reports job produces
+`report.pdf` (`rendered: 1, failed: 0`).
 
 ## 7. Verification plan
 
