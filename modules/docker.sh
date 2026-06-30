@@ -798,7 +798,9 @@ generate_dockerfile_inline() {
         install_mode="renv"
         install_block=$(cat <<'IRENV'
 RUN R -e "install.packages('renv')"
-RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 755 /opt/renv/library /opt/renv/cache
+# 0777 so the non-root run user can hydrate/snapshot into the library (F-2);
+# single-user research container, so world-writable here is acceptable.
+RUN mkdir -p /opt/renv/library /opt/renv/cache && chmod 777 /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
 # RENV_LOCK_HASH is passed by the builder as a digest of renv.lock. Declaring
 # it here and referencing it in the RUN below makes the restore layer's cache
