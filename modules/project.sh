@@ -151,6 +151,10 @@ create_analysis_files() {
     if [[ "$_want_report" == true ]]; then
         install_template "report.Rmd" "analysis/report/report.Rmd" "report template" 2>/dev/null || true
         install_template "references.bib" "analysis/report/references.bib" "bibliography" 2>/dev/null || true
+        # The report's YAML header references ../templates/<csl> for citation
+        # formatting; ship it so the default report renders without a missing
+        # resource error.
+        install_template "statistics-in-medicine.csl" "analysis/templates/statistics-in-medicine.csl" "citation style (CSL)" 2>/dev/null || true
         log_success "Report scaffolded (archetype: $_arch)"
     fi
 
