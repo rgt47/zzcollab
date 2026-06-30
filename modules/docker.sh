@@ -57,7 +57,87 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 RUN R -e \"install.packages(c('languageserver', 'yaml'), Ncpus = max(1L, parallel::detectCores()))\"
 "
 
-    echo "$cmds"
+    # For LaTeX-capable bases (rocker/verse, the publishing profile), pre-bake
+    # the LaTeX package closure at build time so PDF rendering works for the
+    # non-root user without runtime installs. The verse default has auto-install
+    # off; two warm-up renders (report format + a kitchen-sink of common
+    # statistician packages) install the closure as root with the option
+    # explicitly enabled. This block lands before the renv.lock COPY in the
+    # generated Dockerfile, so a lockfile change does not invalidate the layer.
+    if [[ "${base_image##*/}" == "verse" ]]; then
+        cmds+="
+"
+        cmds+="$(cat <<'WARMUP_BLOCK'
+# Pre-bake the LaTeX package closure at build time (as root, where tlmgr can
+# write) so PDF rendering works for the non-root user with no runtime install.
+RUN <<'WARMUP'
+set -eu
+d=/tmp/texwarmup
+mkdir -p "$d"
+cat > "$d/01-report.Rmd" <<'RMD'
+---
+title: warm-up report
+output:
+  bookdown::pdf_document2:
+    number_sections: true
+header-includes:
+  - \usepackage{setspace}
+---
+# Section
+Math $\alpha \in \mathbb{R}$ and $\sum_{i=1}^{n} x_i^2$.
+```{r}
+knitr::kable(head(mtcars, 3), booktabs = TRUE)
+```
+RMD
+cat > "$d/02-kitchensink.Rmd" <<'RMD'
+---
+title: warm-up kitchen sink
+output:
+  pdf_document:
+    extra_dependencies:
+      - booktabs
+      - longtable
+      - array
+      - multirow
+      - wrapfig
+      - float
+      - colortbl
+      - pdflscape
+      - tabu
+      - threeparttable
+      - threeparttablex
+      - ulem
+      - makecell
+      - xcolor
+      - amsmath
+      - amssymb
+      - amsfonts
+      - mathtools
+      - hyperref
+      - geometry
+      - fancyhdr
+      - caption
+      - subcaption
+      - graphicx
+      - multicol
+      - setspace
+      - enumitem
+      - tikz
+      - pgfplots
+      - siunitx
+---
+# Kitchen sink
+Math $\mathcal{N}(\mu, \sigma^2)$.
+RMD
+R -e 'options(tinytex.install_packages = TRUE); for (f in list.files("/tmp/texwarmup", pattern = "[.]Rmd$", full.names = TRUE)) rmarkdown::render(f, quiet = TRUE)'
+rm -rf "$d"
+WARMUP
+WARMUP_BLOCK
+)
+"
+    fi
+
+    printf '%s\n' "$cmds"
 }
 
 create_renv_lock_minimal() {
