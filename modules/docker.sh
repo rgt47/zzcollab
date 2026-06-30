@@ -50,11 +50,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # Always install languageserver for IDE support and yaml for R Markdown.
-    # Ncpus parallelises the ~40-package binary install, which otherwise runs
-    # serially at ~1.5s/package (white paper F-8).
-    cmds+="# Install languageserver for IDE support and yaml for R Markdown dependencies
-RUN R -e \"install.packages(c('languageserver', 'yaml'), Ncpus = max(1L, parallel::detectCores()))\"
+    # Always install languageserver (IDE support), yaml (R Markdown), and here
+    # (project-root path resolution, used by compendium reports). Ncpus
+    # parallelises the binary install, which otherwise runs serially at
+    # ~1.5s/package (white paper F-8).
+    cmds+="# Install languageserver (IDE), yaml (R Markdown), here (path resolution)
+RUN R -e \"install.packages(c('languageserver', 'yaml', 'here'), Ncpus = max(1L, parallel::detectCores()))\"
 "
 
     # For LaTeX-capable bases (rocker/verse, the publishing profile), pre-bake
