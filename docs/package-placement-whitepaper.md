@@ -317,3 +317,41 @@ from the image with `make snapshot`, classify `R/` dependencies as Imports and
 The discipline keeps renv.lock an honest, minimal record of what reproduces the
 result, and the Dockerfile the home for everything that merely supports the
 work.
+
+## Appendix A. Verification of the conditional-tooling mechanism
+
+The placement-versus-provisioning rule of Section 5.4 is enforced by a config
+toggle (`languageserver`) that gates the Dockerfile install list without
+touching renv.lock. The following observations, recorded against a freshly
+scaffolded project, confirm the mechanism behaves as the rule requires.
+
+The renv library layout was probed in a `rocker/verse:4.6.0` container.
+`install.packages` (with `RENV_PATHS_LIBRARY` set), `renv::restore`, and
+`renv::hydrate` all deposit packages in one directory,
+`renv::paths[['library']]()`, which resolves to
+`/opt/renv/library/<platform>/R-<ver>/<arch>`. A glob of the form
+`/opt/renv/library/*/*` stops one level short of that directory, which is the
+defect the render workflow carried until it was corrected to use
+`renv::paths[['library']]()`. This confirms that a single authoritative path
+serves restore, hydrate, and install alike, so a package placed in the manifest
+is found regardless of which mechanism materialises it.
+
+The toggle was then exercised end to end. A project scaffolded with default
+settings produced a Dockerfile whose tooling line read
+`install.packages(c('languageserver', 'yaml', 'here'), ...)`. Running the
+feature wizard and disabling the language server produced the planned change
+`languageserver: on -> off`, persisted `languageserver: "false"` to the
+project's `zzcollab.yaml`, and regenerated the Dockerfile with the tooling line
+reduced to `install.packages(c('yaml', 'here'), ...)`. Throughout, renv.lock
+was untouched, which is the invariant the two-layer model demands: a
+development-tooling decision alters the image and nothing else. With the
+code-quality feature inactive, `styler` and `lintr` were correctly absent from
+the install list, appearing only in the config-gated comment, and the generated
+Makefile carried the `style` and `lint` targets that run those linters in the
+container.
+
+These observations are structural and behavioural checks of the generation and
+toggle path, not a test of the language server or linters themselves. They
+establish that the tooling set is governed entirely by config-gated image
+generation, leaving the reproducibility manifest invariant under tooling
+changes.
