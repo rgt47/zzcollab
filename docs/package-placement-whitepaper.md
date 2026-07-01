@@ -355,3 +355,63 @@ toggle path, not a test of the language server or linters themselves. They
 establish that the tooling set is governed entirely by config-gated image
 generation, leaving the reproducibility manifest invariant under tooling
 changes.
+
+## Appendix B. Provisioning cost: bulk versus incremental LaTeX installation
+
+Section 5.4 establishes that provisioning is a decision distinct from placement:
+the placement of the LaTeX toolchain (the image, never renv.lock) is fixed, but
+*how* the toolchain is materialised in the image is a separate choice with a
+large, and initially hidden, cost. Profiling the publishing-profile image build
+surfaced a defect in the original warm-up strategy and a simple correction.
+
+The publishing profile is built on `rocker/verse`, which ships a minimal TeX
+Live with on-the-fly package installation disabled by default. To render PDFs
+for the non-root run user without a runtime install, the Dockerfile pre-bakes
+the LaTeX package closure at build time. The original approach rendered a
+kitchen-sink document with `options(tinytex.install_packages = TRUE)` and let
+tinytex discover missing packages lazily. Measuring the build layer by layer
+showed this single `RUN` consumed 326 seconds, 77 per cent of the entire image
+build.
+
+The cause was not the package downloads. tinytex installs lazily discovered
+packages one at a time, and after each single install it recompiles the whole
+document with `pdflatex` to discover the next missing file. The install cadence
+was a near-constant 14 seconds per package across 24 packages, yet each `tlmgr`
+install itself completed in under one second; the 14 seconds was the repeated
+`pdflatex` recompile. Package size was uncorrelated with time: the three
+largest downloads (`amsfonts` at 3.5 MB, `pgf` at 702 kB, `pgfplots` at 519 kB)
+each fetched in under a second, and packages pulled as dependencies of the same
+`tlmgr` call installed together in roughly half a second. The cost was
+therefore O(n) full-document recompiles, not O(total bytes) of download.
+
+The correction is to install the known closure in one bulk `tlmgr` pass before
+any render, replacing lazy discovery with an explicit list:
+
+```r
+tinytex::tlmgr_install(c('amsfonts', 'booktabs', 'setspace', 'multirow',
+  'wrapfig', 'float', 'colortbl', 'pdflscape', 'tabu', 'varwidth',
+  'threeparttable', 'threeparttablex', 'environ', 'trimspaces', 'ulem',
+  'makecell', 'mathtools', 'fancyhdr', 'caption', 'enumitem', 'fp', 'pgf',
+  'pgfplots', 'siunitx'))
+```
+
+The subsequent kitchen-sink render is retained: with the closure already
+present it triggers no further installs, so it serves as a fast smoke test and
+self-heals any package the explicit list omits. Measured against the same CI
+runner, the warm-up layer fell from 326 seconds to 31 seconds, a factor of ten,
+and the whole render image build fell from 7 minutes 1 second to 2 minutes 29
+seconds. The final render step was 3 to 4 seconds before and after, confirming
+that rendering was never the bottleneck.
+
+The general lesson generalises beyond LaTeX. When an image provisions a
+tool whose installer resolves dependencies iteratively (a compile-fail-install
+loop, a solver invoked per package, a lockstep resolver), the dominant cost is
+often the repeated resolution step rather than the artifacts themselves.
+Provisioning the full closure in a single resolver invocation, then verifying
+once, converts an O(n)-resolution loop into a single pass. This is a
+provisioning optimisation only; it changes neither placement nor the
+reproducibility manifest, and the rendered output is bit-for-bit identical.
+
+---
+*Rendered on 2026-07-01 at 07:19 PDT.*<br>
+*Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/package-placement-whitepaper.md*
