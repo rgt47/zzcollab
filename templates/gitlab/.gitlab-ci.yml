@@ -239,7 +239,7 @@ render-docker:
     - docker build -f Dockerfile.zzc-render -t compendium-render .
     - |
       docker run --name zzc-render -e CI=true compendium-render Rscript --vanilla -e '
-        baked_lib <- Sys.glob("/opt/renv/library/*/*")[1]
+        baked_lib <- tryCatch(renv::paths[["library"]](), error = function(e) Sys.glob("/opt/renv/library/*/*/*")[1])
         if (!is.na(baked_lib) && nzchar(baked_lib)) .libPaths(c(baked_lib, .libPaths()))
         rmds <- unique(c(
           list.files("analysis", pattern = "^report[.]Rmd$", recursive = TRUE, full.names = TRUE),

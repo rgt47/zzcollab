@@ -124,7 +124,13 @@ jobs:
               # tinytex auto-install any LaTeX package the image did not pre-bake
               # (the verse TeX tree is world-writable). Harmless for HTML output.
               options(tinytex.install_packages = TRUE)
-              baked_lib <- Sys.glob("/opt/renv/library/*/*")[1]
+              # renv::paths$library() is the authoritative package dir
+              # (.../R-x.y/<arch>); the older "*/*" glob stopped one level
+              # short (.../R-x.y) and missed restored packages. The "*/*/*"
+              # glob is a fallback with the correct depth.
+              baked_lib <- tryCatch(
+                renv::paths[["library"]](),
+                error = function(e) Sys.glob("/opt/renv/library/*/*/*")[1])
               if (!is.na(baked_lib) && nzchar(baked_lib)) {
                 .libPaths(c(baked_lib, .libPaths()))
               }
