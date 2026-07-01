@@ -52,7 +52,8 @@ Penguins bill measurements.
 >   manuscript, package, simulation, or blog), which shapes the starter
 >   layout.
 > - **Profile**: the Docker image bundle (which R packages are baked
->   into the container): minimal, analysis, or rstudio. Distinct
+>   into the container): minimal, tidyverse, rstudio, or publishing
+>   (`analysis` is a deprecated alias for `tidyverse`). Distinct
 >   from the archetype.
 > - **Feature**: an independently switchable capability (a package
 >   backend, Docker, CI, data hashing, code-quality hooks, unit tests,
@@ -135,7 +136,10 @@ The second question is the feature wizard (the same one `zzc toggle`
 uses). It recommends a sensible default, renv plus Docker, which you can
 accept or untick. Each toggle is an independently switchable *feature*:
 the package backend (renv), Docker, CI, data-integrity hashing,
-code-quality hooks, unit tests, and cloud launch. You do not have to
+code-quality hooks, unit tests, the R language server in the Docker image
+(`languageserver`, default on), and cloud launch. When the `auto_github`
+config is on, the wizard also pre-ticks a 'create remote now' checkbox
+that creates the GitHub remote during initialisation. You do not have to
 decide everything now; features can be added or removed at any time (see
 `vignette("quickstart3")` for the full toggle model). For this tutorial,
 accept the recommended renv plus Docker.
@@ -206,13 +210,16 @@ zzc rstudio                    # Regenerates Dockerfile with rstudio profile
 zzc list profiles
 ```
 
-**Available profiles** (the three canonical profiles):
+**Available profiles** (the four canonical profiles):
 
 - `minimal` - Command-line R environment (~650MB)
-- `analysis` - Tidyverse data analysis (~1.2GB), recommended
+- `tidyverse` - Tidyverse data analysis (~1.2GB), recommended (formerly
+  `analysis`; the `analysis` alias is still accepted)
 - `rstudio` - RStudio Server (~980MB)
+- `publishing` - Manuscript rendering with LaTeX pre-baked (~4.2GB);
+  renders PDF when a LaTeX toolchain is present, HTML otherwise
 
-For specialised needs (LaTeX, modeling, Shiny), start with the closest one and add
+For modeling, Shiny, or other domains, start with the closest one and add
 packages inside the container with `install.packages()`, then commit the
 updated `renv.lock`.
 
@@ -635,9 +642,19 @@ exit
 # Run tests in clean environment
 make docker-test
 
+# Grow the manifest from the image before committing: hydrate,
+# renv::snapshot(), then zzrenvcheck (strict + auto-fix)
+make snapshot
+
 # Optional: Manually validate dependencies (runs zzrenvcheck in the container)
 make check-renv
 ```
+
+`renv.lock` and `DESCRIPTION` play complementary roles: `renv.lock` pins
+the exact package closure (versions), while `DESCRIPTION` declares
+dependency roles. Packages used by code in `R/` belong in `Imports`;
+packages used only by `analysis/` (reports, scripts, notebooks) belong in
+`Suggests`. `make snapshot` and `zzrenvcheck` keep both honest.
 
 Now commit your work:
 
@@ -681,12 +698,15 @@ gh repo view --web
 GitHub Actions will automatically:
 
 1. Build Docker container from scratch
-2. Validate package dependencies (runs zzrenvcheck via make check-renv)
+2. Validate package dependencies in a step named 'Validate dependency
+   manifest (renv.lock + DESCRIPTION)', which runs zzrenvcheck
 3. Run unit tests
 4. Report results
 
-**Note**: CI/CD runs `make check-renv`, which invokes
-`zzrenvcheck::check_packages()` inside the container.
+**Note**: the 'Validate dependency manifest (renv.lock + DESCRIPTION)'
+step invokes `zzrenvcheck::check_packages()` inside the container and
+fails the build when code references a package that is not declared in
+`DESCRIPTION` or not locked in `renv.lock`.
 
 ## Step 7: Verify Report Rendering CI/CD (Optional)
 
@@ -802,10 +822,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 RUN R -e "install.packages('renv')"
+
+# Development tooling lives in the image, never in renv.lock. The R
+# language server (languageserver, on by default) provides in-container
+# LSP; styler and lintr back make style / make lint.
+RUN R -e "install.packages(c('languageserver', 'styler', 'lintr'))"
+
 RUN mkdir -p /opt/renv/library /opt/renv/cache
 COPY renv.lock renv.lock
+# Reproducibility-relevant packages, including yaml and here, are restored
+# from renv.lock rather than installed explicitly here.
 RUN R -e "renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"
 ```
+
+The split above follows a rule: development tooling (languageserver,
+styler, lintr, devtools, roxygen2, ...) belongs in the Dockerfile and
+never in `renv.lock`, while reproducibility-relevant packages belong in
+`renv.lock` and `DESCRIPTION`. See `docs/package-placement-whitepaper.md`
+for the full account of which packages go in the Dockerfile versus
+`renv.lock` versus `DESCRIPTION`.
 
 ### 2. renv.lock - Exact Package Versions
 
@@ -1216,13 +1251,16 @@ zzc list libs
 zzc list pkgs
 ```
 
-**Available profiles** (the three canonical profiles):
+**Available profiles** (the four canonical profiles):
 
 - `minimal` - Command-line R environment (~650MB)
-- `analysis` - Tidyverse data analysis (~1.2GB), recommended
+- `tidyverse` - Tidyverse data analysis (~1.2GB), recommended (formerly
+  `analysis`; the `analysis` alias is still accepted)
 - `rstudio` - RStudio Server (~980MB)
+- `publishing` - Manuscript rendering with LaTeX pre-baked (~4.2GB);
+  renders PDF when a LaTeX toolchain is present, HTML otherwise
 
-For specialised needs (LaTeX, modeling, Shiny), start with the closest one and add
+For modeling, Shiny, or other domains, start with the closest one and add
 packages inside the container with `install.packages()`, then commit the
 updated `renv.lock`.
 

@@ -28,7 +28,8 @@ environments, automated CI/CD workflows, and team collaboration tools.
 - **Team collaboration** with shared base images
 - **R package interface** for integration with R workflows
 - **Advanced configuration system** with user/project-level settings
-- **Three Docker profiles**: minimal, analysis, rstudio
+- **Four Docker profiles**: minimal, tidyverse (formerly `analysis`, alias
+  kept), rstudio, publishing
 - **Profile-based architecture**: Team lead selects Docker profile, members add packages as needed
 - **Automated CI/CD** workflows
 - **Analysis and reporting** tools
@@ -114,7 +115,8 @@ The **team lead** selects a Docker profile that defines the foundational environ
 - **Base R version** (e.g., R 4.4.0)
 - **System dependencies** (GDAL, PROJ, LaTeX, etc.)
 - **Pre-installed packages** (tidyverse, sf, etc.)
-- **Three profiles** available: minimal, analysis, rstudio
+- **Four profiles** available: minimal, tidyverse (formerly `analysis`, alias
+  kept), rstudio, publishing
 
 **Key principle**: Once selected, the Docker profile is **fixed** for the team. Team members cannot change the base image to ensure consistent environments.
 
@@ -141,6 +143,21 @@ remotes::install_github("user/package")
 renv::install("tidymodels")              # CRAN
 renv::install("user/package")            # GitHub
 ```
+
+### Dependency Manifest: renv.lock + DESCRIPTION
+
+Reproducibility rests on two complementary files, not one. `renv.lock` pins
+the exact package closure (versions), while `DESCRIPTION` declares dependency
+roles: packages used by code in `R/` belong in `Imports`, and packages used
+only by `analysis/` (reports, scripts, notebooks) belong in `Suggests`. Run
+`make snapshot` to grow both from the built image (`renv::hydrate()`,
+`renv::snapshot()`, then `zzrenvcheck::check_packages()`). The R-package CI
+workflow enforces this with a 'Validate dependency manifest (renv.lock +
+DESCRIPTION)' step that fails the build when code references a package that is
+not declared in `DESCRIPTION` or not locked in `renv.lock`. For guidance on
+which packages belong in the Dockerfile versus `renv.lock` versus
+`DESCRIPTION`, see
+[docs/package-placement-whitepaper.md](docs/package-placement-whitepaper.md).
 
 ### Workflow Example
 
@@ -209,10 +226,16 @@ zzcollab provides several Docker profiles optimized for different research needs
 | Profile | Base Image | Size | Use Case |
 |---------|-----------|------|----------|
 | `minimal` | rocker/r-ver | ~650 MB | Lightweight, CI/CD |
-| `analysis` | rocker/tidyverse | ~1.2 GB | Data analysis with tidyverse |
+| `tidyverse` | rocker/tidyverse | ~1.2 GB | Data analysis with tidyverse |
 | `rstudio` | rocker/rstudio | ~980 MB | RStudio Server development |
+| `publishing` | rocker/verse | ~4.2 GB | Manuscript rendering (PDF-adaptive, pre-baked LaTeX) |
 
-For specialised needs (LaTeX, Shiny, machine learning), start from one of
+The `tidyverse` profile was formerly named `analysis`; `analysis` is retained
+as a deprecated alias. The `publishing` profile renders PDF by default when a
+LaTeX toolchain is present and falls back to HTML otherwise; its LaTeX package
+closure is pre-baked into the image, so PDF rendering needs no runtime install.
+
+For other specialised needs (Shiny, machine learning), start from one of
 these profiles and add packages inside the container with
 `install.packages()`, then commit the updated `renv.lock`.
 
@@ -275,6 +298,9 @@ zzcollab config validate               # Validate YAML syntax
 - **Forge**: `forge` (`github` | `gitlab` | `none`), `gitlab_account`,
   `gitlab_host` (self-hosted)
 - **Automation**: `auto_github`, `skip_confirmation`
+- **Tooling**: `languageserver` (default `true`) installs the R language
+  server in the Docker image for in-container LSP completion and diagnostics;
+  set `false` for REPL-only workflows
 
 ## Core R Functions
 
@@ -390,6 +416,9 @@ make rstudio           # RStudio Server GUI at localhost:8787
 make docker-render     # Generate research paper PDF
 make docker-test       # Run package tests
 make docker-check      # Validate package structure
+make style             # Format R code with styler (in container)
+make lint              # Lint R code with lintr (in container)
+make snapshot          # Grow renv.lock + DESCRIPTION from the image
 make help             # See all available commands
 ```
 
@@ -427,7 +456,7 @@ COMMANDS (can be combined):
   build, doctor, validate, config, list, help
 
 PROFILES (quickstart, or switch profile in an existing project):
-  minimal, analysis, rstudio
+  minimal, tidyverse (alias: analysis), rstudio, publishing
 
 GLOBAL OPTIONS:
   -v, --verbose            More output

@@ -644,6 +644,36 @@ performs the same check. Variants `make check-renv-no-fix` (report
 only) and `make check-renv-no-strict` (skip `tests/` and `vignettes/`)
 are available.
 
+These two files play complementary roles: `renv.lock` pins the exact
+package closure, while `DESCRIPTION` declares dependency roles (packages
+used by `R/` code go in `Imports`; packages used only by `analysis/`
+reports and scripts go in `Suggests`). To grow both from the current
+image rather than only validate them, run `make snapshot` before
+committing; it runs `renv::hydrate()`, `renv::snapshot(prompt = FALSE)`,
+and the same `zzrenvcheck` check in sequence. In CI, the R-package
+workflow enforces the manifest with a step named "Validate dependency
+manifest (renv.lock + DESCRIPTION)" that fails the build when code
+references a package absent from `DESCRIPTION` or `renv.lock`.
+
+### Code Quality: make style and make lint
+
+When the code-quality feature is enabled, styler and lintr are baked into
+the project image, and two targets run them inside the container:
+
+```bash
+# Format R code with styler
+make style
+
+# Lint R code with lintr
+make lint
+```
+
+Both targets run in the container, so no host R installation is required.
+They are gated on the code-quality feature: if it is not enabled, the
+tooling is absent from the image and the targets are unavailable. Running
+`make style` before committing keeps formatting consistent, and `make
+lint` surfaces style and correctness issues that tests may not catch.
+
 ### Quality Gates
 
 Implement automated quality checks:

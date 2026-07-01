@@ -603,6 +603,19 @@ saveRDS(results, "analysis/data/derived_data/simulation_results.rds")
 cat("Saved to analysis/data/derived_data/simulation_results.rds\n")
 ```
 
+Once the simulation packages (`furrr`, `geepack`, `lme4`, `progressr`, and the
+rest) are installed, lock them into the manifest before committing:
+
+```bash
+make snapshot
+make check-renv
+```
+
+`make snapshot` records dependencies across two complementary files:
+`renv.lock` pins the exact package versions, while `DESCRIPTION` declares
+dependency roles (packages used by code in `R/` go in `Imports`; packages used
+only by `analysis/` go in `Suggests`).
+
 # Step 8: Load Results into Manuscript
 
 Update `report.Rmd` to use cached results:

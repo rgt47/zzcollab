@@ -58,7 +58,10 @@ control, and CI workflow files exist before any repository does.
 - Apply step: when on, dispatch to `cmd_github` or `cmd_gitlab`
   according to the selected forge. These already ensure git, create the
   initial commit, check authentication, and create the remote with
-  private default visibility.
+  private default visibility. `cmd_github` / `zzc github` now resolves to
+  the repository root before operating, so it publishes the whole
+  compendium rather than a subdirectory (see
+  `docs/remote-guard-whitepaper.md` for the implementation record).
 - Gating: the item is forced off and hidden when any of the following
   hold, so it never fires unexpectedly.
 

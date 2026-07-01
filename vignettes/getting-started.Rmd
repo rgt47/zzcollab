@@ -37,7 +37,8 @@ computational reproducibility practices in data analysis.
 >   software with its environment; a running instance, its template, and
 >   the recipe that builds it.
 > - **Profile**: the Docker image bundle the environment is built from
->   (`minimal`, `analysis`, `rstudio`).
+>   (`minimal`, `tidyverse`, `rstudio`, `publishing`; `analysis` is a
+>   retained alias for `tidyverse`).
 > - **Two-layer package management**: shared, image-baked packages
 >   (Layer 1) versus per-user packages added at runtime (Layer 2).
 > - **renv**: an R package giving each project its own isolated,
@@ -84,17 +85,26 @@ can be added dynamically via `install.packages()` inside containers (Layer 2).
 - Base: rocker/r-ver
 - Packages: renv, devtools, usethis, tinytest, roxygen2
 
-**analysis**: Data analysis environment (~1.2GB, recommended)
+**tidyverse**: Data analysis environment (~1.2GB, recommended)
 - Base: rocker/tidyverse
 - Packages: renv, devtools, tidyverse, here
+- Formerly named `analysis`; the `analysis` alias is still accepted
 
 **rstudio**: RStudio Server in the browser (~980MB)
 - Base: rocker/rstudio
 - Packages: renv, devtools, usethis, tinytest, roxygen2
 
-For specialised needs (LaTeX, Shiny, machine learning), start with one of
-these profiles and add packages inside the container with
-`install.packages()`, then commit the updated `renv.lock`.
+**publishing**: Manuscript rendering (~4.2GB)
+- Base: rocker/verse
+- Packages: renv, devtools, rmarkdown, bookdown, plus a pre-baked LaTeX
+  toolchain
+- Renders PDF when a LaTeX toolchain is present and falls back to HTML
+  otherwise (capability-adaptive); the LaTeX closure is baked into the
+  image at build time, so PDF rendering needs no runtime install
+
+For specialised needs (Shiny, machine learning), start with one of these
+profiles and add packages inside the container with `install.packages()`,
+then commit the updated `renv.lock`.
 
 ## Project Initialization
 
@@ -934,7 +944,14 @@ synchronized with the code.
 
 ## Dependency Validation
 
-ZZCOLLAB provides automated dependency checking to ensure reproducibility. The
+ZZCOLLAB tracks dependencies across two complementary files. `renv.lock` pins
+the exact package closure (every version needed to rebuild the environment),
+while `DESCRIPTION` declares dependency roles: packages used by code in `R/`
+belong in `Imports`, and packages used only by `analysis/` (reports, scripts,
+notebooks) belong in `Suggests`. The two files are complementary, not
+redundant, and both must stay honest for reproducibility to hold.
+
+ZZCOLLAB provides automated dependency checking to keep them aligned. The
 check is implemented by the companion R package `zzrenvcheck`, which is
 installed into the project image. `make check-renv` runs
 `zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` inside the
@@ -943,6 +960,17 @@ container; `zzcollab validate` wraps the same check on the host.
 ```bash
 # Validate dependencies are synchronized (runs zzrenvcheck in the container)
 make check-renv
+```
+
+To grow the manifest from the current image rather than only validate it, run
+`make snapshot` before committing. Inside the container it runs
+`renv::hydrate()`, then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`, capturing newly
+used packages into `renv.lock` and `DESCRIPTION` in one step:
+
+```bash
+# Hydrate, snapshot, and check dependencies (run before commit)
+make snapshot
 ```
 
 The default `check-renv` target is strict and auto-fixing:
@@ -1011,7 +1039,11 @@ git push
 ## Continuous Integration
 
 The dependency validation script integrates with GitHub Actions for automated
-checking on every commit. The workflow validates:
+checking on every commit. The R-package workflow includes a step named
+"Validate dependency manifest (renv.lock + DESCRIPTION)" that runs
+`zzrenvcheck::check_packages` and fails the build when code references a
+package that is not declared in `DESCRIPTION` or not locked in `renv.lock`.
+The workflow validates:
 
 - Package dependencies properly declared
 - renv.lock synchronized with code
@@ -1060,8 +1092,12 @@ git push
 | Profile        | Size     | Application                   | Base Image         |
 |----------------|----------|-------------------------------|--------------------|
 | minimal        | ~650MB   | Lightweight development       | rocker/r-ver       |
-| analysis       | ~1.2GB   | General analyses (recommended)| rocker/tidyverse   |
+| tidyverse      | ~1.2GB   | General analyses (recommended)| rocker/tidyverse   |
 | rstudio        | ~980MB   | RStudio Server                | rocker/rstudio     |
+| publishing     | ~4.2GB   | Manuscript rendering (PDF)    | rocker/verse       |
+
+The `tidyverse` profile was formerly named `analysis`; the `analysis` alias
+is still accepted.
 
 ## Data Directory Functions
 

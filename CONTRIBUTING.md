@@ -47,6 +47,8 @@ a brief design discussion saves rework.
    ```bash
    make test
    make check-renv
+   make style          # format R code with styler (in container)
+   make lint           # lint R code with lintr (in container)
    shellcheck zzcollab.sh modules/*.sh
    ```
 6. Update `NEWS.md` (R package side) or `CHANGELOG.md` (CLI/framework
@@ -79,11 +81,12 @@ a brief design discussion saves rework.
 
 ## NEWS.md vs CHANGELOG.md
 
-- `NEWS.md` tracks the R package version line (currently 0.9.x). It
-  follows tidyverse style (`# zzcollab X.Y.Z` headers + bullet lists)
-  and is what `R CMD check` reads.
-- `CHANGELOG.md` tracks the CLI/framework version line (currently 2.x).
-  It pre-dates the R package and uses date-headed sections.
+- `NEWS.md` tracks the R package version line (unified at 0.1.0 after
+  the re-baseline). It follows tidyverse style (`# zzcollab X.Y.Z`
+  headers + bullet lists) and is what `R CMD check` reads.
+- `CHANGELOG.md` tracks the CLI/framework version line (also unified at
+  0.1.0). It uses date-headed sections. The frozen 2.x history is kept
+  in `CHANGELOG-2.x.md`.
 
 When a change touches both surfaces, add a bullet to each. When it
 touches only one, edit only that file.
