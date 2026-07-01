@@ -128,6 +128,11 @@ _toggle_feature_info() {
             "Adds:  devcontainer (GitHub) or .devfile.yaml (GitLab)" \
             "Use:   Codespaces / Binder one-click" \
             "Cost:  none locally" ;;
+        languageserver) printf '%s\n' \
+            "R language server in the Docker image" \
+            "Adds:  languageserver install (in-container LSP)" \
+            "Off:   REPL-only workflows (no host-bridged editor)" \
+            "Default: on" ;;
         validate-strict) printf '%s\n' \
             "Validation: strict" \
             "Scans: tests/ and vignettes/ for deps" \
@@ -314,16 +319,19 @@ run_feature_wizard() {
     # Dependency-validation defaults are config-backed (not artifacts), so they
     # are read from config in every mode (strict default on, fix default off).
     load_config 2>/dev/null || true
-    local cur_vstrict cur_vfix
+    local cur_vstrict cur_vfix cur_lsp
     [[ "${CONFIG_VALIDATE_STRICT:-true}" == "false" ]] && cur_vstrict=off || cur_vstrict=on
     [[ "${CONFIG_VALIDATE_FIX:-false}"   == "true"  ]] && cur_vfix=on    || cur_vfix=off
+    # languageserver is a Docker-image tool (in-container LSP); config-backed,
+    # default on, applied by (re)generating the Dockerfile.
+    [[ "${CONFIG_LANGUAGESERVER:-true}"  == "false" ]] && cur_lsp=off    || cur_lsp=on
 
     # Pre-selected defaults: current state, except init recommends renv + Docker
     # (overridable by the configured global feature defaults).
     local def_backend="$cur_backend" def_docker="$cur_docker"
     local def_ci="$cur_ci" def_data="$cur_data" def_quality="$cur_quality"
     local def_tests="$cur_tests" def_cloud="$cur_cloud"
-    local def_vstrict="$cur_vstrict" def_vfix="$cur_vfix"
+    local def_vstrict="$cur_vstrict" def_vfix="$cur_vfix" def_lsp="$cur_lsp"
     local def_forge="$cur_forge"
     if [[ "$mode" == init ]]; then
         load_config 2>/dev/null || true
@@ -446,13 +454,13 @@ run_feature_wizard() {
     # Build the checklist option list, appending the version-control items when
     # shown, so the static feature set and the init-only items share one widget.
     local -a feat_opts=(docker ci data code-quality tests cloud \
-        validate-strict validate-fix)
+        languageserver validate-strict validate-fix)
     [[ "$show_git" == true ]]    && feat_opts+=(git)
     [[ "$show_remote" == true ]] && feat_opts+=(remote)
 
     # --- Desired feature checklist (multi-select) --------------------------
     local want_docker want_ci want_data want_quality want_tests want_cloud
-    local want_vstrict want_vfix want_git="$cur_git" want_remote=off
+    local want_lsp want_vstrict want_vfix want_git="$cur_git" want_remote=off
     if [[ "$use_fzf" == true || "$use_gum" == true ]]; then
         local sel=() chosen
         [[ "$def_docker" == on ]]  && sel+=("docker")
@@ -461,6 +469,7 @@ run_feature_wizard() {
         [[ "$def_quality" == on ]] && sel+=("code-quality")
         [[ "$def_tests" == on ]]   && sel+=("tests")
         [[ "$def_cloud" == on ]]   && sel+=("cloud")
+        [[ "$def_lsp" == on ]]     && sel+=("languageserver")
         # validate-strict / validate-fix are dependency-validation defaults
         # (zzrenvcheck), not artifacts; carried in the same checklist.
         [[ "$def_vstrict" == on ]] && sel+=("validate-strict")
@@ -482,6 +491,7 @@ run_feature_wizard() {
         grep -qx code-quality    <<< "$chosen" && want_quality=on || want_quality=off
         grep -qx tests           <<< "$chosen" && want_tests=on   || want_tests=off
         grep -qx cloud           <<< "$chosen" && want_cloud=on   || want_cloud=off
+        grep -qx languageserver  <<< "$chosen" && want_lsp=on     || want_lsp=off
         grep -qx validate-strict <<< "$chosen" && want_vstrict=on || want_vstrict=off
         grep -qx validate-fix    <<< "$chosen" && want_vfix=on    || want_vfix=off
         [[ "$show_git" == true ]]    && { grep -qx git    <<< "$chosen" && want_git=on    || want_git=off; }
@@ -493,6 +503,7 @@ run_feature_wizard() {
         want_quality=$(_toggle_ask "Code quality (pre-commit)"   "$def_quality")
         want_tests=$(_toggle_ask   "Unit testing (tinytest)"     "$def_tests")
         want_cloud=$(_toggle_ask   "Cloud launch (devcontainer)" "$def_cloud")
+        want_lsp=$(_toggle_ask     "R language server in Docker image (in-container LSP)" "$def_lsp")
         want_vstrict=$(_toggle_ask "Validation: strict (scan tests/ & vignettes/)" "$def_vstrict")
         want_vfix=$(_toggle_ask    "Validation: auto-fix DESCRIPTION" "$def_vfix")
         [[ "$show_git" == true ]]    && want_git=$(_toggle_ask    "Initialize git + first commit" "$def_git")
@@ -515,12 +526,13 @@ run_feature_wizard() {
         config_set features-code-quality "$want_quality" >/dev/null
         config_set features-tests        "$want_tests"   >/dev/null
         config_set features-cloud        "$want_cloud"   >/dev/null
+        config_set languageserver  "$([[ "$want_lsp" == on ]] && echo true || echo false)"     >/dev/null
         config_set validate-strict "$([[ "$want_vstrict" == on ]] && echo true || echo false)" >/dev/null
         config_set validate-fix    "$([[ "$want_vfix" == on ]] && echo true || echo false)"    >/dev/null
         echo ""
         log_success "Saved global feature defaults for new projects."
         echo "  forge=$want_forge  backend=$want_backend  docker=$want_docker  ci=$want_ci  data=$want_data  code-quality=$want_quality  tests=$want_tests  cloud=$want_cloud"
-        echo "  validate: strict=$want_vstrict  fix=$want_vfix"
+        echo "  languageserver=$want_lsp  validate: strict=$want_vstrict  fix=$want_vfix"
         return 0
     fi
 
@@ -534,6 +546,7 @@ run_feature_wizard() {
     [[ "$want_quality" != "$cur_quality" ]] && changes+=("code-quality: $cur_quality -> $want_quality")
     [[ "$want_tests"   != "$cur_tests"   ]] && changes+=("tests: $cur_tests -> $want_tests")
     [[ "$want_cloud"   != "$cur_cloud"   ]] && changes+=("cloud: $cur_cloud -> $want_cloud")
+    [[ "$want_lsp"     != "$cur_lsp"     ]] && changes+=("languageserver: $cur_lsp -> $want_lsp")
     [[ "$want_vstrict" != "$cur_vstrict" ]] && changes+=("validate-strict: $cur_vstrict -> $want_vstrict")
     [[ "$want_vfix"    != "$cur_vfix"    ]] && changes+=("validate-fix: $cur_vfix -> $want_vfix")
     [[ "$show_git" == true && "$want_git" != "$cur_git" ]] && changes+=("git: $cur_git -> $want_git")
@@ -567,6 +580,12 @@ run_feature_wizard() {
         config_set forge "$want_forge" true >/dev/null
     fi
 
+    # languageserver is a Docker-image tool: persist the choice before any
+    # Dockerfile (re)generation below, so generate_tools_install reads it.
+    if [[ "$want_lsp" != "$cur_lsp" ]]; then
+        config_set languageserver "$([[ "$want_lsp" == on ]] && echo true || echo false)" true >/dev/null
+    fi
+
     if [[ "$want_backend" != "$cur_backend" ]]; then
         # Backends are mutually exclusive: remove the old one before adding the
         # new, so renv.lock and a nix file never coexist (status would flag it).
@@ -585,6 +604,14 @@ run_feature_wizard() {
         else
             cmd_rm_docker
         fi
+    fi
+
+    # languageserver-only change while Docker stays on: the block above did not
+    # run, so regenerate the Dockerfile to apply the new tool set (config was
+    # already persisted above, before the backend/docker blocks).
+    if [[ "$want_lsp" != "$cur_lsp" && "$want_docker" == on && "$cur_docker" == on ]]; then
+        if [[ "$want_backend" == "none" ]]; then cmd_docker --no-renv; else cmd_docker; fi
+        log_success "Regenerated Dockerfile (languageserver=$want_lsp)"
     fi
 
     # Forge change while CI stays on: swap the CI files to the new forge.
