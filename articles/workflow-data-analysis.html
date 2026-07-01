@@ -650,8 +650,17 @@ expectations (no <code>test_that()</code> wrapper):</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># Run in clean environment</span></span>
 <span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co"># Validate dependencies</span></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co"># Capture dependencies into the manifest</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="co"># Validate dependencies</span></span>
+<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p><code>make snapshot</code> records dependencies across two
+complementary files: <code>renv.lock</code> pins the exact package
+versions, while <code>DESCRIPTION</code> declares dependency roles
+(packages used by code in <code>R/</code> go in <code>Imports</code>;
+packages used only by <code>analysis/</code> go in
+<code>Suggests</code>).</p>
 </div>
 </div>
 <div class="section level2">

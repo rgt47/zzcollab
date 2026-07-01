@@ -183,13 +183,28 @@ report) automatically on every push.</li>
 changes.</li>
 <li>
 <strong>Code-quality hooks</strong>: pre-commit checks (styler and
-lintr) that tidy and lint code before each commit.</li>
+lintr) that tidy and lint code before each commit. styler and lintr are
+also baked into the Docker image, so <code>make style</code> and
+<code>make lint</code> run them in-container.</li>
 <li>
 <strong>Unit tests</strong>: a <code>tinytest</code> test
 scaffold.</li>
 <li>
 <strong>Cloud launch</strong>: a <code>.devcontainer</code> so the
 project opens in a cloud editor or Binder.</li>
+<li>
+<strong>R language server</strong> (<code>languageserver</code>,
+default on): installs the R language server in the Docker image for
+in-container LSP completion and diagnostics. zzcollab assumes no R on
+the host, so the language server runs in the container and a host editor
+(vim, VS Code) bridges its LSP client into it. Opt out with
+<code>zzc config set languageserver false</code> for REPL-only
+workflows.</li>
+<li>
+<strong>Create remote now</strong> (<code>auto_github</code>,
+default off): when the <code>auto_github</code> config is on, the init
+feature wizard pre-ticks a ‘create remote now’ checkbox that creates the
+GitHub remote during initialisation.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -223,7 +238,9 @@ describing the highlighted feature:</p>
   [ ] ci              Adds:  Dockerfile + make r / make rstudio
   [ ] data            Pins:  L2 - the full environment, for sharing
   [x] tests           Cost:  image build time and disk
-  [ ] cloud</code></pre>
+  [x] languageserver  R language server in Docker image (in-container LSP)
+  [ ] cloud
+  [ ] create-remote   Create the GitHub remote now (auto_github)</code></pre>
 <p>Press Tab or Space to tick the highlighted feature on or off; the
 cursor holds its place as the box updates. Enter applies your selection,
 Esc cancels.</p>
@@ -237,7 +254,9 @@ one question at a time:</p>
   Data integrity hashing    [on/off] (current: off): on
   Code quality (pre-commit) [on/off] (current: off): on
   Unit testing (tinytest)   [on/off] (current: on): on
-  Cloud launch (devcontainer) [on/off] (current: on): on</code></pre>
+  R language server (image) [on/off] (current: on): on
+  Cloud launch (devcontainer) [on/off] (current: on): on
+  Create the GitHub remote now [on/off] (current: off): off</code></pre>
 <p>Whichever interface you used, the wizard previews the difference and
 applies it only on confirmation; after applying, the new state is
 printed:</p>
@@ -275,9 +294,9 @@ are equivalent:</p>
 <p><code>zzc add &lt;feature&gt;</code> and
 <code>zzc rm &lt;feature&gt;</code> accept <code>docker</code>,
 <code>renv</code>, <code>nix</code>, <code>data</code>,
-<code>code-quality</code>, <code>tests</code>, <code>cloud</code>,
-<code>cicd</code>, and <code>github</code>. Per-feature flags pass
-through, for example
+<code>code-quality</code>, <code>tests</code>,
+<code>languageserver</code>, <code>cloud</code>, <code>cicd</code>, and
+<code>github</code>. Per-feature flags pass through, for example
 <code>zzc add docker --base-image rocker/verse</code>.</p>
 </div>
 </div>
@@ -577,8 +596,17 @@ so the level is untouched:</p>
 <p>The dependency check (<code>zzc validate</code>, also run by
 <code>make check-renv</code>) enforces that every package used in code
 is declared in <code>DESCRIPTION</code> and pinned in
-<code>renv.lock</code>. Two knobs ride the same toggle checklist, but
-they are configuration rather than files:</p>
+<code>renv.lock</code>. Before a commit, <code>make snapshot</code>
+grows the manifest from the image: in the container it runs
+<code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>.
+The R-package CI workflow re-runs the same check in a step named
+‘Validate dependency manifest (renv.lock + DESCRIPTION)’, failing the
+build when code references a package that is not declared in
+<code>DESCRIPTION</code> or not locked in <code>renv.lock</code>.</p>
+<p>Two knobs ride the same toggle checklist, but they are configuration
+rather than files:</p>
 <ul>
 <li>
 <strong>strict</strong> also scans <code>tests/</code> and

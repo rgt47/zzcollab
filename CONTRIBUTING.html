@@ -85,7 +85,9 @@
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">make</span> test</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="ex">shellcheck</span> zzcollab.sh modules/<span class="pp">*</span>.sh</span></code></pre></div>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">make</span> style          <span class="co"># format R code with styler (in container)</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">make</span> lint           <span class="co"># lint R code with lintr (in container)</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="ex">shellcheck</span> zzcollab.sh modules/<span class="pp">*</span>.sh</span></code></pre></div>
 </li>
 <li><p>Update <code>NEWS.md</code> (R package side) or <code>CHANGELOG.md</code> (CLI/framework side) depending on which surface changed. Use both if both are affected.</p></li>
 <li><p>Open a pull request against <code>main</code>. Reference any related issues.</p></li>
@@ -114,9 +116,9 @@
 <div class="section level2">
 <h2 id="newsmd-vs-changelogmd">NEWS.md vs CHANGELOG.md<a class="anchor" aria-label="anchor" href="#newsmd-vs-changelogmd"></a></h2>
 <ul><li>
-<code>NEWS.md</code> tracks the R package version line (currently 0.9.x). It follows tidyverse style (<code># zzcollab X.Y.Z</code> headers + bullet lists) and is what <code>R CMD check</code> reads.</li>
+<code>NEWS.md</code> tracks the R package version line (unified at 0.1.0 after the re-baseline). It follows tidyverse style (<code># zzcollab X.Y.Z</code> headers + bullet lists) and is what <code>R CMD check</code> reads.</li>
 <li>
-<code>CHANGELOG.md</code> tracks the CLI/framework version line (currently 2.x). It pre-dates the R package and uses date-headed sections.</li>
+<code>CHANGELOG.md</code> tracks the CLI/framework version line (also unified at 0.1.0). It uses date-headed sections. The frozen 2.x history is kept in <code>CHANGELOG-2.x.md</code>.</li>
 </ul><p>When a change touches both surfaces, add a bullet to each. When it touches only one, edit only that file.</p>
 </div>
 <div class="section level2">

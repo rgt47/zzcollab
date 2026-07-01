@@ -12,7 +12,8 @@ multi-layered configuration hierarchy and comprehensive CLI flags.
 > [`vignette('glossary')`](https://rgt47.github.io/zzcollab/articles/glossary.md).
 >
 > - **Profile**: the Docker image bundle the environment is built from
->   (`minimal`, `analysis`, `rstudio`).
+>   (`minimal`, `tidyverse`, `rstudio`, `publishing`; `analysis` is a
+>   deprecated alias for `tidyverse`).
 > - **Two-layer package management**: shared, image-baked packages
 >   (Layer 1) versus per-user packages added at runtime (Layer 2).
 > - **Package backend (renv / Nix / none)**: how the project records
@@ -30,8 +31,10 @@ multi-layered configuration hierarchy and comprehensive CLI flags.
 
 - **Multi-layered configuration**: User, project, system, and built-in
   defaults
-- **Docker profile system**: three built-in profiles (minimal, analysis,
-  rstudio), with other environments available via a custom base image
+- **Docker profile system**: four built-in profiles (minimal, tidyverse,
+  rstudio, publishing), with other environments available via a custom
+  base image. The `tidyverse` profile was formerly named `analysis`;
+  `analysis` is still accepted as a deprecated alias.
 - **Dynamic package management**: Add packages via
   [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
   with automatic snapshot/restore
@@ -159,8 +162,25 @@ zzcollab config set github-account "myusername"
 zzcollab config set dockerhub-account "myusername"
 
 # Set default Docker profile
-zzcollab config set profile-name "analysis"
+zzcollab config set profile-name "tidyverse"
+
+# Opt out of the in-container R language server (default: true)
+zzcollab config set languageserver false
+
+# Pre-select 'create remote now' in the init feature wizard (default: false)
+zzcollab config set auto_github true
 ```
+
+**`languageserver`** (default `true`) installs the R language server in
+the Docker image so an editor gets in-container LSP completion and
+diagnostics. zzcollab assumes no R on the host, so the language server
+must run in the container; a host editor (vim, VS Code) bridges its LSP
+client into the container. Set `languageserver false` for REPL-only
+workflows.
+
+**`auto_github`** (default `false`), when true, pre-selects the ‘create
+remote now’ checkbox in the init feature wizard so the compendium’s
+GitHub remote is created during initialisation.
 
 #### Get Configuration Values
 
@@ -290,12 +310,12 @@ zzcollab config set dockerhub-account myteam
 ``` bash
 # Create the project with a profile (run in the project directory)
 zzcollab minimal          # ~650MB, essential dev tools
-zzcollab analysis         # ~1.2GB, tidyverse ecosystem
+zzcollab tidyverse        # ~1.2GB, tidyverse ecosystem (was: analysis)
 zzcollab rstudio          # RStudio Server
+zzcollab publishing       # ~4.2GB, manuscript rendering (LaTeX pre-baked)
 
-# For LaTeX/Quarto, Shiny, or ML, build on a base image and add
+# For Shiny, ML, or other domains, build on a base image and add
 # packages via renv:
-zzcollab docker --base-image rocker/verse   # LaTeX/Quarto
 zzcollab docker --base-image rocker/shiny   # Shiny apps
 
 # List all available profiles
@@ -372,7 +392,7 @@ with automatic snapshot/restore on container exit (Layer 2).
 
 ### Available Profiles
 
-#### The Three Profiles
+#### The Four Profiles
 
 ##### minimal (~650MB)
 
@@ -388,7 +408,10 @@ use_cases:
   - Resource-constrained environments
 ```
 
-##### analysis (~1.2GB) \[RECOMMENDED\]
+##### tidyverse (~1.2GB) \[RECOMMENDED\]
+
+Formerly named `analysis`; `analysis` remains accepted as a deprecated
+alias.
 
 ``` yaml
 base_image: rocker/tidyverse:latest
@@ -415,20 +438,40 @@ use_cases:
   - Interactive development
 ```
 
+##### publishing (~4.2GB)
+
+A first-class named profile for manuscript rendering. It renders PDF by
+default when a LaTeX toolchain is present and falls back to HTML
+otherwise (capability-adaptive). The LaTeX package closure is pre-baked
+into the image at build time, so PDF rendering needs no runtime install.
+
+``` yaml
+base_image: rocker/verse:latest
+packages:
+  - renv, devtools, here
+  - rmarkdown, bookdown (LaTeX toolchain pre-baked)
+
+use_cases:
+  - Manuscript and report rendering (PDF/HTML)
+  - Bookdown projects
+  - Reproducible publishing pipelines
+```
+
 #### Specialized Environments via a Custom Base Image
 
 Other environments are not separate profiles. Build on a domain base
 image with `zzcollab docker --base-image` and add packages via renv:
 
 ``` bash
-zzcollab docker --base-image rocker/verse                      # LaTeX / Quarto
 zzcollab docker --base-image rocker/shiny                      # Shiny Server
 zzcollab docker --base-image bioconductor/bioconductor_docker  # genomics
 zzcollab docker --base-image rocker/geospatial                 # GIS / spatial
 ```
 
+For manuscript rendering, prefer the named `publishing` profile
+(`zzc publishing`) rather than a custom `rocker/verse` base image.
 Machine-learning packages (tidymodels, xgboost, ranger) are added via
-renv on top of the `analysis` profile.
+renv on top of the `tidyverse` profile.
 
 ### Profile Selection Guide
 
@@ -438,7 +481,7 @@ renv on top of the `analysis` profile.
 | Machine learning | analysis (ML packages via renv)         | minimal          |
 | Genomics         | analysis + Bioconductor base image      | minimal          |
 | GIS/spatial      | analysis + rocker/geospatial base image | minimal          |
-| Publishing       | analysis + rocker/verse base image      | analysis         |
+| Publishing       | publishing                              | tidyverse        |
 | Interactive apps | analysis + rocker/shiny base image      | rstudio          |
 | Teaching         | analysis                                | minimal, rstudio |
 
@@ -1191,8 +1234,9 @@ research environments through multiple layers:
 
 1.  **Configuration hierarchy**: Command-line → environment → project →
     user → system → defaults
-2.  **Docker profiles**: three built-in profiles (minimal ~650MB,
-    analysis ~1.2GB, rstudio ~980MB); other environments via a custom
+2.  **Docker profiles**: four built-in profiles (minimal ~650MB,
+    tidyverse ~1.2GB, rstudio ~980MB, publishing ~4.2GB; `analysis` is a
+    deprecated alias for `tidyverse`); other environments via a custom
     base image
 3.  **Two-layer architecture**: Docker profiles (shared) + renv packages
     (flexible)
@@ -1237,6 +1281,16 @@ install.packages("package")
 q()  # Exit R - snapshot happens automatically
 ```
 
+**Common make targets**:
+
+``` bash
+make snapshot      # grow renv.lock + DESCRIPTION from the image (run
+                   # before commit): hydrate, snapshot, then zzrenvcheck
+make check-renv    # validate deps: strict + auto-fix (run before commit)
+make style         # format R code with styler (code-quality feature)
+make lint          # lint R code with lintr (code-quality feature)
+```
+
 ### Further Reading
 
 - `zzcollab --help` - Complete CLI reference
@@ -1244,6 +1298,6 @@ q()  # Exit R - snapshot happens automatically
   package documentation
 - [`vignette("getting-started")`](https://rgt47.github.io/zzcollab/articles/getting-started.md) -
   Comprehensive tutorial
-- `docs/VARIANTS.md` - The three built-in profiles and the custom
+- `docs/VARIANTS.md` - The four built-in profiles and the custom
   base-image workflow for specialized environments
 - `docs/CONFIGURATION.md` - Advanced configuration guide

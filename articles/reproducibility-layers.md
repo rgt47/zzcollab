@@ -443,15 +443,19 @@ capabilities:
 # Minimal: Essential R development (~650MB)
 zzc minimal
 
-# Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
+# Tidyverse: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]
+# Formerly named 'analysis'; the 'analysis' alias is still accepted.
 # Statistical and machine learning packages are added via renv
-zzc analysis
+zzc tidyverse
 
-# RStudio Server in the browser
+# RStudio Server in the browser (~980MB)
 zzc rstudio
 
-# Manuscript and report rendering (LaTeX/Quarto via the rocker/verse base image)
-zzcollab docker --base-image rocker/verse
+# Publishing: manuscript rendering (~4.2GB, rocker/verse base image)
+# Renders PDF when a LaTeX toolchain is present, HTML otherwise
+# (capability-adaptive). The LaTeX closure is pre-baked into the image,
+# so PDF rendering needs no runtime install.
+zzc publishing
 
 # Specialized domains (e.g. GIS, genomics) use a custom base image:
 zzcollab docker --base-image rocker/geospatial
@@ -913,6 +917,30 @@ validates that your code works in a clean environment on every commit.
 GitHub Actions (or similar) run tests, checks, and builds to catch
 errors early.
 
+### The Dependency Manifest: renv.lock + DESCRIPTION
+
+Reproducibility relies on two complementary files. `renv.lock` pins the
+exact package closure (every version needed to rebuild the environment),
+while `DESCRIPTION` declares dependency roles: packages used by code in
+`R/` belong in `Imports`, and packages used only by `analysis/`
+(reports, scripts, notebooks) belong in `Suggests`. The two are
+complementary, not redundant.
+
+To grow both files from the current image, run `make snapshot` before
+committing. Inside the container it runs
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`, capturing
+newly used packages into `renv.lock` and `DESCRIPTION` in a single step.
+The lighter `make check-renv` validates the same manifest without
+hydrating.
+
+The R-package CI workflow enforces this with a step named “Validate
+dependency manifest (renv.lock + DESCRIPTION)” that runs
+`zzrenvcheck::check_packages` and fails the build when code references a
+package that is not declared in `DESCRIPTION` or not locked in
+`renv.lock`.
+
 ### Additional Structure
 
     my-project/
@@ -955,8 +983,8 @@ make r
 # ... work in container ...
 exit  # Auto-snapshot runs on exit!
 
-# Validate before committing (make check-renv runs zzrenvcheck)
-make check-renv
+# Grow and validate the manifest before committing
+make snapshot        # hydrate + snapshot + check (renv.lock + DESCRIPTION)
 make docker-test
 
 # Commit and push

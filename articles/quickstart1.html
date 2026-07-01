@@ -121,8 +121,9 @@ unit.</li>
 starter layout.</li>
 <li>
 <strong>Profile</strong>: the Docker image bundle (which R packages
-are baked into the container): minimal, analysis, or rstudio. Distinct
-from the archetype.</li>
+are baked into the container): minimal, tidyverse, rstudio, or
+publishing (<code>analysis</code> is a deprecated alias for
+<code>tidyverse</code>). Distinct from the archetype.</li>
 <li>
 <strong>Feature</strong>: an independently switchable capability (a
 package backend, Docker, CI, data hashing, code-quality hooks, unit
@@ -214,11 +215,14 @@ script instead.</li>
 <code>zzc toggle</code> uses). It recommends a sensible default, renv
 plus Docker, which you can accept or untick. Each toggle is an
 independently switchable <em>feature</em>: the package backend (renv),
-Docker, CI, data-integrity hashing, code-quality hooks, unit tests, and
-cloud launch. You do not have to decide everything now; features can be
-added or removed at any time (see <code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></code>
-for the full toggle model). For this tutorial, accept the recommended
-renv plus Docker.</p>
+Docker, CI, data-integrity hashing, code-quality hooks, unit tests, the
+R language server in the Docker image (<code>languageserver</code>,
+default on), and cloud launch. When the <code>auto_github</code> config
+is on, the wizard also pre-ticks a ‘create remote now’ checkbox that
+creates the GitHub remote during initialisation. You do not have to
+decide everything now; features can be added or removed at any time (see
+<code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></code> for the full toggle model). For
+this tutorial, accept the recommended renv plus Docker.</p>
 <p>Only fields that differ from your user defaults are written to the
 project’s <code>./zzcollab.yaml</code>, keeping the file minimal. Commit
 this file; it documents project-specific decisions and allows
@@ -274,21 +278,25 @@ regenerates the Dockerfile only.</li>
 <span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a></span>
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># List available profiles.</span></span>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="ex">zzc</span> list profiles</span></code></pre></div>
-<p><strong>Available profiles</strong> (the three canonical
+<p><strong>Available profiles</strong> (the four canonical
 profiles):</p>
 <ul>
 <li>
 <code>minimal</code> - Command-line R environment (~650MB)</li>
 <li>
-<code>analysis</code> - Tidyverse data analysis (~1.2GB),
-recommended</li>
+<code>tidyverse</code> - Tidyverse data analysis (~1.2GB),
+recommended (formerly <code>analysis</code>; the <code>analysis</code>
+alias is still accepted)</li>
 <li>
 <code>rstudio</code> - RStudio Server (~980MB)</li>
+<li>
+<code>publishing</code> - Manuscript rendering with LaTeX pre-baked
+(~4.2GB); renders PDF when a LaTeX toolchain is present, HTML
+otherwise</li>
 </ul>
-<p>For specialised needs (LaTeX, modeling, Shiny), start with the
-closest one and add packages inside the container with
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated
-<code>renv.lock</code>.</p>
+<p>For modeling, Shiny, or other domains, start with the closest one and
+add packages inside the container with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>,
+then commit the updated <code>renv.lock</code>.</p>
 </div>
 </div>
 <div class="section level3">
@@ -711,8 +719,20 @@ in.</p>
 <span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># Run tests in clean environment</span></span>
 <span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># Optional: Manually validate dependencies (runs zzrenvcheck in the container)</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># Grow the manifest from the image before committing: hydrate,</span></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co"># renv::snapshot(), then zzrenvcheck (strict + auto-fix)</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a></span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a><span class="co"># Optional: Manually validate dependencies (runs zzrenvcheck in the container)</span></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p><code>renv.lock</code> and <code>DESCRIPTION</code> play
+complementary roles: <code>renv.lock</code> pins the exact package
+closure (versions), while <code>DESCRIPTION</code> declares dependency
+roles. Packages used by code in <code>R/</code> belong in
+<code>Imports</code>; packages used only by <code>analysis/</code>
+(reports, scripts, notebooks) belong in <code>Suggests</code>.
+<code>make snapshot</code> and <code>zzrenvcheck</code> keep both
+honest.</p>
 <p>Now commit your work:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">git</span> add .</span>
 <span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"</span><span class="va">$(</span><span class="fu">cat</span> <span class="op">&lt;&lt;'EOF'</span></span>
@@ -749,14 +769,16 @@ in.</p>
 <p>GitHub Actions will automatically:</p>
 <ol style="list-style-type: decimal">
 <li>Build Docker container from scratch</li>
-<li>Validate package dependencies (runs zzrenvcheck via make
-check-renv)</li>
+<li>Validate package dependencies in a step named ‘Validate dependency
+manifest (renv.lock + DESCRIPTION)’, which runs zzrenvcheck</li>
 <li>Run unit tests</li>
 <li>Report results</li>
 </ol>
-<p><strong>Note</strong>: CI/CD runs <code>make check-renv</code>, which
-invokes <code>zzrenvcheck::check_packages()</code> inside the
-container.</p>
+<p><strong>Note</strong>: the ‘Validate dependency manifest (renv.lock +
+DESCRIPTION)’ step invokes <code>zzrenvcheck::check_packages()</code>
+inside the container and fails the build when code references a package
+that is not declared in <code>DESCRIPTION</code> or not locked in
+<code>renv.lock</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="step-7-verify-report-rendering-cicd-optional">Step 7: Verify Report Rendering CI/CD (Optional)<a class="anchor" aria-label="anchor" href="#step-7-verify-report-rendering-cicd-optional"></a>
@@ -882,9 +904,24 @@ settings</li>
 <span id="cb30-20"><a href="#cb30-20" tabindex="-1"></a>    <span class="fu">rm</span> <span class="at">-rf</span> /var/lib/apt/lists/<span class="pp">*</span></span>
 <span id="cb30-21"><a href="#cb30-21" tabindex="-1"></a></span>
 <span id="cb30-22"><a href="#cb30-22" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">R</span> <span class="at">-e</span> <span class="st">"install.packages('renv')"</span></span>
-<span id="cb30-23"><a href="#cb30-23" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">mkdir</span> <span class="at">-p</span> /opt/renv/library /opt/renv/cache</span>
-<span id="cb30-24"><a href="#cb30-24" tabindex="-1"></a><span class="kw">COPY</span> renv.lock renv.lock</span>
-<span id="cb30-25"><a href="#cb30-25" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">R</span> <span class="at">-e</span> <span class="st">"renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"</span></span></code></pre></div>
+<span id="cb30-23"><a href="#cb30-23" tabindex="-1"></a></span>
+<span id="cb30-24"><a href="#cb30-24" tabindex="-1"></a><span class="co"># Development tooling lives in the image, never in renv.lock. The R</span></span>
+<span id="cb30-25"><a href="#cb30-25" tabindex="-1"></a><span class="co"># language server (languageserver, on by default) provides in-container</span></span>
+<span id="cb30-26"><a href="#cb30-26" tabindex="-1"></a><span class="co"># LSP; styler and lintr back make style / make lint.</span></span>
+<span id="cb30-27"><a href="#cb30-27" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">R</span> <span class="at">-e</span> <span class="st">"install.packages(c('languageserver', 'styler', 'lintr'))"</span></span>
+<span id="cb30-28"><a href="#cb30-28" tabindex="-1"></a></span>
+<span id="cb30-29"><a href="#cb30-29" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">mkdir</span> <span class="at">-p</span> /opt/renv/library /opt/renv/cache</span>
+<span id="cb30-30"><a href="#cb30-30" tabindex="-1"></a><span class="kw">COPY</span> renv.lock renv.lock</span>
+<span id="cb30-31"><a href="#cb30-31" tabindex="-1"></a><span class="co"># Reproducibility-relevant packages, including yaml and here, are restored</span></span>
+<span id="cb30-32"><a href="#cb30-32" tabindex="-1"></a><span class="co"># from renv.lock rather than installed explicitly here.</span></span>
+<span id="cb30-33"><a href="#cb30-33" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">R</span> <span class="at">-e</span> <span class="st">"renv::init(bare=TRUE, force=TRUE, restart=FALSE); renv::restore()"</span></span></code></pre></div>
+<p>The split above follows a rule: development tooling (languageserver,
+styler, lintr, devtools, roxygen2, …) belongs in the Dockerfile and
+never in <code>renv.lock</code>, while reproducibility-relevant packages
+belong in <code>renv.lock</code> and <code>DESCRIPTION</code>. See
+<code>docs/package-placement-whitepaper.md</code> for the full account
+of which packages go in the Dockerfile versus <code>renv.lock</code>
+versus <code>DESCRIPTION</code>.</p>
 </div>
 <div class="section level4">
 <h4 id="renv-lock---exact-package-versions">2. renv.lock - Exact Package Versions<a class="anchor" aria-label="anchor" href="#renv-lock---exact-package-versions"></a>
@@ -1362,21 +1399,25 @@ from the features you toggle.</p>
 <span id="cb46-6"><a href="#cb46-6" tabindex="-1"></a></span>
 <span id="cb46-7"><a href="#cb46-7" tabindex="-1"></a><span class="co"># List available package bundles (R packages)</span></span>
 <span id="cb46-8"><a href="#cb46-8" tabindex="-1"></a><span class="ex">zzc</span> list pkgs</span></code></pre></div>
-<p><strong>Available profiles</strong> (the three canonical
+<p><strong>Available profiles</strong> (the four canonical
 profiles):</p>
 <ul>
 <li>
 <code>minimal</code> - Command-line R environment (~650MB)</li>
 <li>
-<code>analysis</code> - Tidyverse data analysis (~1.2GB),
-recommended</li>
+<code>tidyverse</code> - Tidyverse data analysis (~1.2GB),
+recommended (formerly <code>analysis</code>; the <code>analysis</code>
+alias is still accepted)</li>
 <li>
 <code>rstudio</code> - RStudio Server (~980MB)</li>
+<li>
+<code>publishing</code> - Manuscript rendering with LaTeX pre-baked
+(~4.2GB); renders PDF when a LaTeX toolchain is present, HTML
+otherwise</li>
 </ul>
-<p>For specialised needs (LaTeX, modeling, Shiny), start with the
-closest one and add packages inside the container with
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated
-<code>renv.lock</code>.</p>
+<p>For modeling, Shiny, or other domains, start with the closest one and
+add packages inside the container with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>,
+then commit the updated <code>renv.lock</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="switching-profiles">Switching Profiles<a class="anchor" aria-label="anchor" href="#switching-profiles"></a>

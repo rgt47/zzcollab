@@ -272,9 +272,15 @@ modules</li>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">mkdir</span> penguin-morphology <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-morphology</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="ex">zzcollab</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="ex">zzcollab</span> publishing</span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<p>We use the <code>publishing</code> profile because this workflow
+renders to <code>pdf_document</code>. The <code>publishing</code>
+profile builds on <code>rocker/verse</code> and bakes the full LaTeX
+package closure into the image at build time, so PDF rendering works
+with no runtime install. When a LaTeX toolchain is absent the profile is
+capability-adaptive and falls back to HTML output.</p>
 <p>This creates the standard compendium structure with empty directories
 ready for use. Note that <code>make r</code> runs the
 <code>zzrenvcheck</code> dependency gate before and after the session,
@@ -377,6 +383,19 @@ so package usage stays consistent with <code>DESCRIPTION</code> and
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="op">&gt;</span> install.packages<span class="kw">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"palmerpenguins"</span><span class="ex">,</span> <span class="st">"broom"</span>, <span class="st">"knitr"</span><span class="kw">))</span></span>
 <span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span><span class="st">"analysis/report/report.Rmd"</span><span class="kw">)</span></span>
 <span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
+<p>Once the packages you rely on are installed, capture them into the
+manifest:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">make</span> snapshot</span></code></pre></div>
+<p><code>make snapshot</code> grows the manifest from the image: in the
+container it runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>.
+Dependencies are recorded across two complementary files:
+<code>renv.lock</code> pins the exact package versions, while
+<code>DESCRIPTION</code> declares dependency roles. Packages used by
+code in <code>R/</code> belong in <code>Imports</code>; packages used
+only by <code>analysis/</code> (reports, scripts, notebooks) belong in
+<code>Suggests</code>.</p>
 <p>You now have a working manuscript draft with embedded analysis.</p>
 </div>
 <div class="section level3">
@@ -384,7 +403,7 @@ so package usage stays consistent with <code>DESCRIPTION</code> and
 </h3>
 <p>Continue writing in <code>report.Rmd</code>, adding code as
 needed:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In scaling-analysis chunk:</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://broom.tidymodels.org/" class="external-link">broom</a></span><span class="op">)</span></span>
 <span></span>
@@ -410,7 +429,7 @@ appropriate for exploratory work.</p>
 <p>When you find yourself copying code or using similar patterns,
 extract to <code>R/</code>:</p>
 <p><strong>Create <code>R/scaling_functions.R</code></strong>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' Extract allometric slopes by group</span></span>
 <span><span class="co">#'</span></span>
 <span><span class="co">#' Fits linear models of log(y) ~ log(x) within each group and extracts</span></span>
@@ -478,7 +497,7 @@ extract to <code>R/</code>:</p>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p><strong>Update report.Rmd to use the function</strong>:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In setup chunk, add:</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"../../R/scaling_functions.R"</span><span class="op">)</span></span>
 <span></span>
@@ -502,7 +521,7 @@ tests. This project uses tinytest: test files live in
 <code>test_that()</code> wrapper).</p>
 <p><strong>Create
 <code>inst/tinytest/test_scaling_functions.R</code></strong>:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># extract_allometric_slopes returns correct structure</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">palmerpenguins</span><span class="fu">::</span><span class="va">penguins</span></span>
 <span></span>
@@ -544,7 +563,7 @@ tests. This project uses tinytest: test files live in
 <span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">iso</span><span class="op">$</span><span class="va">t_statistic</span>, <span class="fl">0</span><span class="op">)</span></span>
 <span><span class="fu">expect_equal</span><span class="op">(</span><span class="va">iso</span><span class="op">$</span><span class="va">p_value</span>, <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>Run tests:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">make</span> docker-test</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-7-move-heavy-computations-to-scripts">Step 7: Move Heavy Computations to Scripts<a class="anchor" aria-label="anchor" href="#step-7-move-heavy-computations-to-scripts"></a>
@@ -553,7 +572,7 @@ tests. This project uses tinytest: test files live in
 <code>analysis/scripts/</code> and save results.</p>
 <p><strong>Create
 <code>analysis/scripts/01_fit_models.R</code></strong>:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 01_fit_models.R</span></span>
 <span><span class="co"># Fit allometric models and save results</span></span>
 <span><span class="co"># Run separately: Rscript analysis/scripts/01_fit_models.R</span></span>
@@ -595,7 +614,7 @@ tests. This project uses tinytest: test files live in
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Results saved to analysis/data/derived_data/allometric_results.rds\n"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Update report.Rmd to load cached results</strong>:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In load-results chunk:</span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"../data/derived_data/allometric_results.rds"</span><span class="op">)</span></span>
 <span></span>
@@ -604,14 +623,14 @@ tests. This project uses tinytest: test files live in
 <span>  <span class="fu">select</span><span class="op">(</span><span class="va">trait</span>, <span class="va">species</span>, <span class="va">slope</span>, <span class="va">slope_se</span>, <span class="va">scaling_type</span>, <span class="va">p_value</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">knitr</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span>digits <span class="op">=</span> <span class="fl">3</span>, caption <span class="op">=</span> <span class="st">"Allometric scaling results"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Workflow</strong>:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="co"># Run heavy computation once</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="op">&gt;</span> source<span class="kw">(</span><span class="st">"analysis/scripts/01_fit_models.R"</span><span class="kw">)</span></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="co"># Render manuscript (fast - loads cached results)</span></span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span><span class="st">"analysis/report/report.Rmd"</span><span class="kw">)</span></span>
-<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="co"># Run heavy computation once</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="op">&gt;</span> source<span class="kw">(</span><span class="st">"analysis/scripts/01_fit_models.R"</span><span class="kw">)</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co"># Render manuscript (fast - loads cached results)</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span><span class="st">"analysis/report/report.Rmd"</span><span class="kw">)</span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-8-final-project-structure">Step 8: Final Project Structure<a class="anchor" aria-label="anchor" href="#step-8-final-project-structure"></a>
@@ -650,35 +669,35 @@ tests. This project uses tinytest: test files live in
 <div class="section level3">
 <h3 id="pdf-for-submission">PDF (for submission)<a class="anchor" aria-label="anchor" href="#pdf-for-submission"></a>
 </h3>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a></span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span></span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="ex">+</span>   <span class="st">"analysis/report/report.Rmd"</span>,</span>
-<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"pdf_document"</span></span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="ex">+</span> <span class="kw">)</span></span>
-<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="word-for-collaborators">Word (for collaborators)<a class="anchor" aria-label="anchor" href="#word-for-collaborators"></a>
-</h3>
 <div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a></span>
 <span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span></span>
 <span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="ex">+</span>   <span class="st">"analysis/report/report.Rmd"</span>,</span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"word_document"</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"pdf_document"</span></span>
 <span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="ex">+</span> <span class="kw">)</span></span>
 <span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="html-for-web">HTML (for web)<a class="anchor" aria-label="anchor" href="#html-for-web"></a>
+<h3 id="word-for-collaborators">Word (for collaborators)<a class="anchor" aria-label="anchor" href="#word-for-collaborators"></a>
 </h3>
 <div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a></span>
 <span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span></span>
 <span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="ex">+</span>   <span class="st">"analysis/report/report.Rmd"</span>,</span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"html_document"</span></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"word_document"</span></span>
 <span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="ex">+</span> <span class="kw">)</span></span>
 <span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="html-for-web">HTML (for web)<a class="anchor" aria-label="anchor" href="#html-for-web"></a>
+</h3>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="op">&gt;</span> rmarkdown::render<span class="kw">(</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="ex">+</span>   <span class="st">"analysis/report/report.Rmd"</span>,</span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="ex">+</span>   output_format = <span class="st">"html_document"</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="ex">+</span> <span class="kw">)</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -687,30 +706,30 @@ tests. This project uses tinytest: test files live in
 <div class="section level3">
 <h3 id="meaningful-commits">Meaningful Commits<a class="anchor" aria-label="anchor" href="#meaningful-commits"></a>
 </h3>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># After adding results section</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd R/scaling_functions.R</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add allometric scaling analysis</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="st">- Extract slopes for bill length, depth, flipper length</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="st">- Test isometry hypothesis for each trait</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="st">- Table 2 shows species-specific results"</span></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co"># After reviewer revisions</span></span>
-<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd</span>
-<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Address reviewer comments on methods</span></span>
-<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a></span>
-<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="st">- Clarify sample size justification</span></span>
-<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="st">- Add sensitivity analysis for outliers</span></span>
-<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a><span class="st">- Expand discussion of limitations"</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># After adding results section</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd R/scaling_functions.R</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add allometric scaling analysis</span></span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="st">- Extract slopes for bill length, depth, flipper length</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="st">- Test isometry hypothesis for each trait</span></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="st">- Table 2 shows species-specific results"</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a><span class="co"># After reviewer revisions</span></span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a><span class="fu">git</span> add analysis/report/report.Rmd</span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Address reviewer comments on methods</span></span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a></span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a><span class="st">- Clarify sample size justification</span></span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a><span class="st">- Add sensitivity analysis for outliers</span></span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a><span class="st">- Expand discussion of limitations"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="tag-submission-versions">Tag Submission Versions<a class="anchor" aria-label="anchor" href="#tag-submission-versions"></a>
 </h3>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v1.0-submission <span class="at">-m</span> <span class="st">"Initial submission to Journal X"</span></span>
-<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">git</span> push origin v1.0-submission</span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a></span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v1.1-revision <span class="at">-m</span> <span class="st">"First revision addressing reviewer comments"</span></span>
-<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="fu">git</span> push origin v1.1-revision</span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v1.0-submission <span class="at">-m</span> <span class="st">"Initial submission to Journal X"</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">git</span> push origin v1.0-submission</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v1.1-revision <span class="at">-m</span> <span class="st">"First revision addressing reviewer comments"</span></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="fu">git</span> push origin v1.1-revision</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">

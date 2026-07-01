@@ -96,7 +96,7 @@
 <li>
 <strong>Advanced configuration system</strong> with user/project-level settings</li>
 <li>
-<strong>Three Docker profiles</strong>: minimal, analysis, rstudio</li>
+<strong>Four Docker profiles</strong>: minimal, tidyverse (formerly <code>analysis</code>, alias kept), rstudio, publishing</li>
 <li>
 <strong>Profile-based architecture</strong>: Team lead selects Docker profile, members add packages as needed</li>
 <li>
@@ -200,7 +200,7 @@
 <li>
 <strong>Pre-installed packages</strong> (tidyverse, sf, etc.)</li>
 <li>
-<strong>Three profiles</strong> available: minimal, analysis, rstudio</li>
+<strong>Four profiles</strong> available: minimal, tidyverse (formerly <code>analysis</code>, alias kept), rstudio, publishing</li>
 </ul>
 <p><strong>Key principle</strong>: Once selected, the Docker profile is <strong>fixed</strong> for the team. Team members cannot change the base image to ensure consistent environments.</p>
 </div>
@@ -221,6 +221,11 @@
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"tidymodels"</span><span class="op">)</span>              <span class="co"># CRAN</span></span>
 <span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"user/package"</span><span class="op">)</span>            <span class="co"># GitHub</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="dependency-manifest-renvlock--description">Dependency Manifest: renv.lock + DESCRIPTION<a class="anchor" aria-label="anchor" href="#dependency-manifest-renvlock--description"></a>
+</h3>
+<p>Reproducibility rests on two complementary files, not one. <code>renv.lock</code> pins the exact package closure (versions), while <code>DESCRIPTION</code> declares dependency roles: packages used by code in <code>R/</code> belong in <code>Imports</code>, and packages used only by <code>analysis/</code> (reports, scripts, notebooks) belong in <code>Suggests</code>. Run <code>make snapshot</code> to grow both from the built image (<code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code>, then <code>zzrenvcheck::check_packages()</code>). The R-package CI workflow enforces this with a ‘Validate dependency manifest (renv.lock + DESCRIPTION)’ step that fails the build when code references a package that is not declared in <code>DESCRIPTION</code> or not locked in <code>renv.lock</code>. For guidance on which packages belong in the Dockerfile versus <code>renv.lock</code> versus <code>DESCRIPTION</code>, see <a href="docs/package-placement-whitepaper.html">docs/package-placement-whitepaper.md</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="workflow-example">Workflow Example<a class="anchor" aria-label="anchor" href="#workflow-example"></a>
@@ -306,7 +311,7 @@
 <td>Lightweight, CI/CD</td>
 </tr>
 <tr>
-<td><code>analysis</code></td>
+<td><code>tidyverse</code></td>
 <td>rocker/tidyverse</td>
 <td>~1.2 GB</td>
 <td>Data analysis with tidyverse</td>
@@ -317,9 +322,16 @@
 <td>~980 MB</td>
 <td>RStudio Server development</td>
 </tr>
+<tr>
+<td><code>publishing</code></td>
+<td>rocker/verse</td>
+<td>~4.2 GB</td>
+<td>Manuscript rendering (PDF-adaptive, pre-baked LaTeX)</td>
+</tr>
 </tbody>
 </table>
-<p>For specialised needs (LaTeX, Shiny, machine learning), start from one of these profiles and add packages inside the container with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated <code>renv.lock</code>.</p>
+<p>The <code>tidyverse</code> profile was formerly named <code>analysis</code>; <code>analysis</code> is retained as a deprecated alias. The <code>publishing</code> profile renders PDF by default when a LaTeX toolchain is present and falls back to HTML otherwise; its LaTeX package closure is pre-baked into the image, so PDF rendering needs no runtime install.</p>
+<p>For other specialised needs (Shiny, machine learning), start from one of these profiles and add packages inside the container with <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated <code>renv.lock</code>.</p>
 <p>Run <code>zzcollab list</code> for the full set of available profiles and bundles.</p>
 <div class="section level3">
 <h3 id="selecting-a-profile">Selecting a Profile<a class="anchor" aria-label="anchor" href="#selecting-a-profile"></a>
@@ -385,6 +397,8 @@
 <li>
 <strong>Automation</strong>: <code>auto_github</code>, <code>skip_confirmation</code>
 </li>
+<li>
+<strong>Tooling</strong>: <code>languageserver</code> (default <code>true</code>) installs the R language server in the Docker image for in-container LSP completion and diagnostics; set <code>false</code> for REPL-only workflows</li>
 </ul>
 </div>
 </div>
@@ -542,7 +556,10 @@
 <span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="fu">make</span> docker-render     <span class="co"># Generate research paper PDF</span></span>
 <span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="fu">make</span> docker-test       <span class="co"># Run package tests</span></span>
 <span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="fu">make</span> docker-check      <span class="co"># Validate package structure</span></span>
-<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="fu">make</span> help             <span class="co"># See all available commands</span></span></code></pre></div>
+<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="fu">make</span> style             <span class="co"># Format R code with styler (in container)</span></span>
+<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a><span class="fu">make</span> lint              <span class="co"># Lint R code with lintr (in container)</span></span>
+<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a><span class="fu">make</span> snapshot          <span class="co"># Grow renv.lock + DESCRIPTION from the image</span></span>
+<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a><span class="fu">make</span> help             <span class="co"># See all available commands</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="project-structure">Project Structure<a class="anchor" aria-label="anchor" href="#project-structure"></a>
@@ -577,7 +594,7 @@
 <span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>  <span class="ex">build,</span> doctor, validate, config, list, help</span>
 <span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a></span>
 <span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="ex">PROFILES</span> <span class="er">(</span><span class="ex">quickstart,</span> or switch profile in an existing project<span class="kw">)</span><span class="bu">:</span></span>
-<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="ex">minimal,</span> analysis, rstudio</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="ex">minimal,</span> tidyverse <span class="er">(</span><span class="ex">alias:</span> analysis<span class="kw">)</span><span class="ex">,</span> rstudio, publishing</span>
 <span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a></span>
 <span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="ex">GLOBAL</span> OPTIONS:</span>
 <span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>  <span class="ex">-v,</span> <span class="at">--verbose</span>            More output</span>

@@ -55,16 +55,32 @@
 <h3 id="added">Added<a class="anchor" aria-label="anchor" href="#added"></a></h3>
 <ul><li>
 <code>zzc init</code> now back-fills an existing <code>~/.zzcollab/config.yaml</code> to the current schema. Older or hand-trimmed configs that lack whole sections (<code>author</code>, <code>license</code>, <code>r_package</code>, <code>style</code>, <code>github</code>) gain those sections with their default values and comments, while every value already set is preserved. Implemented as an idempotent deep-merge of the default skeleton under the existing file (<code>config_backfill_schema</code>); the merge runs only when a schema key is genuinely missing.</li>
+<li>
+<code>languageserver</code> config key (default <code>true</code>) and a matching feature-wizard checkbox (‘R language server in Docker image (in-container LSP)’) install the R language server into the image for in-container completion and diagnostics. Opt out with <code>zzc config set languageserver false</code> for REPL-only workflows.</li>
+<li>
+<code>styler</code> and <code>lintr</code> are installed in the image when the code-quality feature is active, alongside two new in-container targets: <code>make style</code> (format R code with styler) and <code>make lint</code> (lint R code with lintr).</li>
+<li>
+<code>publishing</code> profile (base image <code>rocker/verse</code>) for manuscript rendering. It renders PDF by default when a LaTeX toolchain is present and falls back to HTML otherwise (capability-adaptive); the LaTeX package closure is pre-baked into the image at build time, so PDF rendering requires no runtime install.</li>
+<li>
+<code>make snapshot</code>: capture code dependencies into <code>renv.lock</code> and <code>DESCRIPTION</code> by running, in the container, <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, <code>renv::snapshot(prompt = FALSE)</code>, and <code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>. The R-package CI workflow gains a ‘Validate dependency manifest (renv.lock + DESCRIPTION)’ step that fails the build when code references a package that is not declared in <code>DESCRIPTION</code> or not locked in <code>renv.lock</code>.</li>
+<li>
+<code>auto_github</code> config key (default <code>false</code>) and an init ‘create remote now’ wizard checkbox that it pre-selects. <code>zzc github</code> now walks up to the repository root before creating the remote, so it publishes the whole compendium rather than a subdirectory.</li>
+<li>
+<code>docs/package-placement-whitepaper.md</code>: a comprehensive account of which packages belong in the Dockerfile versus <code>renv.lock</code> versus <code>DESCRIPTION</code>.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="changed">Changed<a class="anchor" aria-label="anchor" href="#changed"></a></h3>
-<ul><li>
-<code>zzc init</code> identity step no longer silently re-prompts only when fields are absent. When name and email are already saved, it displays the stored identity and offers an optional update, pre-filling each prompt with the current value so a bare Enter keeps it. Because <code>zzc init</code> is run for every new repository, the default is to keep existing values (no prompt churn); only an explicit confirmation walks the fields.</li>
+<ul><li><p>Profile <code>analysis</code> renamed to <code>tidyverse</code>. <code>analysis</code> is retained as a deprecated alias.</p></li>
+<li><p><code>zzc init</code> identity step no longer silently re-prompts only when fields are absent. When name and email are already saved, it displays the stored identity and offers an optional update, pre-filling each prompt with the current value so a bare Enter keeps it. Because <code>zzc init</code> is run for every new repository, the default is to keep existing values (no prompt churn); only an explicit confirmation walks the fields.</p></li>
 </ul></div>
 <div class="section level3">
 <h3 id="fixed">Fixed<a class="anchor" aria-label="anchor" href="#fixed"></a></h3>
 <ul><li>
 <code>config_set KEY VALUE --local</code> (and <code>zzc init</code>, which uses it to record the archetype) no longer seeds a freshly created project <code>zzcollab.yaml</code> with an empty <code>docker.default_profile: ""</code> stub. The placeholder served no purpose — the loader skips empty values and the real key is written immediately after — but persisted as a meaningless override. The creation template now matches the one used by the interactive project prompt (header only).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a></h3>
+<ul><li>The LaTeX warm-up for the <code>publishing</code> image now bulk-installs the package closure in a single <code>tlmgr</code> pass, reducing the render image build from about 7 minutes to about 2.5 minutes.</li>
 </ul><hr></div>
 </div>
 <div class="section level2">

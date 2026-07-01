@@ -750,12 +750,44 @@ which verifies that every package referenced in code is declared in both
 <code>make check-renv-no-fix</code> (report only) and
 <code>make check-renv-no-strict</code> (skip <code>tests/</code> and
 <code>vignettes/</code>) are available.</p>
+<p>These two files play complementary roles: <code>renv.lock</code> pins
+the exact package closure, while <code>DESCRIPTION</code> declares
+dependency roles (packages used by <code>R/</code> code go in
+<code>Imports</code>; packages used only by <code>analysis/</code>
+reports and scripts go in <code>Suggests</code>). To grow both from the
+current image rather than only validate them, run
+<code>make snapshot</code> before committing; it runs
+<code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>,
+<code>renv::snapshot(prompt = FALSE)</code>, and the same
+<code>zzrenvcheck</code> check in sequence. In CI, the R-package
+workflow enforces the manifest with a step named “Validate dependency
+manifest (renv.lock + DESCRIPTION)” that fails the build when code
+references a package absent from <code>DESCRIPTION</code> or
+<code>renv.lock</code>.</p>
+</div>
+<div class="section level4">
+<h4 id="code-quality-make-style-and-make-lint">Code Quality: make style and make lint<a class="anchor" aria-label="anchor" href="#code-quality-make-style-and-make-lint"></a>
+</h4>
+<p>When the code-quality feature is enabled, styler and lintr are baked
+into the project image, and two targets run them inside the
+container:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Format R code with styler</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">make</span> style</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co"># Lint R code with lintr</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="fu">make</span> lint</span></code></pre></div>
+<p>Both targets run in the container, so no host R installation is
+required. They are gated on the code-quality feature: if it is not
+enabled, the tooling is absent from the image and the targets are
+unavailable. Running <code>make style</code> before committing keeps
+formatting consistent, and <code>make lint</code> surfaces style and
+correctness issues that tests may not catch.</p>
 </div>
 <div class="section level4">
 <h4 id="quality-gates">Quality Gates<a class="anchor" aria-label="anchor" href="#quality-gates"></a>
 </h4>
 <p>Implement automated quality checks:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># scripts/99_reproducibility_check.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/markvanderloo/tinytest" class="external-link">tinytest</a></span><span class="op">)</span></span>
 <span></span>
@@ -822,7 +854,7 @@ catch pipeline failures</li>
 <div class="section level4">
 <h4 id="performance-considerations">Performance Considerations<a class="anchor" aria-label="anchor" href="#performance-considerations"></a>
 </h4>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_performance.R</span></span>
 <span><span class="va">start_time</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.time</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -912,7 +944,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="basic-data-validation-tests-with-iris-dataset">Basic Data Validation Tests with iris Dataset<a class="anchor" aria-label="anchor" href="#basic-data-validation-tests-with-iris-dataset"></a>
 </h5>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_iris_analysis.R</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">iris</span><span class="op">)</span></span>
 <span></span>
@@ -949,7 +981,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="simple-statistical-functions-with-mtcars">Simple Statistical Functions with mtcars<a class="anchor" aria-label="anchor" href="#simple-statistical-functions-with-mtcars"></a>
 </h5>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_mtcars_stats.R</span></span>
 <span></span>
 <span><span class="co"># Helper function for testing</span></span>
@@ -999,7 +1031,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="basic-visualization-testing-with-penguins">Basic Visualization Testing with penguins<a class="anchor" aria-label="anchor" href="#basic-visualization-testing-with-penguins"></a>
 </h5>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_penguins_viz.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://allisonhorst.github.io/palmerpenguins/" class="external-link">palmerpenguins</a></span><span class="op">)</span></span>
@@ -1056,7 +1088,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="data-pipeline-testing-with-iris">Data Pipeline Testing with iris<a class="anchor" aria-label="anchor" href="#data-pipeline-testing-with-iris"></a>
 </h5>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_iris_pipeline.R</span></span>
 <span></span>
 <span><span class="co"># Analysis pipeline functions</span></span>
@@ -1136,7 +1168,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="advanced-statistical-testing-with-mtcars">Advanced Statistical Testing with mtcars<a class="anchor" aria-label="anchor" href="#advanced-statistical-testing-with-mtcars"></a>
 </h5>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_mtcars_advanced.R</span></span>
 <span></span>
 <span><span class="co"># Advanced analysis functions</span></span>
@@ -1231,7 +1263,7 @@ running checks</li>
 <div class="section level5">
 <h5 id="integration-testing-with-penguins-dataset">Integration Testing with penguins Dataset<a class="anchor" aria-label="anchor" href="#integration-testing-with-penguins-dataset"></a>
 </h5>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_penguins_integration.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://allisonhorst.github.io/palmerpenguins/" class="external-link">palmerpenguins</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
@@ -1377,7 +1409,7 @@ running checks</li>
 <div class="section level4">
 <h4 id="complete-test-suite-template">Complete Test Suite Template<a class="anchor" aria-label="anchor" href="#complete-test-suite-template"></a>
 </h4>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_complete_analysis.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">myanalysis</span><span class="op">)</span></span>
 <span></span>
@@ -1420,7 +1452,7 @@ running checks</li>
 <div class="section level4">
 <h4 id="data-validation-template">Data Validation Template<a class="anchor" aria-label="anchor" href="#data-validation-template"></a>
 </h4>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># inst/tinytest/test_data_validation.R</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://socialresearchcentre.github.io/testdat/" class="external-link">testdat</a></span><span class="op">)</span></span>
 <span></span>

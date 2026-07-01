@@ -673,12 +673,23 @@ expectations (no <code>test_that()</code> wrapper):</p>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">bind_rows</span><span class="op">(</span><span class="va">results_list</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">results</span>, <span class="st">"analysis/data/derived_data/simulation_results.rds"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Saved to analysis/data/derived_data/simulation_results.rds\n"</span><span class="op">)</span></span></code></pre></div>
+<p>Once the simulation packages (<code>furrr</code>,
+<code>geepack</code>, <code>lme4</code>, <code>progressr</code>, and the
+rest) are installed, lock them into the manifest before committing:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p><code>make snapshot</code> records dependencies across two
+complementary files: <code>renv.lock</code> pins the exact package
+versions, while <code>DESCRIPTION</code> declares dependency roles
+(packages used by code in <code>R/</code> go in <code>Imports</code>;
+packages used only by <code>analysis/</code> go in
+<code>Suggests</code>).</p>
 </div>
 <div class="section level2">
 <h2 id="step-8-load-results-into-manuscript">Step 8: Load Results into Manuscript<a class="anchor" aria-label="anchor" href="#step-8-load-results-into-manuscript"></a>
 </h2>
 <p>Update <code>report.Rmd</code> to use cached results:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In load-results chunk:</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"../../R/performance_metrics.R"</span><span class="op">)</span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"../data/derived_data/simulation_results.rds"</span><span class="op">)</span></span>

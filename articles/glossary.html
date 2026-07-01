@@ -131,11 +131,15 @@ hooks, unit tests, cloud launch).</li>
 which shapes the starter layout.</li>
 <li>
 <strong>Profile</strong>: the Docker image bundle the environment is
-built from. The three canonical profiles are <code>minimal</code>
-(command-line, ~650MB), <code>analysis</code> (tidyverse, ~1.2GB), and
-<code>rstudio</code> (RStudio Server, ~980MB). For specialised needs
-(LaTeX, modeling, Shiny), extend the closest profile. Distinct from the
-archetype: the profile is the image, the archetype is the layout.</li>
+built from. The four canonical profiles are <code>minimal</code>
+(command-line, ~650MB), <code>tidyverse</code> (tidyverse, ~1.2GB),
+<code>rstudio</code> (RStudio Server, ~980MB), and
+<code>publishing</code> (manuscript rendering on
+<code>rocker/verse</code>, ~4.2GB). <code>tidyverse</code> was formerly
+named <code>analysis</code>; the <code>analysis</code> alias is still
+accepted. For other specialised needs (modeling, Shiny), extend the
+closest profile. Distinct from the archetype: the profile is the image,
+the archetype is the layout.</li>
 <li>
 <strong>Render gate</strong>: a CI check tied to the archetypes that
 scaffold a report, failing the build if the manuscript will not
@@ -186,7 +190,13 @@ and <code>verify</code> read instead of re-parsing the
 <li>
 <strong>make target</strong>: a named <code>Makefile</code> command
 (e.g. <code>make docker-build</code>, <code>make docker-test</code>,
-<code>make check-renv</code>) wrapping a container operation.</li>
+<code>make check-renv</code>, <code>make snapshot</code>) wrapping a
+container operation. <code>make snapshot</code> grows the dependency
+manifest (<code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>),
+whereas <code>make check-renv</code> validates the manifest without
+hydrating.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -226,6 +236,24 @@ packages (Layer
 <li>versus per-user packages added at runtime (Layer 2).</li>
 </ol>
 </li>
+<li>
+<strong>Dependency placement</strong>: the rule governing where a
+package is recorded. Development tooling (<code>languageserver</code>,
+styler, lintr, devtools, roxygen2, and similar) belongs in the
+<code>Dockerfile</code> and never in <code>renv.lock</code>;
+reproducibility-relevant packages belong in <code>renv.lock</code> and
+<code>DESCRIPTION</code>. See
+<code>docs/package-placement-whitepaper.md</code> for the comprehensive
+treatment of which packages go where.</li>
+<li>
+<strong><code>languageserver</code> / in-container LSP</strong>: the
+R language server installed into the Docker image (config key
+<code>languageserver</code>, default <code>true</code>) so that editor
+completion and diagnostics run inside the container. Because zzcollab
+assumes no R on the host, the language server must run in the container;
+a host editor (vim, VS Code) bridges its LSP client into the container.
+Opt out with <code>zzc config set languageserver false</code> for
+REPL-only workflows.</li>
 </ul>
 </div>
 </div>

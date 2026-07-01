@@ -102,10 +102,22 @@ start.
 - **Data-integrity hashing**: a checksum file (`data-manifest.sha256`)
   that detects if a raw data file changes.
 - **Code-quality hooks**: pre-commit checks (styler and lintr) that tidy
-  and lint code before each commit.
+  and lint code before each commit. styler and lintr are also baked into
+  the Docker image, so `make style` and `make lint` run them
+  in-container.
 - **Unit tests**: a `tinytest` test scaffold.
 - **Cloud launch**: a `.devcontainer` so the project opens in a cloud
   editor or Binder.
+- **R language server** (`languageserver`, default on): installs the R
+  language server in the Docker image for in-container LSP completion
+  and diagnostics. zzcollab assumes no R on the host, so the language
+  server runs in the container and a host editor (vim, VS Code) bridges
+  its LSP client into it. Opt out with
+  `zzc config set languageserver false` for REPL-only workflows.
+- **Create remote now** (`auto_github`, default off): when the
+  `auto_github` config is on, the init feature wizard pre-ticks a
+  ‘create remote now’ checkbox that creates the GitHub remote during
+  initialisation.
 
 ## Add and remove features
 
@@ -144,7 +156,9 @@ describing the highlighted feature:
       [ ] ci              Adds:  Dockerfile + make r / make rstudio
       [ ] data            Pins:  L2 - the full environment, for sharing
       [x] tests           Cost:  image build time and disk
+      [x] languageserver  R language server in Docker image (in-container LSP)
       [ ] cloud
+      [ ] create-remote   Create the GitHub remote now (auto_github)
 
 Press Tab or Space to tick the highlighted feature on or off; the cursor
 holds its place as the box updates. Enter applies your selection, Esc
@@ -160,7 +174,9 @@ tool, the wizard asks one question at a time:
       Data integrity hashing    [on/off] (current: off): on
       Code quality (pre-commit) [on/off] (current: off): on
       Unit testing (tinytest)   [on/off] (current: on): on
+      R language server (image) [on/off] (current: on): on
       Cloud launch (devcontainer) [on/off] (current: on): on
+      Create the GitHub remote now [on/off] (current: off): off
 
 Whichever interface you used, the wizard previews the difference and
 applies it only on confirmation; after applying, the new state is
@@ -198,8 +214,8 @@ zzc rm cloud
 ```
 
 `zzc add <feature>` and `zzc rm <feature>` accept `docker`, `renv`,
-`nix`, `data`, `code-quality`, `tests`, `cloud`, `cicd`, and `github`.
-Per-feature flags pass through, for example
+`nix`, `data`, `code-quality`, `tests`, `languageserver`, `cloud`,
+`cicd`, and `github`. Per-feature flags pass through, for example
 `zzc add docker --base-image rocker/verse`.
 
 ## See where you stand: `zzc status`
@@ -451,8 +467,18 @@ holds steady.
 
 The dependency check (`zzc validate`, also run by `make check-renv`)
 enforces that every package used in code is declared in `DESCRIPTION`
-and pinned in `renv.lock`. Two knobs ride the same toggle checklist, but
-they are configuration rather than files:
+and pinned in `renv.lock`. Before a commit, `make snapshot` grows the
+manifest from the image: in the container it runs
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`. The
+R-package CI workflow re-runs the same check in a step named ‘Validate
+dependency manifest (renv.lock + DESCRIPTION)’, failing the build when
+code references a package that is not declared in `DESCRIPTION` or not
+locked in `renv.lock`.
+
+Two knobs ride the same toggle checklist, but they are configuration
+rather than files:
 
 - **strict** also scans `tests/` and `vignettes/` for package use
   (default on).

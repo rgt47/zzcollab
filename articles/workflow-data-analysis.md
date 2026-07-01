@@ -563,9 +563,17 @@ make docker-render
 # Run in clean environment
 make docker-test
 
+# Capture dependencies into the manifest
+make snapshot
+
 # Validate dependencies
 make check-renv
 ```
+
+`make snapshot` records dependencies across two complementary files:
+`renv.lock` pins the exact package versions, while `DESCRIPTION`
+declares dependency roles (packages used by code in `R/` go in
+`Imports`; packages used only by `analysis/` go in `Suggests`).
 
 ## Benefits of Write as You Go
 

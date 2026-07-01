@@ -418,6 +418,30 @@ wrapper:</p>
 </div>
 </div>
 <div class="section level3">
+<h3 id="dependency-management">Dependency Management<a class="anchor" aria-label="anchor" href="#dependency-management"></a>
+</h3>
+<p>As you add functions and tests, new package dependencies accumulate.
+Capture them into the manifest before committing:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">make</span> snapshot</span></code></pre></div>
+<p><code>make snapshot</code> runs the full loop in the container:
+<code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>.</p>
+<p>Dependencies are recorded across two complementary files with
+distinct roles. <code>renv.lock</code> pins the exact package closure
+(versions) for reproducible rebuilds; <code>DESCRIPTION</code> declares
+dependency roles. Packages used by code in <code>R/</code> belong in
+<code>Imports</code>; packages used only by <code>analysis/</code>
+(reports, scripts, notebooks) belong in <code>Suggests</code>. The two
+files are complementary, not redundant.</p>
+<p>To validate the manifest at any point without the full snapshot loop,
+run the dependency gate directly:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p>This runs <code>zzrenvcheck</code> in strict + auto-fix mode and
+fails when code references a package that is not declared in
+<code>DESCRIPTION</code> or not locked in <code>renv.lock</code>.</p>
+</div>
+<div class="section level3">
 <h3 id="step-3-documentation-with-roxygen2">Step 3: Documentation with roxygen2<a class="anchor" aria-label="anchor" href="#step-3-documentation-with-roxygen2"></a>
 </h3>
 <p>Comprehensive documentation is essential for package users <span class="citation">(Wickham 2015)</span>.</p>
@@ -425,7 +449,7 @@ wrapper:</p>
 <h4 id="document-all-exported-functions">Document All Exported Functions<a class="anchor" aria-label="anchor" href="#document-all-exported-functions"></a>
 </h4>
 <p>Each function in <code>R/</code> needs roxygen2 documentation:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' @title - Brief description (1 line)</span></span>
 <span><span class="co">#' @description - Detailed description (multiple paragraphs OK)</span></span>
 <span><span class="co">#' @param - Document each parameter</span></span>
@@ -439,19 +463,19 @@ wrapper:</p>
 <div class="section level4">
 <h4 id="generate-documentation">Generate Documentation<a class="anchor" aria-label="anchor" href="#generate-documentation"></a>
 </h4>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="op">&gt;</span> devtools::document<span class="kw">()</span>  <span class="co"># Generates man/*.Rd files from roxygen2 comments</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="op">&gt;</span> devtools::document<span class="kw">()</span>  <span class="co"># Generates man/*.Rd files from roxygen2 comments</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="verify-documentation">Verify Documentation<a class="anchor" aria-label="anchor" href="#verify-documentation"></a>
 </h4>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Run R CMD check in the container (Docker-first path)</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">make</span> docker-check</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Run R CMD check in the container (Docker-first path)</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="fu">make</span> docker-check</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -461,68 +485,68 @@ wrapper:</p>
 <div class="section level4">
 <h4 id="create-tutorial-vignette">Create Tutorial Vignette<a class="anchor" aria-label="anchor" href="#create-tutorial-vignette"></a>
 </h4>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_vignette<span class="kw">(</span><span class="st">"penguin-analysis-tutorial"</span><span class="kw">)</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_vignette<span class="kw">(</span><span class="st">"penguin-analysis-tutorial"</span><span class="kw">)</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 <p>Edit <code>vignettes/penguin-analysis-tutorial.Rmd</code>:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Penguin Morphology Analysis Tutorial"</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="an">output:</span><span class="co"> rmarkdown::html_vignette</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="an">vignette:</span><span class="co"> &gt;</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">  %\VignetteIndexEntry{Penguin Morphology Analysis Tutorial}</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">  %\VignetteEngine{knitr::rmarkdown}</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">  %\VignetteEncoding{UTF-8}</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">---</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="fu">## Introduction</span></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a>This vignette demonstrates how to use the <span class="in">`penguintools`</span> package to analyze</span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a>Palmer Penguins morphological data.</span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="fu">## Data Preparation</span></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a></span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="fu">library</span>(penguintools)</span>
-<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="fu">library</span>(palmerpenguins)</span>
-<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co"># Prepare data</span></span>
-<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a>clean_data <span class="ot">&lt;-</span> <span class="fu">prepare_penguin_data</span>(penguins)</span>
-<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a></span>
-<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="fu">## Allometric Analysis</span></span>
-<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a></span>
-<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a></span>
-<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co"># Fit scaling model</span></span>
-<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">fit_body_mass_model</span>(clean_data)</span>
-<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="fu">summary</span>(model)</span>
-<span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-36"><a href="#cb14-36" tabindex="-1"></a></span>
-<span id="cb14-37"><a href="#cb14-37" tabindex="-1"></a><span class="fu">## Visualization</span></span>
-<span id="cb14-38"><a href="#cb14-38" tabindex="-1"></a></span>
-<span id="cb14-39"><a href="#cb14-39" tabindex="-1"></a></span>
-<span id="cb14-40"><a href="#cb14-40" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb14-41"><a href="#cb14-41" tabindex="-1"></a><span class="co"># Create bill dimensions plot</span></span>
-<span id="cb14-42"><a href="#cb14-42" tabindex="-1"></a><span class="fu">plot_bill_dimensions</span>(clean_data)</span>
-<span id="cb14-43"><a href="#cb14-43" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Penguin Morphology Analysis Tutorial"</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="an">output:</span><span class="co"> rmarkdown::html_vignette</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="an">vignette:</span><span class="co"> &gt;</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co">  %\VignetteIndexEntry{Penguin Morphology Analysis Tutorial}</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="co">  %\VignetteEngine{knitr::rmarkdown}</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="co">  %\VignetteEncoding{UTF-8}</span></span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="fu">## Introduction</span></span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a></span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a>This vignette demonstrates how to use the <span class="in">`penguintools`</span> package to analyze</span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a>Palmer Penguins morphological data.</span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="fu">## Data Preparation</span></span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a></span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a></span>
+<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="fu">library</span>(penguintools)</span>
+<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a><span class="fu">library</span>(palmerpenguins)</span>
+<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a></span>
+<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a><span class="co"># Prepare data</span></span>
+<span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a>clean_data <span class="ot">&lt;-</span> <span class="fu">prepare_penguin_data</span>(penguins)</span>
+<span id="cb16-26"><a href="#cb16-26" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-27"><a href="#cb16-27" tabindex="-1"></a></span>
+<span id="cb16-28"><a href="#cb16-28" tabindex="-1"></a><span class="fu">## Allometric Analysis</span></span>
+<span id="cb16-29"><a href="#cb16-29" tabindex="-1"></a></span>
+<span id="cb16-30"><a href="#cb16-30" tabindex="-1"></a></span>
+<span id="cb16-31"><a href="#cb16-31" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb16-32"><a href="#cb16-32" tabindex="-1"></a><span class="co"># Fit scaling model</span></span>
+<span id="cb16-33"><a href="#cb16-33" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">fit_body_mass_model</span>(clean_data)</span>
+<span id="cb16-34"><a href="#cb16-34" tabindex="-1"></a><span class="fu">summary</span>(model)</span>
+<span id="cb16-35"><a href="#cb16-35" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-36"><a href="#cb16-36" tabindex="-1"></a></span>
+<span id="cb16-37"><a href="#cb16-37" tabindex="-1"></a><span class="fu">## Visualization</span></span>
+<span id="cb16-38"><a href="#cb16-38" tabindex="-1"></a></span>
+<span id="cb16-39"><a href="#cb16-39" tabindex="-1"></a></span>
+<span id="cb16-40"><a href="#cb16-40" tabindex="-1"></a><span class="in">``` r</span></span>
+<span id="cb16-41"><a href="#cb16-41" tabindex="-1"></a><span class="co"># Create bill dimensions plot</span></span>
+<span id="cb16-42"><a href="#cb16-42" tabindex="-1"></a><span class="fu">plot_bill_dimensions</span>(clean_data)</span>
+<span id="cb16-43"><a href="#cb16-43" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="build-vignettes">Build Vignettes<a class="anchor" aria-label="anchor" href="#build-vignettes"></a>
 </h4>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="op">&gt;</span> devtools::build_vignettes<span class="kw">()</span></span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="op">&gt;</span> devtools::build_vignettes<span class="kw">()</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -532,74 +556,74 @@ wrapper:</p>
 <div class="section level4">
 <h4 id="update-description-file">Update DESCRIPTION File<a class="anchor" aria-label="anchor" href="#update-description-file"></a>
 </h4>
-<div class="sourceCode" id="cb16"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">Package</span><span class="kw">:</span><span class="at"> penguintools</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">Title</span><span class="kw">:</span><span class="at"> Tools for Palmer Penguins Morphological Analysis</span></span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="fu">Version</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1.0</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="fu">Authors@R</span><span class="kw">:</span></span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="at">    person("Your", "Name", , "your.email@example.com", role = c("aut", "cre"),</span></span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="at">           comment = c(ORCID = "YOUR-ORCID-ID"))</span></span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="fu">Description</span><span class="kw">:</span><span class="at"> Provides data preparation, statistical modeling, and visualization</span></span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="at">    tools for analyzing Palmer Penguins morphological data. Implements</span></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="at">    allometric scaling analyses following Schmidt-Nielsen (1984).</span></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="fu">License</span><span class="kw">:</span><span class="at"> MIT + file LICENSE</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="fu">Encoding</span><span class="kw">:</span><span class="at"> UTF-8</span></span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="fu">Roxygen</span><span class="kw">:</span><span class="at"> list(markdown = TRUE)</span></span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="fu">RoxygenNote</span><span class="kw">:</span><span class="at"> </span><span class="fl">7.2.3</span></span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="fu">Imports</span><span class="kw">:</span></span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="at">    dplyr (&gt;= 1.0.0),</span></span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="at">    ggplot2 (&gt;= 3.3.0)</span></span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="fu">Suggests</span><span class="kw">:</span></span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="at">    tinytest,</span></span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="at">    palmerpenguins,</span></span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="at">    knitr,</span></span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="at">    rmarkdown</span></span>
-<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a><span class="fu">VignetteBuilder</span><span class="kw">:</span><span class="at"> knitr</span></span>
-<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a><span class="fu">URL</span><span class="kw">:</span><span class="at"> https://github.com/yourusername/penguintools</span></span>
-<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a><span class="fu">BugReports</span><span class="kw">:</span><span class="at"> https://github.com/yourusername/penguintools/issues</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">Package</span><span class="kw">:</span><span class="at"> penguintools</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">Title</span><span class="kw">:</span><span class="at"> Tools for Palmer Penguins Morphological Analysis</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="fu">Version</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1.0</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="fu">Authors@R</span><span class="kw">:</span></span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="at">    person("Your", "Name", , "your.email@example.com", role = c("aut", "cre"),</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="at">           comment = c(ORCID = "YOUR-ORCID-ID"))</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="fu">Description</span><span class="kw">:</span><span class="at"> Provides data preparation, statistical modeling, and visualization</span></span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="at">    tools for analyzing Palmer Penguins morphological data. Implements</span></span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="at">    allometric scaling analyses following Schmidt-Nielsen (1984).</span></span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a><span class="fu">License</span><span class="kw">:</span><span class="at"> MIT + file LICENSE</span></span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a><span class="fu">Encoding</span><span class="kw">:</span><span class="at"> UTF-8</span></span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a><span class="fu">Roxygen</span><span class="kw">:</span><span class="at"> list(markdown = TRUE)</span></span>
+<span id="cb18-13"><a href="#cb18-13" tabindex="-1"></a><span class="fu">RoxygenNote</span><span class="kw">:</span><span class="at"> </span><span class="fl">7.2.3</span></span>
+<span id="cb18-14"><a href="#cb18-14" tabindex="-1"></a><span class="fu">Imports</span><span class="kw">:</span></span>
+<span id="cb18-15"><a href="#cb18-15" tabindex="-1"></a><span class="at">    dplyr (&gt;= 1.0.0),</span></span>
+<span id="cb18-16"><a href="#cb18-16" tabindex="-1"></a><span class="at">    ggplot2 (&gt;= 3.3.0)</span></span>
+<span id="cb18-17"><a href="#cb18-17" tabindex="-1"></a><span class="fu">Suggests</span><span class="kw">:</span></span>
+<span id="cb18-18"><a href="#cb18-18" tabindex="-1"></a><span class="at">    tinytest,</span></span>
+<span id="cb18-19"><a href="#cb18-19" tabindex="-1"></a><span class="at">    palmerpenguins,</span></span>
+<span id="cb18-20"><a href="#cb18-20" tabindex="-1"></a><span class="at">    knitr,</span></span>
+<span id="cb18-21"><a href="#cb18-21" tabindex="-1"></a><span class="at">    rmarkdown</span></span>
+<span id="cb18-22"><a href="#cb18-22" tabindex="-1"></a><span class="fu">VignetteBuilder</span><span class="kw">:</span><span class="at"> knitr</span></span>
+<span id="cb18-23"><a href="#cb18-23" tabindex="-1"></a><span class="fu">URL</span><span class="kw">:</span><span class="at"> https://github.com/yourusername/penguintools</span></span>
+<span id="cb18-24"><a href="#cb18-24" tabindex="-1"></a><span class="fu">BugReports</span><span class="kw">:</span><span class="at"> https://github.com/yourusername/penguintools/issues</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="add-license-file">Add LICENSE File<a class="anchor" aria-label="anchor" href="#add-license-file"></a>
 </h4>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a></span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_mit_license<span class="kw">(</span><span class="st">"Your Name"</span><span class="kw">)</span></span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_mit_license<span class="kw">(</span><span class="st">"Your Name"</span><span class="kw">)</span></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="add-news-md">Add NEWS.md<a class="anchor" aria-label="anchor" href="#add-news-md"></a>
 </h4>
 <p>Create <code>NEWS.md</code> to document version history:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu"># penguintools 0.1.0</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="ss">* </span>Initial CRAN submission</span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a><span class="ss">* </span>Core functions for penguin morphology analysis:</span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="ss">  - </span><span class="in">`prepare_penguin_data()`</span>: Data preparation</span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="ss">  - </span><span class="in">`fit_body_mass_model()`</span>: Allometric scaling</span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="ss">  - </span><span class="in">`plot_bill_dimensions()`</span>: Visualization</span>
-<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="ss">* </span>Comprehensive test coverage (&gt;95%)</span>
-<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="ss">* </span>Tutorial vignette</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu"># penguintools 0.1.0</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="ss">* </span>Initial CRAN submission</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="ss">* </span>Core functions for penguin morphology analysis:</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="ss">  - </span><span class="in">`prepare_penguin_data()`</span>: Data preparation</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="ss">  - </span><span class="in">`fit_body_mass_model()`</span>: Allometric scaling</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="ss">  - </span><span class="in">`plot_bill_dimensions()`</span>: Visualization</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="ss">* </span>Comprehensive test coverage (&gt;95%)</span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="ss">* </span>Tutorial vignette</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="add-cran-comments-md">Add cran-comments.md<a class="anchor" aria-label="anchor" href="#add-cran-comments-md"></a>
 </h4>
 <p>Create <code>cran-comments.md</code> for CRAN maintainers:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">## Test environments</span></span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="ss">* </span>local: macOS (M1), R 4.3.1 (via Docker)</span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="ss">* </span>GitHub Actions:</span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="ss">  - </span>ubuntu-latest (release, devel, oldrel-1)</span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="ss">  - </span>windows-latest (release)</span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="ss">  - </span>macos-latest (release)</span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a></span>
-<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="fu">## R CMD check results</span></span>
-<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a></span>
-<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a>0 errors | 0 warnings | 0 notes</span>
-<span id="cb19-11"><a href="#cb19-11" tabindex="-1"></a></span>
-<span id="cb19-12"><a href="#cb19-12" tabindex="-1"></a><span class="fu">## Downstream dependencies</span></span>
-<span id="cb19-13"><a href="#cb19-13" tabindex="-1"></a></span>
-<span id="cb19-14"><a href="#cb19-14" tabindex="-1"></a>There are currently no downstream dependencies for this package.</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">## Test environments</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ss">* </span>local: macOS (M1), R 4.3.1 (via Docker)</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="ss">* </span>GitHub Actions:</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="ss">  - </span>ubuntu-latest (release, devel, oldrel-1)</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="ss">  - </span>windows-latest (release)</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="ss">  - </span>macos-latest (release)</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="fu">## R CMD check results</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>0 errors | 0 warnings | 0 notes</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a></span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="fu">## Downstream dependencies</span></span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>There are currently no downstream dependencies for this package.</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -609,19 +633,19 @@ wrapper:</p>
 <div class="section level4">
 <h4 id="test-coverage-report">Test Coverage Report<a class="anchor" aria-label="anchor" href="#test-coverage-report"></a>
 </h4>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a></span>
-<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="op">&gt;</span> library<span class="kw">(</span><span class="ex">covr</span><span class="kw">)</span></span>
-<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="op">&gt;</span> cov <span class="op">&lt;</span>- <span class="fu">package_coverage()</span></span>
-<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="op">&gt;</span> percent_coverage<span class="kw">(</span><span class="ex">cov</span><span class="kw">)</span></span>
-<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="co"># Target: &gt;95%</span></span>
-<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a></span>
-<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Generate HTML report</span></span>
-<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="op">&gt;</span> report<span class="kw">(</span><span class="ex">cov</span><span class="kw">)</span></span>
-<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a></span>
-<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="op">&gt;</span> library<span class="kw">(</span><span class="ex">covr</span><span class="kw">)</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="op">&gt;</span> cov <span class="op">&lt;</span>- <span class="fu">package_coverage()</span></span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="op">&gt;</span> percent_coverage<span class="kw">(</span><span class="ex">cov</span><span class="kw">)</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co"># Target: &gt;95%</span></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Generate HTML report</span></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="op">&gt;</span> report<span class="kw">(</span><span class="ex">cov</span><span class="kw">)</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="test-edge-cases">Test Edge Cases<a class="anchor" aria-label="anchor" href="#test-edge-cases"></a>
@@ -634,7 +658,7 @@ informative errors - <strong>Boundary conditions</strong>: Min/max
 values, NA handling</p>
 <p>Example comprehensive test (tinytest, bare top-level
 expectations):</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># prepare_penguin_data handles all edge cases</span></span>
 <span><span class="co"># Normal case</span></span>
 <span><span class="va">normal_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -681,98 +705,105 @@ expectations):</p>
 <h4 id="github-actions-workflow">GitHub Actions Workflow<a class="anchor" aria-label="anchor" href="#github-actions-workflow"></a>
 </h4>
 <p>Create <code>.github/workflows/R-CMD-check.yml</code>:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> R-CMD-check</span></span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a></span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
-<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a></span>
-<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="at">  </span><span class="fu">R-CMD-check</span><span class="kw">:</span></span>
-<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }}</span></span>
-<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a></span>
-<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }} (${{ matrix.config.r }})</span></span>
-<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a></span>
-<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
-<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span></span>
-<span id="cb22-19"><a href="#cb22-19" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> macos-latest</span><span class="kw">,</span><span class="at">   </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
-<span id="cb22-20"><a href="#cb22-20" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> windows-latest</span><span class="kw">,</span><span class="at"> </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
-<span id="cb22-21"><a href="#cb22-21" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'devel'</span><span class="kw">,</span><span class="at"> </span><span class="fu">http-user-agent</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
-<span id="cb22-22"><a href="#cb22-22" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
-<span id="cb22-23"><a href="#cb22-23" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'oldrel-1'</span><span class="kw">}</span></span>
-<span id="cb22-24"><a href="#cb22-24" tabindex="-1"></a></span>
-<span id="cb22-25"><a href="#cb22-25" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb22-26"><a href="#cb22-26" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
-<span id="cb22-27"><a href="#cb22-27" tabindex="-1"></a></span>
-<span id="cb22-28"><a href="#cb22-28" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
-<span id="cb22-29"><a href="#cb22-29" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb22-30"><a href="#cb22-30" tabindex="-1"></a><span class="at">          </span><span class="fu">r-version</span><span class="kw">:</span><span class="at"> ${{ matrix.config.r }}</span></span>
-<span id="cb22-31"><a href="#cb22-31" tabindex="-1"></a><span class="at">          </span><span class="fu">http-user-agent</span><span class="kw">:</span><span class="at"> ${{ matrix.config.http-user-agent }}</span></span>
-<span id="cb22-32"><a href="#cb22-32" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb22-33"><a href="#cb22-33" tabindex="-1"></a></span>
-<span id="cb22-34"><a href="#cb22-34" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
-<span id="cb22-35"><a href="#cb22-35" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb22-36"><a href="#cb22-36" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::rcmdcheck</span></span>
-<span id="cb22-37"><a href="#cb22-37" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> check</span></span>
-<span id="cb22-38"><a href="#cb22-38" tabindex="-1"></a></span>
-<span id="cb22-39"><a href="#cb22-39" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/check-r-package@v2</span></span>
-<span id="cb22-40"><a href="#cb22-40" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb22-41"><a href="#cb22-41" tabindex="-1"></a><span class="at">          </span><span class="fu">upload-snapshots</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> R-CMD-check</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="at">  </span><span class="fu">R-CMD-check</span><span class="kw">:</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }}</span></span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ${{ matrix.config.os }} (${{ matrix.config.r }})</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a></span>
+<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a><span class="at">      </span><span class="fu">fail-fast</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a><span class="at">      </span><span class="fu">matrix</span><span class="kw">:</span></span>
+<span id="cb24-18"><a href="#cb24-18" tabindex="-1"></a><span class="at">        </span><span class="fu">config</span><span class="kw">:</span></span>
+<span id="cb24-19"><a href="#cb24-19" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> macos-latest</span><span class="kw">,</span><span class="at">   </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb24-20"><a href="#cb24-20" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> windows-latest</span><span class="kw">,</span><span class="at"> </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb24-21"><a href="#cb24-21" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'devel'</span><span class="kw">,</span><span class="at"> </span><span class="fu">http-user-agent</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb24-22"><a href="#cb24-22" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'release'</span><span class="kw">}</span></span>
+<span id="cb24-23"><a href="#cb24-23" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">os</span><span class="kw">:</span><span class="at"> ubuntu-latest</span><span class="kw">,</span><span class="at">  </span><span class="fu">r</span><span class="kw">:</span><span class="at"> </span><span class="st">'oldrel-1'</span><span class="kw">}</span></span>
+<span id="cb24-24"><a href="#cb24-24" tabindex="-1"></a></span>
+<span id="cb24-25"><a href="#cb24-25" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb24-26"><a href="#cb24-26" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb24-27"><a href="#cb24-27" tabindex="-1"></a></span>
+<span id="cb24-28"><a href="#cb24-28" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb24-29"><a href="#cb24-29" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb24-30"><a href="#cb24-30" tabindex="-1"></a><span class="at">          </span><span class="fu">r-version</span><span class="kw">:</span><span class="at"> ${{ matrix.config.r }}</span></span>
+<span id="cb24-31"><a href="#cb24-31" tabindex="-1"></a><span class="at">          </span><span class="fu">http-user-agent</span><span class="kw">:</span><span class="at"> ${{ matrix.config.http-user-agent }}</span></span>
+<span id="cb24-32"><a href="#cb24-32" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb24-33"><a href="#cb24-33" tabindex="-1"></a></span>
+<span id="cb24-34"><a href="#cb24-34" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
+<span id="cb24-35"><a href="#cb24-35" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb24-36"><a href="#cb24-36" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::rcmdcheck</span></span>
+<span id="cb24-37"><a href="#cb24-37" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> check</span></span>
+<span id="cb24-38"><a href="#cb24-38" tabindex="-1"></a></span>
+<span id="cb24-39"><a href="#cb24-39" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/check-r-package@v2</span></span>
+<span id="cb24-40"><a href="#cb24-40" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb24-41"><a href="#cb24-41" tabindex="-1"></a><span class="at">          </span><span class="fu">upload-snapshots</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>The R-package CI workflow also includes a step “Validate dependency
+manifest (renv.lock + DESCRIPTION)” that runs
+<code>zzrenvcheck::check_packages</code> and fails the build when code
+references a package that is not declared in <code>DESCRIPTION</code> or
+not locked in <code>renv.lock</code>. This keeps the two-layer manifest
+honest on every push, mirroring the local <code>make snapshot</code> and
+<code>make check-renv</code> gates.</p>
 </div>
 <div class="section level4">
 <h4 id="test-coverage-workflow">Test Coverage Workflow<a class="anchor" aria-label="anchor" href="#test-coverage-workflow"></a>
 </h4>
 <p>Create <code>.github/workflows/test-coverage.yml</code>:</p>
-<div class="sourceCode" id="cb23"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> test-coverage</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
-<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a></span>
-<span id="cb23-9"><a href="#cb23-9" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb23-10"><a href="#cb23-10" tabindex="-1"></a><span class="at">  </span><span class="fu">test-coverage</span><span class="kw">:</span></span>
-<span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a></span>
-<span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
-<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a></span>
-<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
-<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a></span>
-<span id="cb23-20"><a href="#cb23-20" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
-<span id="cb23-21"><a href="#cb23-21" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb23-22"><a href="#cb23-22" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::covr</span></span>
-<span id="cb23-23"><a href="#cb23-23" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> coverage</span></span>
-<span id="cb23-24"><a href="#cb23-24" tabindex="-1"></a></span>
-<span id="cb23-25"><a href="#cb23-25" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Test coverage</span></span>
-<span id="cb23-26"><a href="#cb23-26" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
-<span id="cb23-27"><a href="#cb23-27" tabindex="-1"></a>          covr::codecov(</span>
-<span id="cb23-28"><a href="#cb23-28" tabindex="-1"></a>            quiet = FALSE,</span>
-<span id="cb23-29"><a href="#cb23-29" tabindex="-1"></a>            clean = FALSE,</span>
-<span id="cb23-30"><a href="#cb23-30" tabindex="-1"></a>            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "package")</span>
-<span id="cb23-31"><a href="#cb23-31" tabindex="-1"></a>          )</span>
-<span id="cb23-32"><a href="#cb23-32" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
-<span id="cb23-33"><a href="#cb23-33" tabindex="-1"></a></span>
-<span id="cb23-34"><a href="#cb23-34" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Show test output</span></span>
-<span id="cb23-35"><a href="#cb23-35" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
-<span id="cb23-36"><a href="#cb23-36" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
-<span id="cb23-37"><a href="#cb23-37" tabindex="-1"></a>          ## --------------------------------------------------------------------</span>
-<span id="cb23-38"><a href="#cb23-38" tabindex="-1"></a>          find ${{ runner.temp }}/package -name 'tinytest.Rout*' -exec cat '{}' \; || true</span>
-<span id="cb23-39"><a href="#cb23-39" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> bash</span></span>
-<span id="cb23-40"><a href="#cb23-40" tabindex="-1"></a></span>
-<span id="cb23-41"><a href="#cb23-41" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Upload test results</span></span>
-<span id="cb23-42"><a href="#cb23-42" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> failure()</span></span>
-<span id="cb23-43"><a href="#cb23-43" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/upload-artifact@v3</span></span>
-<span id="cb23-44"><a href="#cb23-44" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb23-45"><a href="#cb23-45" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> coverage-test-failures</span></span>
-<span id="cb23-46"><a href="#cb23-46" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ${{ runner.temp }}/package</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> test-coverage</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a></span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a><span class="at">  </span><span class="fu">test-coverage</span><span class="kw">:</span></span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a></span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a></span>
+<span id="cb25-16"><a href="#cb25-16" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb25-17"><a href="#cb25-17" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb25-18"><a href="#cb25-18" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb25-19"><a href="#cb25-19" tabindex="-1"></a></span>
+<span id="cb25-20"><a href="#cb25-20" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
+<span id="cb25-21"><a href="#cb25-21" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb25-22"><a href="#cb25-22" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::covr</span></span>
+<span id="cb25-23"><a href="#cb25-23" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> coverage</span></span>
+<span id="cb25-24"><a href="#cb25-24" tabindex="-1"></a></span>
+<span id="cb25-25"><a href="#cb25-25" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Test coverage</span></span>
+<span id="cb25-26"><a href="#cb25-26" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb25-27"><a href="#cb25-27" tabindex="-1"></a>          covr::codecov(</span>
+<span id="cb25-28"><a href="#cb25-28" tabindex="-1"></a>            quiet = FALSE,</span>
+<span id="cb25-29"><a href="#cb25-29" tabindex="-1"></a>            clean = FALSE,</span>
+<span id="cb25-30"><a href="#cb25-30" tabindex="-1"></a>            install_path = file.path(Sys.getenv("RUNNER_TEMP"), "package")</span>
+<span id="cb25-31"><a href="#cb25-31" tabindex="-1"></a>          )</span>
+<span id="cb25-32"><a href="#cb25-32" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
+<span id="cb25-33"><a href="#cb25-33" tabindex="-1"></a></span>
+<span id="cb25-34"><a href="#cb25-34" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Show test output</span></span>
+<span id="cb25-35"><a href="#cb25-35" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> always()</span></span>
+<span id="cb25-36"><a href="#cb25-36" tabindex="-1"></a><span class="fu">        run</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb25-37"><a href="#cb25-37" tabindex="-1"></a>          ## --------------------------------------------------------------------</span>
+<span id="cb25-38"><a href="#cb25-38" tabindex="-1"></a>          find ${{ runner.temp }}/package -name 'tinytest.Rout*' -exec cat '{}' \; || true</span>
+<span id="cb25-39"><a href="#cb25-39" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> bash</span></span>
+<span id="cb25-40"><a href="#cb25-40" tabindex="-1"></a></span>
+<span id="cb25-41"><a href="#cb25-41" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Upload test results</span></span>
+<span id="cb25-42"><a href="#cb25-42" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> failure()</span></span>
+<span id="cb25-43"><a href="#cb25-43" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/upload-artifact@v3</span></span>
+<span id="cb25-44"><a href="#cb25-44" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb25-45"><a href="#cb25-45" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> coverage-test-failures</span></span>
+<span id="cb25-46"><a href="#cb25-46" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ${{ runner.temp }}/package</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -783,62 +814,62 @@ expectations):</p>
 <div class="section level4">
 <h4 id="pre-submission-checklist">Pre-Submission Checklist<a class="anchor" aria-label="anchor" href="#pre-submission-checklist"></a>
 </h4>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># 1. Update version number in DESCRIPTION</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co"># 2. Update NEWS.md with changes</span></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co"># 3. Run comprehensive checks</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check on multiple R versions</span></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="op">&gt;</span> devtools::check<span class="kw">()</span>  <span class="co"># Current R version</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a></span>
-<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check reverse dependencies (none for new package)</span></span>
-<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="op">&gt;</span> devtools::revdep_check<span class="kw">()</span></span>
-<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a></span>
-<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Spell check</span></span>
-<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="op">&gt;</span> devtools::spell_check<span class="kw">()</span></span>
-<span id="cb24-15"><a href="#cb24-15" tabindex="-1"></a></span>
-<span id="cb24-16"><a href="#cb24-16" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check for CRAN policy compliance</span></span>
-<span id="cb24-17"><a href="#cb24-17" tabindex="-1"></a><span class="op">&gt;</span> rhub::check_for_cran<span class="kw">()</span></span>
-<span id="cb24-18"><a href="#cb24-18" tabindex="-1"></a></span>
-<span id="cb24-19"><a href="#cb24-19" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Windows check</span></span>
-<span id="cb24-20"><a href="#cb24-20" tabindex="-1"></a><span class="op">&gt;</span> devtools::check_win_devel<span class="kw">()</span></span>
-<span id="cb24-21"><a href="#cb24-21" tabindex="-1"></a><span class="op">&gt;</span> devtools::check_win_release<span class="kw">()</span></span>
-<span id="cb24-22"><a href="#cb24-22" tabindex="-1"></a></span>
-<span id="cb24-23"><a href="#cb24-23" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb24-24"><a href="#cb24-24" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb24-25"><a href="#cb24-25" tabindex="-1"></a></span>
-<span id="cb24-26"><a href="#cb24-26" tabindex="-1"></a><span class="co"># 4. Verify all CI checks pass on GitHub</span></span>
-<span id="cb24-27"><a href="#cb24-27" tabindex="-1"></a><span class="co"># 5. Update cran-comments.md with test results</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># 1. Update version number in DESCRIPTION</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="co"># 2. Update NEWS.md with changes</span></span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="co"># 3. Run comprehensive checks</span></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check on multiple R versions</span></span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="op">&gt;</span> devtools::check<span class="kw">()</span>  <span class="co"># Current R version</span></span>
+<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a></span>
+<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check reverse dependencies (none for new package)</span></span>
+<span id="cb26-11"><a href="#cb26-11" tabindex="-1"></a><span class="op">&gt;</span> devtools::revdep_check<span class="kw">()</span></span>
+<span id="cb26-12"><a href="#cb26-12" tabindex="-1"></a></span>
+<span id="cb26-13"><a href="#cb26-13" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Spell check</span></span>
+<span id="cb26-14"><a href="#cb26-14" tabindex="-1"></a><span class="op">&gt;</span> devtools::spell_check<span class="kw">()</span></span>
+<span id="cb26-15"><a href="#cb26-15" tabindex="-1"></a></span>
+<span id="cb26-16"><a href="#cb26-16" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Check for CRAN policy compliance</span></span>
+<span id="cb26-17"><a href="#cb26-17" tabindex="-1"></a><span class="op">&gt;</span> rhub::check_for_cran<span class="kw">()</span></span>
+<span id="cb26-18"><a href="#cb26-18" tabindex="-1"></a></span>
+<span id="cb26-19"><a href="#cb26-19" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Windows check</span></span>
+<span id="cb26-20"><a href="#cb26-20" tabindex="-1"></a><span class="op">&gt;</span> devtools::check_win_devel<span class="kw">()</span></span>
+<span id="cb26-21"><a href="#cb26-21" tabindex="-1"></a><span class="op">&gt;</span> devtools::check_win_release<span class="kw">()</span></span>
+<span id="cb26-22"><a href="#cb26-22" tabindex="-1"></a></span>
+<span id="cb26-23"><a href="#cb26-23" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb26-24"><a href="#cb26-24" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb26-25"><a href="#cb26-25" tabindex="-1"></a></span>
+<span id="cb26-26"><a href="#cb26-26" tabindex="-1"></a><span class="co"># 4. Verify all CI checks pass on GitHub</span></span>
+<span id="cb26-27"><a href="#cb26-27" tabindex="-1"></a><span class="co"># 5. Update cran-comments.md with test results</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="submit-to-cran">Submit to CRAN<a class="anchor" aria-label="anchor" href="#submit-to-cran"></a>
 </h4>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Final check</span></span>
-<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="op">&gt;</span> devtools::check<span class="kw">()</span></span>
-<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a></span>
-<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Submit to CRAN</span></span>
-<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a><span class="op">&gt;</span> devtools::release<span class="kw">()</span></span>
-<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a></span>
-<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Follow prompts - answer questions carefully</span></span>
-<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># CRAN maintainers will review and provide feedback</span></span>
-<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a></span>
-<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Final check</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="op">&gt;</span> devtools::check<span class="kw">()</span></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Submit to CRAN</span></span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="op">&gt;</span> devtools::release<span class="kw">()</span></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a></span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Follow prompts - answer questions carefully</span></span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># CRAN maintainers will review and provide feedback</span></span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a></span>
+<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="post-submission">Post-Submission<a class="anchor" aria-label="anchor" href="#post-submission"></a>
 </h4>
 <p>After CRAN acceptance:</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Tag release</span></span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v0.1.0 <span class="at">-m</span> <span class="st">"CRAN release 0.1.0"</span></span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="fu">git</span> push origin v0.1.0</span>
-<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a></span>
-<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="co"># Create GitHub release</span></span>
-<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">gh</span> release create v0.1.0 <span class="at">--title</span> <span class="st">"v0.1.0: Initial CRAN Release"</span> <span class="at">--notes</span> <span class="st">"See NEWS.md for details"</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Tag release</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">git</span> tag <span class="at">-a</span> v0.1.0 <span class="at">-m</span> <span class="st">"CRAN release 0.1.0"</span></span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">git</span> push origin v0.1.0</span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="co"># Create GitHub release</span></span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="ex">gh</span> release create v0.1.0 <span class="at">--title</span> <span class="st">"v0.1.0: Initial CRAN Release"</span> <span class="at">--notes</span> <span class="st">"See NEWS.md for details"</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -848,60 +879,60 @@ expectations):</p>
 <div class="section level4">
 <h4 id="setup-pkgdown">Setup pkgdown<a class="anchor" aria-label="anchor" href="#setup-pkgdown"></a>
 </h4>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a></span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_pkgdown<span class="kw">()</span></span>
-<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="op">&gt;</span> pkgdown::build_site<span class="kw">()</span></span>
-<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a></span>
-<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_pkgdown<span class="kw">()</span></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="op">&gt;</span> pkgdown::build_site<span class="kw">()</span></span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a></span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="deploy-to-github-pages">Deploy to GitHub Pages<a class="anchor" aria-label="anchor" href="#deploy-to-github-pages"></a>
 </h4>
 <p>Create <code>.github/workflows/pkgdown.yml</code>:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> pkgdown</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a></span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
-<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
-<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="at">  </span><span class="fu">release</span><span class="kw">:</span></span>
-<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a><span class="at">    </span><span class="fu">types</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">published</span><span class="kw">]</span></span>
-<span id="cb28-10"><a href="#cb28-10" tabindex="-1"></a><span class="at">  </span><span class="fu">workflow_dispatch</span><span class="kw">:</span></span>
-<span id="cb28-11"><a href="#cb28-11" tabindex="-1"></a></span>
-<span id="cb28-12"><a href="#cb28-12" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
-<span id="cb28-13"><a href="#cb28-13" tabindex="-1"></a><span class="at">  </span><span class="fu">pkgdown</span><span class="kw">:</span></span>
-<span id="cb28-14"><a href="#cb28-14" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
-<span id="cb28-15"><a href="#cb28-15" tabindex="-1"></a><span class="at">    </span><span class="fu">permissions</span><span class="kw">:</span></span>
-<span id="cb28-16"><a href="#cb28-16" tabindex="-1"></a><span class="at">      </span><span class="fu">contents</span><span class="kw">:</span><span class="at"> write</span></span>
-<span id="cb28-17"><a href="#cb28-17" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
-<span id="cb28-18"><a href="#cb28-18" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
-<span id="cb28-19"><a href="#cb28-19" tabindex="-1"></a></span>
-<span id="cb28-20"><a href="#cb28-20" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-pandoc@v2</span></span>
-<span id="cb28-21"><a href="#cb28-21" tabindex="-1"></a></span>
-<span id="cb28-22"><a href="#cb28-22" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
-<span id="cb28-23"><a href="#cb28-23" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb28-24"><a href="#cb28-24" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb28-25"><a href="#cb28-25" tabindex="-1"></a></span>
-<span id="cb28-26"><a href="#cb28-26" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
-<span id="cb28-27"><a href="#cb28-27" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb28-28"><a href="#cb28-28" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::pkgdown, local::.</span></span>
-<span id="cb28-29"><a href="#cb28-29" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> website</span></span>
-<span id="cb28-30"><a href="#cb28-30" tabindex="-1"></a></span>
-<span id="cb28-31"><a href="#cb28-31" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build site</span></span>
-<span id="cb28-32"><a href="#cb28-32" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)</span></span>
-<span id="cb28-33"><a href="#cb28-33" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
-<span id="cb28-34"><a href="#cb28-34" tabindex="-1"></a></span>
-<span id="cb28-35"><a href="#cb28-35" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Deploy to GitHub pages</span></span>
-<span id="cb28-36"><a href="#cb28-36" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> github.event_name != 'pull_request'</span></span>
-<span id="cb28-37"><a href="#cb28-37" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> JamesIves/github-pages-deploy-action@v4.4.1</span></span>
-<span id="cb28-38"><a href="#cb28-38" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
-<span id="cb28-39"><a href="#cb28-39" tabindex="-1"></a><span class="at">          </span><span class="fu">clean</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb28-40"><a href="#cb28-40" tabindex="-1"></a><span class="at">          </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> gh-pages</span></span>
-<span id="cb28-41"><a href="#cb28-41" tabindex="-1"></a><span class="at">          </span><span class="fu">folder</span><span class="kw">:</span><span class="at"> docs</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> pkgdown</span></span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="fu">on</span><span class="kw">:</span></span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="at">  </span><span class="fu">push</span><span class="kw">:</span></span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="at">  </span><span class="fu">pull_request</span><span class="kw">:</span></span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="at">    </span><span class="fu">branches</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">main</span><span class="kw">,</span><span class="at"> master</span><span class="kw">]</span></span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="at">  </span><span class="fu">release</span><span class="kw">:</span></span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="at">    </span><span class="fu">types</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">published</span><span class="kw">]</span></span>
+<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a><span class="at">  </span><span class="fu">workflow_dispatch</span><span class="kw">:</span></span>
+<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a></span>
+<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="fu">jobs</span><span class="kw">:</span></span>
+<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="at">  </span><span class="fu">pkgdown</span><span class="kw">:</span></span>
+<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a><span class="at">    </span><span class="fu">runs-on</span><span class="kw">:</span><span class="at"> ubuntu-latest</span></span>
+<span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a><span class="at">    </span><span class="fu">permissions</span><span class="kw">:</span></span>
+<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="at">      </span><span class="fu">contents</span><span class="kw">:</span><span class="at"> write</span></span>
+<span id="cb30-17"><a href="#cb30-17" tabindex="-1"></a><span class="at">    </span><span class="fu">steps</span><span class="kw">:</span></span>
+<span id="cb30-18"><a href="#cb30-18" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> actions/checkout@v4</span></span>
+<span id="cb30-19"><a href="#cb30-19" tabindex="-1"></a></span>
+<span id="cb30-20"><a href="#cb30-20" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-pandoc@v2</span></span>
+<span id="cb30-21"><a href="#cb30-21" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r@v2</span></span>
+<span id="cb30-23"><a href="#cb30-23" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb30-24"><a href="#cb30-24" tabindex="-1"></a><span class="at">          </span><span class="fu">use-public-rspm</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb30-25"><a href="#cb30-25" tabindex="-1"></a></span>
+<span id="cb30-26"><a href="#cb30-26" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> r-lib/actions/setup-r-dependencies@v2</span></span>
+<span id="cb30-27"><a href="#cb30-27" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb30-28"><a href="#cb30-28" tabindex="-1"></a><span class="at">          </span><span class="fu">extra-packages</span><span class="kw">:</span><span class="at"> any::pkgdown, local::.</span></span>
+<span id="cb30-29"><a href="#cb30-29" tabindex="-1"></a><span class="at">          </span><span class="fu">needs</span><span class="kw">:</span><span class="at"> website</span></span>
+<span id="cb30-30"><a href="#cb30-30" tabindex="-1"></a></span>
+<span id="cb30-31"><a href="#cb30-31" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Build site</span></span>
+<span id="cb30-32"><a href="#cb30-32" tabindex="-1"></a><span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)</span></span>
+<span id="cb30-33"><a href="#cb30-33" tabindex="-1"></a><span class="at">        </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> Rscript {0}</span></span>
+<span id="cb30-34"><a href="#cb30-34" tabindex="-1"></a></span>
+<span id="cb30-35"><a href="#cb30-35" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Deploy to GitHub pages</span></span>
+<span id="cb30-36"><a href="#cb30-36" tabindex="-1"></a><span class="at">        </span><span class="fu">if</span><span class="kw">:</span><span class="at"> github.event_name != 'pull_request'</span></span>
+<span id="cb30-37"><a href="#cb30-37" tabindex="-1"></a><span class="at">        </span><span class="fu">uses</span><span class="kw">:</span><span class="at"> JamesIves/github-pages-deploy-action@v4.4.1</span></span>
+<span id="cb30-38"><a href="#cb30-38" tabindex="-1"></a><span class="at">        </span><span class="fu">with</span><span class="kw">:</span></span>
+<span id="cb30-39"><a href="#cb30-39" tabindex="-1"></a><span class="at">          </span><span class="fu">clean</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb30-40"><a href="#cb30-40" tabindex="-1"></a><span class="at">          </span><span class="fu">branch</span><span class="kw">:</span><span class="at"> gh-pages</span></span>
+<span id="cb30-41"><a href="#cb30-41" tabindex="-1"></a><span class="at">          </span><span class="fu">folder</span><span class="kw">:</span><span class="at"> docs</span></span></code></pre></div>
 <p>Website will be available at:
 <code>https://yourusername.github.io/penguintools/</code></p>
 </div>
@@ -914,23 +945,23 @@ expectations):</p>
 <h3 id="using-example-data">Using Example Data<a class="anchor" aria-label="anchor" href="#using-example-data"></a>
 </h3>
 <p>Include example datasets in your package:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a></span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Create data object</span></span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="op">&gt;</span> library<span class="kw">(</span><span class="ex">palmerpenguins</span><span class="kw">)</span></span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="op">&gt;</span> penguins_sample <span class="op">&lt;</span>- <span class="fu">head</span><span class="er">(</span><span class="ex">penguins,</span> 20<span class="kw">)</span></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="op">&gt;</span></span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Save as package data</span></span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_data<span class="kw">(</span><span class="ex">penguins_sample</span><span class="kw">)</span></span>
-<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a><span class="op">&gt;</span></span>
-<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Document the dataset</span></span>
-<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_r<span class="kw">(</span><span class="st">"data"</span><span class="kw">)</span></span>
-<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a></span>
-<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Create data object</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="op">&gt;</span> library<span class="kw">(</span><span class="ex">palmerpenguins</span><span class="kw">)</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="op">&gt;</span> penguins_sample <span class="op">&lt;</span>- <span class="fu">head</span><span class="er">(</span><span class="ex">penguins,</span> 20<span class="kw">)</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="op">&gt;</span></span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Save as package data</span></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_data<span class="kw">(</span><span class="ex">penguins_sample</span><span class="kw">)</span></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="op">&gt;</span></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># Document the dataset</span></span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_r<span class="kw">(</span><span class="st">"data"</span><span class="kw">)</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 <p>Document in <code>R/data.R</code>:</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' Sample of Palmer Penguins data</span></span>
 <span><span class="co">#'</span></span>
 <span><span class="co">#' A subset of 20 observations from the Palmer Penguins dataset,</span></span>
@@ -957,7 +988,7 @@ expectations):</p>
 <h3 id="s3-methods">S3 Methods<a class="anchor" aria-label="anchor" href="#s3-methods"></a>
 </h3>
 <p>Implement S3 methods for clean interfaces:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">#' Print method for penguin model results</span></span>
 <span><span class="co">#'</span></span>
 <span><span class="co">#' @param x Object of class "penguin_model"</span></span>
@@ -976,28 +1007,28 @@ expectations):</p>
 <h3 id="rcpp-integration">Rcpp Integration<a class="anchor" aria-label="anchor" href="#rcpp-integration"></a>
 </h3>
 <p>For performance-critical functions, integrate C++:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a></span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="ex">R</span></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_rcpp<span class="kw">()</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="ex">R</span></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="op">&gt;</span> usethis::use_rcpp<span class="kw">()</span></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 <p>Create <code>src/fast_functions.cpp</code>:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Rcpp.h&gt;</span></span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> Rcpp<span class="op">;</span></span>
-<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a></span>
-<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="co">//' Fast body mass standardization</span></span>
-<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="co">//'</span></span>
-<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a><span class="co">//' @param body_mass Numeric vector of body mass values</span></span>
-<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a><span class="co">//' @return Standardized body mass (mean=0, sd=1)</span></span>
-<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a><span class="co">//' @export</span></span>
-<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a><span class="co">// [[Rcpp::export]]</span></span>
-<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a>NumericVector standardize_mass_cpp<span class="op">(</span>NumericVector body_mass<span class="op">)</span> <span class="op">{</span></span>
-<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a>  <span class="dt">double</span> mean <span class="op">=</span> Rcpp<span class="op">::</span>mean<span class="op">(</span>body_mass<span class="op">);</span></span>
-<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a>  <span class="dt">double</span> sd <span class="op">=</span> Rcpp<span class="op">::</span>sd<span class="op">(</span>body_mass<span class="op">);</span></span>
-<span id="cb33-13"><a href="#cb33-13" tabindex="-1"></a>  <span class="cf">return</span> <span class="op">(</span>body_mass <span class="op">-</span> mean<span class="op">)</span> <span class="op">/</span> sd<span class="op">;</span></span>
-<span id="cb33-14"><a href="#cb33-14" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Rcpp.h&gt;</span></span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="kw">using</span> <span class="kw">namespace</span> Rcpp<span class="op">;</span></span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="co">//' Fast body mass standardization</span></span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="co">//'</span></span>
+<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a><span class="co">//' @param body_mass Numeric vector of body mass values</span></span>
+<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a><span class="co">//' @return Standardized body mass (mean=0, sd=1)</span></span>
+<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a><span class="co">//' @export</span></span>
+<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a><span class="co">// [[Rcpp::export]]</span></span>
+<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a>NumericVector standardize_mass_cpp<span class="op">(</span>NumericVector body_mass<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a>  <span class="dt">double</span> mean <span class="op">=</span> Rcpp<span class="op">::</span>mean<span class="op">(</span>body_mass<span class="op">);</span></span>
+<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a>  <span class="dt">double</span> sd <span class="op">=</span> Rcpp<span class="op">::</span>sd<span class="op">(</span>body_mass<span class="op">);</span></span>
+<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a>  <span class="cf">return</span> <span class="op">(</span>body_mass <span class="op">-</span> mean<span class="op">)</span> <span class="op">/</span> sd<span class="op">;</span></span>
+<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1142,10 +1173,10 @@ world.</p>
 post? ZZCOLLAB projects integrate with Quarto blogs by placing the post
 at <code>analysis/report/index.qmd</code> and rendering with
 <code>make docker-render-qmd</code>:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Author the post at analysis/report/index.qmd, then render in the container</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a></span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co"># See vignette: "Reproducible Blog Post Development with ZZCOLLAB"</span></span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Author the post at analysis/report/index.qmd, then render in the container</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co"># See vignette: "Reproducible Blog Post Development with ZZCOLLAB"</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1184,6 +1215,15 @@ Important?</em> Cambridge University Press.</p>
 </li>
 <li>ZZCOLLAB Development Guide: <code>docs/DEVELOPMENT.md</code>
 </li>
+<li>ZZCOLLAB Package Placement Whitepaper:
+<code>docs/package-placement-whitepaper.md</code> (a comprehensive
+answer to which packages go in the Dockerfile versus
+<code>renv.lock</code> versus <code>DESCRIPTION</code>). The governing
+rule: development tooling (<code>languageserver</code>,
+<code>styler</code>, <code>lintr</code>, <code>devtools</code>,
+<code>roxygen2</code>, and similar) belongs in the Dockerfile and never
+in <code>renv.lock</code>; reproducibility-relevant packages belong in
+<code>renv.lock</code> and <code>DESCRIPTION</code>.</li>
 </ul>
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-marwick2018" class="csl-entry">

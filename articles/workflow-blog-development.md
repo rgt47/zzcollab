@@ -366,7 +366,7 @@ make r
 # Install required packages
 R
 > install.packages(c("palmerpenguins", "tidyverse", "broom"))
-> q()  # Auto-snapshot on exit captures packages
+> q()
 
 # Run analysis pipeline
 Rscript analysis/scripts/01_prepare_data.R
@@ -379,6 +379,21 @@ quarto render analysis/report/index.qmd
 # Exit container
 exit
 ```
+
+Capturing packages is now an explicit step: run `make snapshot` after
+installing new packages. The `make r` gate validates dependencies on
+entry and exit; it does not auto-snapshot on exit.
+
+``` bash
+make snapshot
+```
+
+`make snapshot` runs
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` in the
+container, recording dependencies across `renv.lock` (exact versions)
+and `DESCRIPTION` (roles).
 
 Alternatively, render from the host with the framework target, which
 runs `quarto render analysis/report/index.qmd` inside the container:

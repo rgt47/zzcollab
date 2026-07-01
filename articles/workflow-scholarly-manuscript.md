@@ -137,10 +137,16 @@ summarise_by_species(penguins, body_mass_g)
 ``` bash
 mkdir penguin-morphology && cd penguin-morphology
 
-zzcollab
+zzcollab publishing
 
 make docker-build
 ```
+
+We use the `publishing` profile because this workflow renders to
+`pdf_document`. The `publishing` profile builds on `rocker/verse` and
+bakes the full LaTeX package closure into the image at build time, so
+PDF rendering works with no runtime install. When a LaTeX toolchain is
+absent the profile is capability-adaptive and falls back to HTML output.
 
 This creates the standard compendium structure with empty directories
 ready for use. Note that `make r` runs the `zzrenvcheck` dependency gate
@@ -260,6 +266,23 @@ make r
 > rmarkdown::render("analysis/report/report.Rmd")
 > q()
 ```
+
+Once the packages you rely on are installed, capture them into the
+manifest:
+
+``` bash
+make snapshot
+```
+
+`make snapshot` grows the manifest from the image: in the container it
+runs
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`.
+Dependencies are recorded across two complementary files: `renv.lock`
+pins the exact package versions, while `DESCRIPTION` declares dependency
+roles. Packages used by code in `R/` belong in `Imports`; packages used
+only by `analysis/` (reports, scripts, notebooks) belong in `Suggests`.
 
 You now have a working manuscript draft with embedded analysis.
 

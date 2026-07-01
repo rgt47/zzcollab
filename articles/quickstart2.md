@@ -17,8 +17,9 @@ reporting, and version control practices.
 >   manuscript, package, simulation, or blog); it shapes the starter
 >   layout. This guide uses `analysis`.
 > - **Profile**: the Docker image bundle the environment is built from
->   (minimal, analysis, rstudio). Distinct from the archetype: the
->   profile is the image, the archetype is the layout.
+>   (minimal, tidyverse, rstudio, publishing; `analysis` is a deprecated
+>   alias for `tidyverse`). Distinct from the archetype: the profile is
+>   the image, the archetype is the layout.
 > - **Feature**: an independently switchable capability (a package
 >   backend, Docker, CI, data hashing, code-quality hooks, unit tests,
 >   or cloud launch) toggled with `zzc toggle` or `zzc add`/`zzc rm`.
@@ -96,10 +97,12 @@ type, which shapes the starter layout:
 This tutorial uses `analysis`, which scaffolds a report at
 `analysis/report/report.Rmd`. The second is a short feature wizard (renv
 backend, Docker, CI, data-integrity hashing, code-quality hooks, unit
-tests, cloud launch). It recommends a sensible default of renv plus
-Docker, which is what this guide assumes; accept it. The archetype
-(project layout) is separate from the **profile** (the Docker image
-bundle), covered in the next step.
+tests, the R language server in the Docker image (`languageserver`,
+default on), and cloud launch). It recommends a sensible default of renv
+plus Docker, which is what this guide assumes; accept it. When the
+`auto_github` config is on, the wizard also pre-ticks a ‘create remote
+now’ checkbox. The archetype (project layout) is separate from the
+**profile** (the Docker image bundle), covered in the next step.
 
 To skip every prompt and accept defaults, or to set the archetype as a
 flag:
@@ -159,9 +162,11 @@ make docker-build
 This creates a reproducible R environment based on the `analysis`
 **profile**, the Docker image bundle (rocker/tidyverse with tidyverse
 packages). The profile selects the image; the archetype chosen in the
-previous step selected the layout. The three canonical profiles are
-minimal, analysis, and rstudio; list them with `zzc list profiles`. For
-specialised needs (LaTeX, modeling, Shiny), extend the closest profile.
+previous step selected the layout. The four canonical profiles are
+minimal, tidyverse, rstudio, and publishing (`analysis` is a deprecated
+alias for `tidyverse`); list them with `zzc list profiles`. For
+manuscript rendering use the `publishing` profile; for modeling or
+Shiny, extend the closest profile.
 
 ## Part 2: Data Preparation (Developer 1)
 
@@ -573,15 +578,28 @@ q()
 
 ### 4.3 Validate Package Dependencies
 
-After exiting R, validate that all packages are properly tracked:
+After exiting R, grow the manifest from the image and validate that all
+packages are properly tracked:
 
 ``` bash
-make check-renv
+make snapshot        # hydrate, renv::snapshot(), then zzrenvcheck
+make check-renv      # validate deps: strict + auto-fix
 ```
 
-This runs `zzrenvcheck::check_packages()` inside the container to verify
-that DESCRIPTION and renv.lock are synchronized with the code’s actual
-[`library()`](https://rdrr.io/r/base/library.html) calls.
+`make snapshot` is the fuller loop: in the container it runs
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`.
+`make check-renv` runs `zzrenvcheck::check_packages()` on its own to
+verify that DESCRIPTION and renv.lock are synchronized with the code’s
+actual [`library()`](https://rdrr.io/r/base/library.html) calls. The two
+files are complementary: `renv.lock` pins the exact package closure
+(versions), while `DESCRIPTION` declares dependency roles (packages used
+by `R/` in `Imports`, packages used only by `analysis/` in `Suggests`).
+The R-package CI workflow re-runs this check in a step named ‘Validate
+dependency manifest (renv.lock + DESCRIPTION)’, failing the build when
+code references a package that is not declared in `DESCRIPTION` or not
+locked in `renv.lock`.
 
 ## Part 5: Push to GitHub (Developer 1)
 
@@ -1200,6 +1218,9 @@ The final repository contains:
 | Enter container | `make r` |
 | Run tests | `make docker-test` |
 | Validate packages | `make check-renv` |
+| Snapshot deps into renv.lock + DESCRIPTION | `make snapshot` |
+| Format R code (styler) | `make style` |
+| Lint R code (lintr) | `make lint` |
 | Build Docker image | `make docker-build` |
 | Push multi-arch image + record digest | `make docker-push-team` |
 | Pull image pinned by digest | `make docker-pull-team` |

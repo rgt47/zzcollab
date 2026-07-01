@@ -97,8 +97,10 @@ unit.</li>
 starter layout. This guide uses <code>analysis</code>.</li>
 <li>
 <strong>Profile</strong>: the Docker image bundle the environment is
-built from (minimal, analysis, rstudio). Distinct from the archetype:
-the profile is the image, the archetype is the layout.</li>
+built from (minimal, tidyverse, rstudio, publishing;
+<code>analysis</code> is a deprecated alias for <code>tidyverse</code>).
+Distinct from the archetype: the profile is the image, the archetype is
+the layout.</li>
 <li>
 <strong>Feature</strong>: an independently switchable capability (a
 package backend, Docker, CI, data hashing, code-quality hooks, unit
@@ -175,8 +177,11 @@ layout:</p>
 <p>This tutorial uses <code>analysis</code>, which scaffolds a report at
 <code>analysis/report/report.Rmd</code>. The second is a short feature
 wizard (renv backend, Docker, CI, data-integrity hashing, code-quality
-hooks, unit tests, cloud launch). It recommends a sensible default of
-renv plus Docker, which is what this guide assumes; accept it. The
+hooks, unit tests, the R language server in the Docker image
+(<code>languageserver</code>, default on), and cloud launch). It
+recommends a sensible default of renv plus Docker, which is what this
+guide assumes; accept it. When the <code>auto_github</code> config is
+on, the wizard also pre-ticks a ‘create remote now’ checkbox. The
 archetype (project layout) is separate from the <strong>profile</strong>
 (the Docker image bundle), covered in the next step.</p>
 <p>To skip every prompt and accept defaults, or to set the archetype as
@@ -220,9 +225,11 @@ documented in <code><a href="../articles/quickstart3.html">vignette("quickstart3
 <code>analysis</code> <strong>profile</strong>, the Docker image bundle
 (rocker/tidyverse with tidyverse packages). The profile selects the
 image; the archetype chosen in the previous step selected the layout.
-The three canonical profiles are minimal, analysis, and rstudio; list
-them with <code>zzc list profiles</code>. For specialised needs (LaTeX,
-modeling, Shiny), extend the closest profile.</p>
+The four canonical profiles are minimal, tidyverse, rstudio, and
+publishing (<code>analysis</code> is a deprecated alias for
+<code>tidyverse</code>); list them with <code>zzc list profiles</code>.
+For manuscript rendering use the <code>publishing</code> profile; for
+modeling or Shiny, extend the closest profile.</p>
 </div>
 </div>
 <div class="section level2">
@@ -599,11 +606,26 @@ ggplot(data, aes(x = mpg, fill = efficiency_class)) +
 <div class="section level3">
 <h3 id="validate-package-dependencies">4.3 Validate Package Dependencies<a class="anchor" aria-label="anchor" href="#validate-package-dependencies"></a>
 </h3>
-<p>After exiting R, validate that all packages are properly tracked:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
-<p>This runs <code>zzrenvcheck::check_packages()</code> inside the
-container to verify that DESCRIPTION and renv.lock are synchronized with
-the code’s actual <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> calls.</p>
+<p>After exiting R, grow the manifest from the image and validate that
+all packages are properly tracked:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> snapshot        <span class="co"># hydrate, renv::snapshot(), then zzrenvcheck</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> check-renv      <span class="co"># validate deps: strict + auto-fix</span></span></code></pre></div>
+<p><code>make snapshot</code> is the fuller loop: in the container it
+runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>.
+<code>make check-renv</code> runs
+<code>zzrenvcheck::check_packages()</code> on its own to verify that
+DESCRIPTION and renv.lock are synchronized with the code’s actual
+<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> calls. The two files are complementary:
+<code>renv.lock</code> pins the exact package closure (versions), while
+<code>DESCRIPTION</code> declares dependency roles (packages used by
+<code>R/</code> in <code>Imports</code>, packages used only by
+<code>analysis/</code> in <code>Suggests</code>). The R-package CI
+workflow re-runs this check in a step named ‘Validate dependency
+manifest (renv.lock + DESCRIPTION)’, failing the build when code
+references a package that is not declared in <code>DESCRIPTION</code> or
+not locked in <code>renv.lock</code>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -1236,42 +1258,54 @@ Docker images</li>
 <td><code>make check-renv</code></td>
 </tr>
 <tr class="even">
+<td>Snapshot deps into renv.lock + DESCRIPTION</td>
+<td><code>make snapshot</code></td>
+</tr>
+<tr class="odd">
+<td>Format R code (styler)</td>
+<td><code>make style</code></td>
+</tr>
+<tr class="even">
+<td>Lint R code (lintr)</td>
+<td><code>make lint</code></td>
+</tr>
+<tr class="odd">
 <td>Build Docker image</td>
 <td><code>make docker-build</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Push multi-arch image + record digest</td>
 <td><code>make docker-push-team</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Pull image pinned by digest</td>
 <td><code>make docker-pull-team</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Push single-arch (simpler)</td>
 <td><code>zzc dockerhub</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Push with tag</td>
 <td><code>zzc dockerhub --tag v1.0</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Hash raw data for integrity</td>
 <td><code>make hash-data</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Verify raw data against manifest</td>
 <td><code>make verify-data</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Change base image</td>
 <td><code>zzcollab docker --base-image rocker/verse</code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>List profiles</td>
 <td><code>zzc list profiles</code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Render report</td>
 <td><code>make docker-render</code></td>
 </tr>

@@ -312,6 +312,38 @@ Following the same TDD approach, add more functions:
 
 See **Data Analysis vignette** for examples.
 
+### Dependency Management
+
+As you add functions and tests, new package dependencies accumulate.
+Capture them into the manifest before committing:
+
+``` bash
+make snapshot
+```
+
+`make snapshot` runs the full loop in the container:
+[`renv::hydrate()`](https://rstudio.github.io/renv/reference/hydrate.html),
+then `renv::snapshot(prompt = FALSE)`, then
+`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`.
+
+Dependencies are recorded across two complementary files with distinct
+roles. `renv.lock` pins the exact package closure (versions) for
+reproducible rebuilds; `DESCRIPTION` declares dependency roles. Packages
+used by code in `R/` belong in `Imports`; packages used only by
+`analysis/` (reports, scripts, notebooks) belong in `Suggests`. The two
+files are complementary, not redundant.
+
+To validate the manifest at any point without the full snapshot loop,
+run the dependency gate directly:
+
+``` bash
+make check-renv
+```
+
+This runs `zzrenvcheck` in strict + auto-fix mode and fails when code
+references a package that is not declared in `DESCRIPTION` or not locked
+in `renv.lock`.
+
 ### Step 3: Documentation with roxygen2
 
 Comprehensive documentation is essential for package users (Wickham
@@ -635,6 +667,13 @@ jobs:
         with:
           upload-snapshots: true
 ```
+
+The R-package CI workflow also includes a step “Validate dependency
+manifest (renv.lock + DESCRIPTION)” that runs
+`zzrenvcheck::check_packages` and fails the build when code references a
+package that is not declared in `DESCRIPTION` or not locked in
+`renv.lock`. This keeps the two-layer manifest honest on every push,
+mirroring the local `make snapshot` and `make check-renv` gates.
 
 #### Test Coverage Workflow
 
@@ -1097,6 +1136,14 @@ Cambridge University Press.
 - Tidyverse Style Guide: <https://style.tidyverse.org/>
 - ZZCOLLAB Testing Guide: `docs/TESTING_GUIDE.md`
 - ZZCOLLAB Development Guide: `docs/DEVELOPMENT.md`
+- ZZCOLLAB Package Placement Whitepaper:
+  `docs/package-placement-whitepaper.md` (a comprehensive answer to
+  which packages go in the Dockerfile versus `renv.lock` versus
+  `DESCRIPTION`). The governing rule: development tooling
+  (`languageserver`, `styler`, `lintr`, `devtools`, `roxygen2`, and
+  similar) belongs in the Dockerfile and never in `renv.lock`;
+  reproducibility-relevant packages belong in `renv.lock` and
+  `DESCRIPTION`.
 
 Marwick, Ben, Carl Boettiger, and Lincoln Mullen. 2018. “Packaging Data
 Analytical Work Reproducibly Using R (and Friends).” *The American

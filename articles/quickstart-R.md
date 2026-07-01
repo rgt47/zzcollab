@@ -15,7 +15,8 @@ R package interface.
 > - **`zzc` / `zzcollab`**: the framework’s command-line interface, here
 >   driven through its R-function equivalents.
 > - **Profile**: the Docker image bundle the environment is built from
->   (`minimal`, `analysis`, `rstudio`).
+>   (`minimal`, `tidyverse`, `rstudio`, `publishing`; `analysis` is a
+>   deprecated alias for `tidyverse`).
 > - **Package backend (renv / Nix / none)**: how the project records
 >   exact package versions; a single mutually-exclusive choice.
 > - **Auto-snapshot / auto-restore**: zzcollab records installed
@@ -55,7 +56,10 @@ init_config()
 # Set your defaults
 set_config("team_name", "myteam")
 set_config("github_account", "myusername")
-set_config("profile_name", "analysis")
+set_config("profile_name", "tidyverse")
+
+# Opt out of the in-container R language server (default: true)
+set_config("languageserver", "false")
 
 # View current configuration
 list_config()
@@ -85,8 +89,9 @@ if (is.null(team)) {
   set_config("team_name", "myteam")
 }
 
-# Update existing configuration (built-in profiles: minimal, analysis, rstudio)
-set_config("profile_name", "analysis")
+# Update existing configuration (built-in profiles: minimal, tidyverse,
+# rstudio, publishing; 'analysis' is a deprecated alias for 'tidyverse')
+set_config("profile_name", "tidyverse")
 
 # View all settings
 config <- list_config()
@@ -217,12 +222,13 @@ Create a team project with R interface:
 
 library(zzcollab)
 
-# Set team configuration. Built-in profiles are minimal, analysis, and
-# rstudio; for genomics, start from analysis and either add Bioconductor
-# packages via renv or build on a Bioconductor base image with
-# `zzcollab docker --base-image bioconductor/bioconductor_docker`.
+# Set team configuration. Built-in profiles are minimal, tidyverse,
+# rstudio, and publishing ('analysis' is a deprecated alias for
+# 'tidyverse'); for genomics, start from tidyverse and either add
+# Bioconductor packages via renv or build on a Bioconductor base image
+# with `zzcollab docker --base-image bioconductor/bioconductor_docker`.
 set_config("team_name", "genomicslab")
-set_config("profile_name", "analysis")
+set_config("profile_name", "tidyverse")
 set_config("github_account", "genomicslab")
 
 # Navigate to project directory
@@ -414,6 +420,11 @@ rebuild()
 rebuild("docker-build")
 rebuild("docker-test")
 rebuild("docker-check")
+
+# Dependency and code-quality targets (run the make targets in-container)
+rebuild("snapshot")   # hydrate + renv::snapshot() + zzrenvcheck
+rebuild("style")      # format R code with styler
+rebuild("lint")       # lint R code with lintr
 
 # List team images
 images <- team_images()

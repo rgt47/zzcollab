@@ -100,8 +100,9 @@ that packages software with its environment; a running instance, its
 template, and the recipe that builds it.</li>
 <li>
 <strong>Profile</strong>: the Docker image bundle the environment is
-built from (<code>minimal</code>, <code>analysis</code>,
-<code>rstudio</code>).</li>
+built from (<code>minimal</code>, <code>tidyverse</code>,
+<code>rstudio</code>, <code>publishing</code>; <code>analysis</code> is
+a retained alias for <code>tidyverse</code>).</li>
 <li>
 <strong>Two-layer package management</strong>: shared, image-baked
 packages (Layer 1) versus per-user packages added at runtime (Layer
@@ -165,14 +166,21 @@ additional packages can be added dynamically via
 <p><strong>minimal</strong>: Lightweight development environment
 (~650MB) - Base: rocker/r-ver - Packages: renv, devtools, usethis,
 tinytest, roxygen2</p>
-<p><strong>analysis</strong>: Data analysis environment (~1.2GB,
+<p><strong>tidyverse</strong>: Data analysis environment (~1.2GB,
 recommended) - Base: rocker/tidyverse - Packages: renv, devtools,
-tidyverse, here</p>
+tidyverse, here - Formerly named <code>analysis</code>; the
+<code>analysis</code> alias is still accepted</p>
 <p><strong>rstudio</strong>: RStudio Server in the browser (~980MB) -
 Base: rocker/rstudio - Packages: renv, devtools, usethis, tinytest,
 roxygen2</p>
-<p>For specialised needs (LaTeX, Shiny, machine learning), start with
-one of these profiles and add packages inside the container with
+<p><strong>publishing</strong>: Manuscript rendering (~4.2GB) - Base:
+rocker/verse - Packages: renv, devtools, rmarkdown, bookdown, plus a
+pre-baked LaTeX toolchain - Renders PDF when a LaTeX toolchain is
+present and falls back to HTML otherwise (capability-adaptive); the
+LaTeX closure is baked into the image at build time, so PDF rendering
+needs no runtime install</p>
+<p>For specialised needs (Shiny, machine learning), start with one of
+these profiles and add packages inside the container with
 <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, then commit the updated
 <code>renv.lock</code>.</p>
 </div>
@@ -997,8 +1005,16 @@ properly synchronized with the code.</p>
 <div class="section level3">
 <h3 id="dependency-validation">Dependency Validation<a class="anchor" aria-label="anchor" href="#dependency-validation"></a>
 </h3>
-<p>ZZCOLLAB provides automated dependency checking to ensure
-reproducibility. The check is implemented by the companion R package
+<p>ZZCOLLAB tracks dependencies across two complementary files.
+<code>renv.lock</code> pins the exact package closure (every version
+needed to rebuild the environment), while <code>DESCRIPTION</code>
+declares dependency roles: packages used by code in <code>R/</code>
+belong in <code>Imports</code>, and packages used only by
+<code>analysis/</code> (reports, scripts, notebooks) belong in
+<code>Suggests</code>. The two files are complementary, not redundant,
+and both must stay honest for reproducibility to hold.</p>
+<p>ZZCOLLAB provides automated dependency checking to keep them aligned.
+The check is implemented by the companion R package
 <code>zzrenvcheck</code>, which is installed into the project image.
 <code>make check-renv</code> runs
 <code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>
@@ -1006,6 +1022,15 @@ inside the container; <code>zzcollab validate</code> wraps the same
 check on the host.</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Validate dependencies are synchronized (runs zzrenvcheck in the container)</span></span>
 <span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<p>To grow the manifest from the current image rather than only validate
+it, run <code>make snapshot</code> before committing. Inside the
+container it runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>,
+capturing newly used packages into <code>renv.lock</code> and
+<code>DESCRIPTION</code> in one step:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Hydrate, snapshot, and check dependencies (run before commit)</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> snapshot</span></code></pre></div>
 <p>The default <code>check-renv</code> target is strict and
 auto-fixing:</p>
 <ul>
@@ -1017,14 +1042,14 @@ DESCRIPTION</li>
 <li>Repairs DESCRIPTION and renv.lock discrepancies automatically</li>
 </ul>
 <p><strong>Common validation scenarios:</strong></p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Standard validation (strict + auto-fix, recommended before every commit)</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co"># Report only, without modifying any files</span></span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="fu">make</span> check-renv-no-fix</span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a></span>
-<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="co"># Skip the tests/ and vignettes/ scan</span></span>
-<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Standard validation (strict + auto-fix, recommended before every commit)</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="co"># Report only, without modifying any files</span></span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a><span class="fu">make</span> check-renv-no-fix</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="co"># Skip the tests/ and vignettes/ scan</span></span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict</span></code></pre></div>
 <p><strong>Interpreting validation results:</strong></p>
 <pre><code># Success - ready to commit
 All dependencies properly declared
@@ -1040,33 +1065,38 @@ Auto-fix applies the necessary additions</code></pre>
 <h3 id="commit-workflow">Commit Workflow<a class="anchor" aria-label="anchor" href="#commit-workflow"></a>
 </h3>
 <p>After successful validation, commit changes to version control:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># Check repository status</span></span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="fu">git</span> status</span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a></span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="co"># Stage all modifications</span></span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a></span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="co"># Create descriptive commit</span></span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Implement Palmer Penguins bill dimension analysis</span></span>
-<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a></span>
-<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a><span class="st">- Add raw data with comprehensive validation tests</span></span>
-<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a><span class="st">- Develop prepare_penguin_data() function with unit tests</span></span>
-<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="st">- Implement bill dimension analysis with linear models</span></span>
-<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="st">- Generate publication-quality visualizations</span></span>
-<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a><span class="st">- Document data provenance and transformations</span></span>
-<span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a></span>
-<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="st">Tests: All tinytest expectations passing</span></span>
-<span id="cb30-17"><a href="#cb30-17" tabindex="-1"></a><span class="st">Coverage: Complete coverage of data preparation code</span></span>
-<span id="cb30-18"><a href="#cb30-18" tabindex="-1"></a><span class="st">Dependencies: Validated with make check-renv (zzrenvcheck)"</span></span>
-<span id="cb30-19"><a href="#cb30-19" tabindex="-1"></a></span>
-<span id="cb30-20"><a href="#cb30-20" tabindex="-1"></a><span class="co"># Push to remote repository (if configured)</span></span>
-<span id="cb30-21"><a href="#cb30-21" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Check repository status</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">git</span> status</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="co"># Stage all modifications</span></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="co"># Create descriptive commit</span></span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Implement Palmer Penguins bill dimension analysis</span></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="st">- Add raw data with comprehensive validation tests</span></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="st">- Develop prepare_penguin_data() function with unit tests</span></span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="st">- Implement bill dimension analysis with linear models</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="st">- Generate publication-quality visualizations</span></span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="st">- Document data provenance and transformations</span></span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a></span>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="st">Tests: All tinytest expectations passing</span></span>
+<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="st">Coverage: Complete coverage of data preparation code</span></span>
+<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a><span class="st">Dependencies: Validated with make check-renv (zzrenvcheck)"</span></span>
+<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a></span>
+<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a><span class="co"># Push to remote repository (if configured)</span></span>
+<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="continuous-integration">Continuous Integration<a class="anchor" aria-label="anchor" href="#continuous-integration"></a>
 </h3>
 <p>The dependency validation script integrates with GitHub Actions for
-automated checking on every commit. The workflow validates:</p>
+automated checking on every commit. The R-package workflow includes a
+step named “Validate dependency manifest (renv.lock + DESCRIPTION)” that
+runs <code>zzrenvcheck::check_packages</code> and fails the build when
+code references a package that is not declared in
+<code>DESCRIPTION</code> or not locked in <code>renv.lock</code>. The
+workflow validates:</p>
 <ul>
 <li>Package dependencies properly declared</li>
 <li>renv.lock synchronized with code</li>
@@ -1083,34 +1113,34 @@ lifecycle.</p>
 <div class="section level3">
 <h3 id="command-reference">Command Reference<a class="anchor" aria-label="anchor" href="#command-reference"></a>
 </h3>
-<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Project initialization</span></span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">mkdir</span> penguin-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-analysis</span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo (optional)</span></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="co"># Raw data placement (host environment)</span></span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">cp</span> ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/</span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="co"># Container entry</span></span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="bu">cd</span> ~/projects/penguin-analysis</span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a></span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="co"># Development workflow (within container)</span></span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="ex">R</span>                              <span class="co"># Start R session</span></span>
-<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="fu">devtools::load_all()</span>           <span class="co"># Load project functions</span></span>
-<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="bu">source</span><span class="er">(</span><span class="st">"scripts/01_analysis.R"</span><span class="kw">)</span>  <span class="co"># Run analysis</span></span>
-<span id="cb31-17"><a href="#cb31-17" tabindex="-1"></a><span class="bu">exit</span>                           <span class="co"># Exit R</span></span>
-<span id="cb31-18"><a href="#cb31-18" tabindex="-1"></a></span>
-<span id="cb31-19"><a href="#cb31-19" tabindex="-1"></a><span class="co"># Run the tinytest suite (from host or container)</span></span>
-<span id="cb31-20"><a href="#cb31-20" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
-<span id="cb31-21"><a href="#cb31-21" tabindex="-1"></a></span>
-<span id="cb31-22"><a href="#cb31-22" tabindex="-1"></a><span class="co"># Container exit</span></span>
-<span id="cb31-23"><a href="#cb31-23" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb31-24"><a href="#cb31-24" tabindex="-1"></a></span>
-<span id="cb31-25"><a href="#cb31-25" tabindex="-1"></a><span class="co"># Version control (host environment)</span></span>
-<span id="cb31-26"><a href="#cb31-26" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb31-27"><a href="#cb31-27" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Commit message"</span></span>
-<span id="cb31-28"><a href="#cb31-28" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># Project initialization</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">mkdir</span> penguin-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-analysis</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo (optional)</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co"># Raw data placement (host environment)</span></span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="fu">cp</span> ~/Downloads/data.csv ~/projects/penguin-analysis/analysis/data/raw_data/</span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="co"># Container entry</span></span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="bu">cd</span> ~/projects/penguin-analysis</span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a></span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="co"># Development workflow (within container)</span></span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="ex">R</span>                              <span class="co"># Start R session</span></span>
+<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a><span class="fu">devtools::load_all()</span>           <span class="co"># Load project functions</span></span>
+<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a><span class="bu">source</span><span class="er">(</span><span class="st">"scripts/01_analysis.R"</span><span class="kw">)</span>  <span class="co"># Run analysis</span></span>
+<span id="cb32-17"><a href="#cb32-17" tabindex="-1"></a><span class="bu">exit</span>                           <span class="co"># Exit R</span></span>
+<span id="cb32-18"><a href="#cb32-18" tabindex="-1"></a></span>
+<span id="cb32-19"><a href="#cb32-19" tabindex="-1"></a><span class="co"># Run the tinytest suite (from host or container)</span></span>
+<span id="cb32-20"><a href="#cb32-20" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb32-21"><a href="#cb32-21" tabindex="-1"></a></span>
+<span id="cb32-22"><a href="#cb32-22" tabindex="-1"></a><span class="co"># Container exit</span></span>
+<span id="cb32-23"><a href="#cb32-23" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb32-24"><a href="#cb32-24" tabindex="-1"></a></span>
+<span id="cb32-25"><a href="#cb32-25" tabindex="-1"></a><span class="co"># Version control (host environment)</span></span>
+<span id="cb32-26"><a href="#cb32-26" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb32-27"><a href="#cb32-27" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Commit message"</span></span>
+<span id="cb32-28"><a href="#cb32-28" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="docker-profile-comparison">Docker Profile Comparison<a class="anchor" aria-label="anchor" href="#docker-profile-comparison"></a>
@@ -1136,7 +1166,7 @@ lifecycle.</p>
 <td>rocker/r-ver</td>
 </tr>
 <tr class="even">
-<td>analysis</td>
+<td>tidyverse</td>
 <td>~1.2GB</td>
 <td>General analyses (recommended)</td>
 <td>rocker/tidyverse</td>
@@ -1147,8 +1177,17 @@ lifecycle.</p>
 <td>RStudio Server</td>
 <td>rocker/rstudio</td>
 </tr>
+<tr class="even">
+<td>publishing</td>
+<td>~4.2GB</td>
+<td>Manuscript rendering (PDF)</td>
+<td>rocker/verse</td>
+</tr>
 </tbody>
 </table>
+<p>The <code>tidyverse</code> profile was formerly named
+<code>analysis</code>; the <code>analysis</code> alias is still
+accepted.</p>
 </div>
 <div class="section level3">
 <h3 id="data-directory-functions">Data Directory Functions<a class="anchor" aria-label="anchor" href="#data-directory-functions"></a>
@@ -1206,8 +1245,8 @@ OMP_NUM_THREADS)</li>
 <li>✅ Base image documented (rocker/verse, bioconductor, etc.)</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"FROM rocker"</span> Dockerfile</span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"ENV LANG"</span> Dockerfile</span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"FROM rocker"</span> Dockerfile</span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="fu">grep</span> <span class="st">"ENV LANG"</span> Dockerfile</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pillar-2-package-dependencies-renv-lock">Pillar 2: Package Dependencies (renv.lock)<a class="anchor" aria-label="anchor" href="#pillar-2-package-dependencies-renv-lock"></a>
@@ -1219,8 +1258,8 @@ OMP_NUM_THREADS)</li>
 <li>✅ renv.lock synchronized with code</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Runs zzrenvcheck in the container</span></span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="fu">git</span> status renv.lock  <span class="co"># Should show "nothing to commit"</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">make</span> check-renv  <span class="co"># Runs zzrenvcheck in the container</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="fu">git</span> status renv.lock  <span class="co"># Should show "nothing to commit"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pillar-3-r-session-configuration--rprofile">Pillar 3: R Session Configuration (.Rprofile)<a class="anchor" aria-label="anchor" href="#pillar-3-r-session-configuration--rprofile"></a>
@@ -1232,8 +1271,8 @@ OMP_NUM_THREADS)</li>
 <li>✅ No undocumented option changes</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">git</span> ls-files <span class="kw">|</span> <span class="fu">grep</span> .Rprofile</span>
-<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="ex">Rscript</span> check_rprofile_options.R</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">git</span> ls-files <span class="kw">|</span> <span class="fu">grep</span> .Rprofile</span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="ex">Rscript</span> check_rprofile_options.R</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pillar-4-computational-logic-source-code">Pillar 4: Computational Logic (Source Code)<a class="anchor" aria-label="anchor" href="#pillar-4-computational-logic-source-code"></a>
@@ -1245,8 +1284,8 @@ OMP_NUM_THREADS)</li>
 <li>✅ Random seeds explicit for stochastic analyses</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">make</span> docker-test           <span class="co"># All tinytest expectations should pass</span></span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">make</span> docker-check          <span class="co"># R CMD check should succeed</span></span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="fu">make</span> docker-test           <span class="co"># All tinytest expectations should pass</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">make</span> docker-check          <span class="co"># R CMD check should succeed</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pillar-5-research-data">Pillar 5: Research Data<a class="anchor" aria-label="anchor" href="#pillar-5-research-data"></a>
@@ -1262,9 +1301,9 @@ codes)</li>
 <li>✅ Data quality notes documented (validation, known issues)</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-lh</span> analysis/data/raw_data/        <span class="co"># Raw data files present</span></span>
-<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">cat</span> analysis/data/README.md           <span class="co"># Documentation complete</span></span>
-<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="fu">make</span> docker-test                      <span class="co"># Data validation tests pass</span></span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-lh</span> analysis/data/raw_data/        <span class="co"># Raw data files present</span></span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">cat</span> analysis/data/README.md           <span class="co"># Documentation complete</span></span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="fu">make</span> docker-test                      <span class="co"># Data validation tests pass</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="continuous-integration-1">Continuous Integration<a class="anchor" aria-label="anchor" href="#continuous-integration-1"></a>
@@ -1276,9 +1315,9 @@ codes)</li>
 <li>✅ R CMD check passes in clean environment</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="co"># Check CI status</span></span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">git</span> push</span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="co"># Visit GitHub Actions tab - all checks should pass</span></span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Check CI status</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="fu">git</span> push</span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a><span class="co"># Visit GitHub Actions tab - all checks should pass</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="collaboration-ready">Collaboration Ready<a class="anchor" aria-label="anchor" href="#collaboration-ready"></a>
@@ -1290,18 +1329,18 @@ codes)</li>
 <li>✅ Analysis reproduces identical results</li>
 </ul>
 <p><strong>Verification</strong>:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Colleague workflow simulation</span></span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>repository-url<span class="op">&gt;</span> test-clone</span>
-<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a><span class="bu">cd</span> test-clone</span>
-<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a></span>
-<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a><span class="co"># Build Docker image from project Dockerfile</span></span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a></span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a><span class="co"># Enter container and run analysis</span></span>
-<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="co"># Inside container:</span></span>
-<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="ex">Rscript</span> scripts/01_penguin_bill_analysis.R</span>
-<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a><span class="co"># Should produce identical results</span></span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Colleague workflow simulation</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>repository-url<span class="op">&gt;</span> test-clone</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="bu">cd</span> test-clone</span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a></span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="co"># Build Docker image from project Dockerfile</span></span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a></span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="co"># Enter container and run analysis</span></span>
+<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="co"># Inside container:</span></span>
+<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="ex">Rscript</span> scripts/01_penguin_bill_analysis.R</span>
+<span id="cb39-12"><a href="#cb39-12" tabindex="-1"></a><span class="co"># Should produce identical results</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1362,42 +1401,42 @@ configuration</li>
 <h4 id="team-lead-setup">Team Lead Setup<a class="anchor" aria-label="anchor" href="#team-lead-setup"></a>
 </h4>
 <p>The team lead creates the project and shares the team image:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Create project structure</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="bu">cd</span> ~/projects</span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="fu">mkdir</span> penguin-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-analysis</span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a></span>
-<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="co"># Initialize project with analysis profile</span></span>
-<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
-<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a></span>
-<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co"># Build team Docker image (installs packages from renv.lock)</span></span>
-<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a></span>
-<span id="cb39-12"><a href="#cb39-12" tabindex="-1"></a><span class="co"># Push team image to Docker Hub (optional but efficient for team)</span></span>
-<span id="cb39-13"><a href="#cb39-13" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb39-14"><a href="#cb39-14" tabindex="-1"></a></span>
-<span id="cb39-15"><a href="#cb39-15" tabindex="-1"></a><span class="co"># Commit and push project structure</span></span>
-<span id="cb39-16"><a href="#cb39-16" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb39-17"><a href="#cb39-17" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial project setup with Palmer Penguins analysis"</span></span>
-<span id="cb39-18"><a href="#cb39-18" tabindex="-1"></a><span class="fu">git</span> push <span class="at">-u</span> origin main</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Create project structure</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="bu">cd</span> ~/projects</span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="fu">mkdir</span> penguin-analysis <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-analysis</span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="co"># Initialize project with analysis profile</span></span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a></span>
+<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a><span class="co"># Build team Docker image (installs packages from renv.lock)</span></span>
+<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a></span>
+<span id="cb40-12"><a href="#cb40-12" tabindex="-1"></a><span class="co"># Push team image to Docker Hub (optional but efficient for team)</span></span>
+<span id="cb40-13"><a href="#cb40-13" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb40-14"><a href="#cb40-14" tabindex="-1"></a></span>
+<span id="cb40-15"><a href="#cb40-15" tabindex="-1"></a><span class="co"># Commit and push project structure</span></span>
+<span id="cb40-16"><a href="#cb40-16" tabindex="-1"></a><span class="fu">git</span> add .</span>
+<span id="cb40-17"><a href="#cb40-17" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial project setup with Palmer Penguins analysis"</span></span>
+<span id="cb40-18"><a href="#cb40-18" tabindex="-1"></a><span class="fu">git</span> push <span class="at">-u</span> origin main</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="team-members-joining">Team Members Joining<a class="anchor" aria-label="anchor" href="#team-members-joining"></a>
 </h4>
 <p>Colleagues can reproduce this analysis using the following
 procedure:</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Clone repository</span></span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourname/penguin-analysis.git</span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="bu">cd</span> penguin-analysis</span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a></span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="co"># Build Docker image from project Dockerfile</span></span>
-<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a></span>
-<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="co"># Enter container environment</span></span>
-<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a></span>
-<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a><span class="co"># Execute analysis</span></span>
-<span id="cb40-12"><a href="#cb40-12" tabindex="-1"></a><span class="ex">Rscript</span> scripts/01_penguin_bill_analysis.R</span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Clone repository</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourname/penguin-analysis.git</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="bu">cd</span> penguin-analysis</span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a></span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="co"># Build Docker image from project Dockerfile</span></span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="co"># Enter container environment</span></span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a></span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a><span class="co"># Execute analysis</span></span>
+<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a><span class="ex">Rscript</span> scripts/01_penguin_bill_analysis.R</span></code></pre></div>
 <p><strong>Note</strong>: DockerHub is optional but efficient for teams.
 If team image is not available, building from the Dockerfile produces an
 identical environment.</p>

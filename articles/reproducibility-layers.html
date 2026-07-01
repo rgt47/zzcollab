@@ -618,21 +618,25 @@ and capabilities:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Minimal: Essential R development (~650MB)</span></span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzc</span> minimal</span>
 <span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co"># Analysis: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co"># Statistical and machine learning packages are added via renv</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co"># RStudio Server in the browser</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="ex">zzc</span> rstudio</span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co"># Manuscript and report rendering (LaTeX/Quarto via the rocker/verse base image)</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse</span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co"># Specialized domains (e.g. GIS, genomics) use a custom base image:</span></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="ex">zzc</span> help profiles</span></code></pre></div>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co"># Tidyverse: Data analysis with tidyverse (~1.2GB) [RECOMMENDED]</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co"># Formerly named 'analysis'; the 'analysis' alias is still accepted.</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># Statistical and machine learning packages are added via renv</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="ex">zzc</span> tidyverse</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co"># RStudio Server in the browser (~980MB)</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="ex">zzc</span> rstudio</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co"># Publishing: manuscript rendering (~4.2GB, rocker/verse base image)</span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co"># Renders PDF when a LaTeX toolchain is present, HTML otherwise</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co"># (capability-adaptive). The LaTeX closure is pre-baked into the image,</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co"># so PDF rendering needs no runtime install.</span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="ex">zzc</span> publishing</span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co"># Specialized domains (e.g. GIS, genomics) use a custom base image:</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="ex">zzc</span> help profiles</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -1153,6 +1157,31 @@ GitHub Actions (or similar) run tests, checks, and builds to catch
 errors early.</p>
 </div>
 <div class="section level3">
+<h3 id="the-dependency-manifest-renv-lock-description">The Dependency Manifest: renv.lock + DESCRIPTION<a class="anchor" aria-label="anchor" href="#the-dependency-manifest-renv-lock-description"></a>
+</h3>
+<p>Reproducibility relies on two complementary files.
+<code>renv.lock</code> pins the exact package closure (every version
+needed to rebuild the environment), while <code>DESCRIPTION</code>
+declares dependency roles: packages used by code in <code>R/</code>
+belong in <code>Imports</code>, and packages used only by
+<code>analysis/</code> (reports, scripts, notebooks) belong in
+<code>Suggests</code>. The two are complementary, not redundant.</p>
+<p>To grow both files from the current image, run
+<code>make snapshot</code> before committing. Inside the container it
+runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
+<code>renv::snapshot(prompt = FALSE)</code>, then
+<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>,
+capturing newly used packages into <code>renv.lock</code> and
+<code>DESCRIPTION</code> in a single step. The lighter
+<code>make check-renv</code> validates the same manifest without
+hydrating.</p>
+<p>The R-package CI workflow enforces this with a step named “Validate
+dependency manifest (renv.lock + DESCRIPTION)” that runs
+<code>zzrenvcheck::check_packages</code> and fails the build when code
+references a package that is not declared in <code>DESCRIPTION</code> or
+not locked in <code>renv.lock</code>.</p>
+</div>
+<div class="section level3">
 <h3 id="additional-structure-3">Additional Structure<a class="anchor" aria-label="anchor" href="#additional-structure-3"></a>
 </h3>
 <pre><code>my-project/
@@ -1194,8 +1223,8 @@ errors early.</p>
 <span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="co"># ... work in container ...</span></span>
 <span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot runs on exit!</span></span>
 <span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a></span>
-<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Validate before committing (make check-renv runs zzrenvcheck)</span></span>
-<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Grow and validate the manifest before committing</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> snapshot        <span class="co"># hydrate + snapshot + check (renv.lock + DESCRIPTION)</span></span>
 <span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
 <span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a></span>
 <span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="co"># Commit and push</span></span>

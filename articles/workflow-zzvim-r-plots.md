@@ -306,6 +306,19 @@ zzggplot(p)
 save_plot("analysis/figures/scatter.png")
 ```
 
+### Language Server
+
+zzcollab assumes no R installation on the host, so R completion and
+diagnostics run inside the container via the `languageserver` package.
+The Docker image installs it by default (config key `languageserver`,
+default `true`); your host editor (vim) bridges its LSP client into the
+container. No host R install is required. For REPL-only workflows you
+can opt out with:
+
+``` bash
+zzc config set languageserver false
+```
+
 ### Ensuring .Rprofile.local is Loaded
 
 The zzcollab `.Rprofile` template automatically sources

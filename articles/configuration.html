@@ -91,8 +91,9 @@ Full definitions are in <code><a href="../articles/glossary.html">vignette('glos
 <ul>
 <li>
 <strong>Profile</strong>: the Docker image bundle the environment is
-built from (<code>minimal</code>, <code>analysis</code>,
-<code>rstudio</code>).</li>
+built from (<code>minimal</code>, <code>tidyverse</code>,
+<code>rstudio</code>, <code>publishing</code>; <code>analysis</code> is
+a deprecated alias for <code>tidyverse</code>).</li>
 <li>
 <strong>Two-layer package management</strong>: shared, image-baked
 packages (Layer 1) versus per-user packages added at runtime (Layer
@@ -127,9 +128,11 @@ framework’s command-line interface; <code>zzc</code> is an alias for
 <strong>Multi-layered configuration</strong>: User, project, system,
 and built-in defaults</li>
 <li>
-<strong>Docker profile system</strong>: three built-in profiles
-(minimal, analysis, rstudio), with other environments available via a
-custom base image</li>
+<strong>Docker profile system</strong>: four built-in profiles
+(minimal, tidyverse, rstudio, publishing), with other environments
+available via a custom base image. The <code>tidyverse</code> profile
+was formerly named <code>analysis</code>; <code>analysis</code> is still
+accepted as a deprecated alias.</li>
 <li>
 <strong>Dynamic package management</strong>: Add packages via
 <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with automatic snapshot/restore</li>
@@ -270,7 +273,24 @@ organization-wide policies.</p>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="ex">zzcollab</span> config set dockerhub-account <span class="st">"myusername"</span></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
 <span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co"># Set default Docker profile</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span></code></pre></div>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co"># Opt out of the in-container R language server (default: true)</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="ex">zzcollab</span> config set languageserver false</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co"># Pre-select 'create remote now' in the init feature wizard (default: false)</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="ex">zzcollab</span> config set auto_github true</span></code></pre></div>
+<p><strong><code>languageserver</code></strong> (default
+<code>true</code>) installs the R language server in the Docker image so
+an editor gets in-container LSP completion and diagnostics. zzcollab
+assumes no R on the host, so the language server must run in the
+container; a host editor (vim, VS Code) bridges its LSP client into the
+container. Set <code>languageserver false</code> for REPL-only
+workflows.</p>
+<p><strong><code>auto_github</code></strong> (default
+<code>false</code>), when true, pre-selects the ‘create remote now’
+checkbox in the init feature wizard so the compendium’s GitHub remote is
+created during initialisation.</p>
 </div>
 <div class="section level4">
 <h4 id="get-configuration-values">Get Configuration Values<a class="anchor" aria-label="anchor" href="#get-configuration-values"></a>
@@ -394,12 +414,12 @@ once; the project name comes from the working directory.</p>
 </h4>
 <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Create the project with a profile (run in the project directory)</span></span>
 <span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzcollab</span> minimal          <span class="co"># ~650MB, essential dev tools</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis         <span class="co"># ~1.2GB, tidyverse ecosystem</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzcollab</span> tidyverse        <span class="co"># ~1.2GB, tidyverse ecosystem (was: analysis)</span></span>
 <span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="ex">zzcollab</span> rstudio          <span class="co"># RStudio Server</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># For LaTeX/Quarto, Shiny, or ML, build on a base image and add</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># packages via renv:</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse   <span class="co"># LaTeX/Quarto</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">zzcollab</span> publishing       <span class="co"># ~4.2GB, manuscript rendering (LaTeX pre-baked)</span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># For Shiny, ML, or other domains, build on a base image and add</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co"># packages via renv:</span></span>
 <span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/shiny   <span class="co"># Shiny apps</span></span>
 <span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
 <span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
@@ -477,7 +497,7 @@ automatic snapshot/restore on container exit (Layer 2).</p>
 <h3 id="available-profiles">Available Profiles<a class="anchor" aria-label="anchor" href="#available-profiles"></a>
 </h3>
 <div class="section level4">
-<h4 id="the-three-profiles">The Three Profiles<a class="anchor" aria-label="anchor" href="#the-three-profiles"></a>
+<h4 id="the-four-profiles">The Four Profiles<a class="anchor" aria-label="anchor" href="#the-four-profiles"></a>
 </h4>
 <div class="section level5">
 <h5 id="minimal-650mb">minimal (~650MB)<a class="anchor" aria-label="anchor" href="#minimal-650mb"></a>
@@ -493,8 +513,10 @@ automatic snapshot/restore on container exit (Layer 2).</p>
 <span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Resource-constrained environments</span></span></code></pre></div>
 </div>
 <div class="section level5">
-<h5 id="analysis-1-2gb-recommended">analysis (~1.2GB) [RECOMMENDED]<a class="anchor" aria-label="anchor" href="#analysis-1-2gb-recommended"></a>
+<h5 id="tidyverse-1-2gb-recommended">tidyverse (~1.2GB) [RECOMMENDED]<a class="anchor" aria-label="anchor" href="#tidyverse-1-2gb-recommended"></a>
 </h5>
+<p>Formerly named <code>analysis</code>; <code>analysis</code> remains
+accepted as a deprecated alias.</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/tidyverse:latest</span></span>
 <span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
 <span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, here</span></span>
@@ -517,6 +539,24 @@ automatic snapshot/restore on container exit (Layer 2).</p>
 <span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> RStudio Server (browser IDE at localhost:8787)</span></span>
 <span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Interactive development</span></span></code></pre></div>
 </div>
+<div class="section level5">
+<h5 id="publishing-4-2gb">publishing (~4.2GB)<a class="anchor" aria-label="anchor" href="#publishing-4-2gb"></a>
+</h5>
+<p>A first-class named profile for manuscript rendering. It renders PDF
+by default when a LaTeX toolchain is present and falls back to HTML
+otherwise (capability-adaptive). The LaTeX package closure is pre-baked
+into the image at build time, so PDF rendering needs no runtime
+install.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/verse:latest</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, here</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> rmarkdown, bookdown (LaTeX toolchain pre-baked)</span></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="fu">use_cases</span><span class="kw">:</span></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Manuscript and report rendering (PDF/HTML)</span></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Bookdown projects</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Reproducible publishing pipelines</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level4">
 <h4 id="specialized-environments-via-a-custom-base-image">Specialized Environments via a Custom Base Image<a class="anchor" aria-label="anchor" href="#specialized-environments-via-a-custom-base-image"></a>
@@ -524,12 +564,14 @@ automatic snapshot/restore on container exit (Layer 2).</p>
 <p>Other environments are not separate profiles. Build on a domain base
 image with <code>zzcollab docker --base-image</code> and add packages
 via renv:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/verse                      <span class="co"># LaTeX / Quarto</span></span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/shiny                      <span class="co"># Shiny Server</span></span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># genomics</span></span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial                 <span class="co"># GIS / spatial</span></span></code></pre></div>
-<p>Machine-learning packages (tidymodels, xgboost, ranger) are added via
-renv on top of the <code>analysis</code> profile.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/shiny                      <span class="co"># Shiny Server</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># genomics</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial                 <span class="co"># GIS / spatial</span></span></code></pre></div>
+<p>For manuscript rendering, prefer the named <code>publishing</code>
+profile (<code>zzc publishing</code>) rather than a custom
+<code>rocker/verse</code> base image. Machine-learning packages
+(tidymodels, xgboost, ranger) are added via renv on top of the
+<code>tidyverse</code> profile.</p>
 </div>
 </div>
 <div class="section level3">
@@ -564,8 +606,8 @@ renv on top of the <code>analysis</code> profile.</p>
 </tr>
 <tr class="odd">
 <td>Publishing</td>
-<td>analysis + rocker/verse base image</td>
-<td>analysis</td>
+<td>publishing</td>
+<td>tidyverse</td>
 </tr>
 <tr class="even">
 <td>Interactive apps</td>
@@ -587,35 +629,35 @@ renv on top of the <code>analysis</code> profile.</p>
 <div class="section level4">
 <h4 id="example-bayesian-statistics-environment">Example: Bayesian Statistics Environment<a class="anchor" aria-label="anchor" href="#example-bayesian-statistics-environment"></a>
 </h4>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="fu">mkdir</span> bayes-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> bayes-study</span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a></span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co"># Inside container, add specialized Bayesian packages:</span></span>
-<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="co"># install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))</span></span>
-<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">mkdir</span> bayes-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> bayes-study</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co"># Inside container, add specialized Bayesian packages:</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co"># install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))</span></span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="example-web-scraping-nlp-environment">Example: Web Scraping + NLP Environment<a class="anchor" aria-label="anchor" href="#example-web-scraping-nlp-environment"></a>
 </h4>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">mkdir</span> nlp-scraper <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> nlp-scraper</span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co"># Add NLP packages dynamically:</span></span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co"># install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))</span></span>
-<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">mkdir</span> nlp-scraper <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> nlp-scraper</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># Add NLP packages dynamically:</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co"># install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="example-lightweight-reporting">Example: Lightweight Reporting<a class="anchor" aria-label="anchor" href="#example-lightweight-reporting"></a>
 </h4>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Minimal base for a small footprint</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">mkdir</span> reports <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> reports</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="ex">zzcollab</span> minimal</span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># Add reporting packages:</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co"># install.packages(c("rmarkdown", "knitr", "gt", "flextable"))</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Minimal base for a small footprint</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">mkdir</span> reports <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> reports</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="ex">zzcollab</span> minimal</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="co"># Add reporting packages:</span></span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="co"># install.packages(c("rmarkdown", "knitr", "gt", "flextable"))</span></span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -632,14 +674,14 @@ reproducibility.</p>
 / <code>docker --profile</code>) or a custom base image
 <strong>Shared</strong>: All team members get identical packages
 <strong>Purpose</strong>: Fast container startup, team consistency</p>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Team lead creates base environment</span></span>
-<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># ML packages added via renv on top of analysis</span></span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span>
-<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a></span>
-<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a><span class="co"># All team members get identical environment</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Team lead creates base environment</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># ML packages added via renv on top of analysis</span></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="co"># All team members get identical environment</span></span></code></pre></div>
 <p><strong>Layer 1 packages are in the Docker image</strong>: -
 Available immediately when container starts - No installation time -
 Shared across all users of the image - Fixed until image is rebuilt</p>
@@ -653,21 +695,21 @@ snapshot on exit <strong>Control</strong>: Team members install as
 needed <strong>Flexible</strong>: Each person can add different packages
 <strong>Purpose</strong>: Analysis-specific packages, reproducible
 dependency tracking</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Inside container</span></span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a></span>
-<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="co"># Install packages as needed (standard R command)</span></span>
-<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
-<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"pins"</span><span class="kw">)</span></span>
-<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"vetiver"</span><span class="kw">)</span></span>
-<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a></span>
-<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a><span class="co"># When you exit R, packages are automatically saved to renv.lock (via .Last() in .Rprofile)</span></span>
-<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a><span class="fu">q()</span></span>
-<span id="cb26-11"><a href="#cb26-11" tabindex="-1"></a></span>
-<span id="cb26-12"><a href="#cb26-12" tabindex="-1"></a><span class="co"># Back on host - commit the updated renv.lock</span></span>
-<span id="cb26-13"><a href="#cb26-13" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
-<span id="cb26-14"><a href="#cb26-14" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add ML deployment packages"</span></span>
-<span id="cb26-15"><a href="#cb26-15" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Inside container</span></span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co"># Install packages as needed (standard R command)</span></span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
+<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"pins"</span><span class="kw">)</span></span>
+<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"vetiver"</span><span class="kw">)</span></span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="co"># When you exit R, packages are automatically saved to renv.lock (via .Last() in .Rprofile)</span></span>
+<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="fu">q()</span></span>
+<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a><span class="co"># Back on host - commit the updated renv.lock</span></span>
+<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
+<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add ML deployment packages"</span></span>
+<span id="cb27-15"><a href="#cb27-15" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 <p><strong>Layer 2 packages via renv</strong>: - Installed on-demand
 inside containers - Added dynamically as analysis needs evolve -
 Accumulates packages from all team members - renv.lock is the source of
@@ -680,32 +722,32 @@ truth for reproducibility</p>
 <h4 id="scenario-genomics-team-with-multiple-analyses">Scenario: Genomics Team with Multiple Analyses<a class="anchor" aria-label="anchor" href="#scenario-genomics-team-with-multiple-analyses"></a>
 </h4>
 <p><strong>Team Lead Setup (Layer 1)</strong>:</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Create a base environment with common packages</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">mkdir</span> baseenv <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> baseenv</span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Or another profile</span></span>
-<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span></code></pre></div>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Create a base environment with common packages</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">mkdir</span> baseenv <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> baseenv</span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Or another profile</span></span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span></code></pre></div>
 <p><strong>Team Member Alice (Layer 2 - RNA-seq)</strong>:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">make</span> docker-build                <span class="co"># Or: docker pull genomicslab/rnaseq-study:latest</span></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="co"># Add RNA-seq specific packages</span></span>
-<span id="cb28-7"><a href="#cb28-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"tximport"</span><span class="ex">,</span> <span class="st">"DESeq2"</span>, <span class="st">"apeglm"</span>, <span class="st">"EnhancedVolcano"</span><span class="kw">))</span></span>
-<span id="cb28-8"><a href="#cb28-8" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages in renv.lock</span></span>
-<span id="cb28-9"><a href="#cb28-9" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
-<p><strong>Team Member Bob (Layer 2 - ChIP-seq)</strong>:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/chipseq-study.git</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="bu">cd</span> chipseq-study</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="fu">make</span> docker-build                <span class="co"># Or: docker pull genomicslab/rnaseq-study:latest</span></span>
 <span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a></span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="co"># Add ChIP-seq specific packages</span></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"ChIPseeker"</span><span class="ex">,</span> <span class="st">"ChIPpeakAnno"</span>, <span class="st">"DiffBind"</span>, <span class="st">"csaw"</span><span class="kw">))</span></span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="co"># Add RNA-seq specific packages</span></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"tximport"</span><span class="ex">,</span> <span class="st">"DESeq2"</span>, <span class="st">"apeglm"</span>, <span class="st">"EnhancedVolcano"</span><span class="kw">))</span></span>
 <span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages in renv.lock</span></span>
 <span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
+<p><strong>Team Member Bob (Layer 2 - ChIP-seq)</strong>:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/chipseq-study.git</span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="bu">cd</span> chipseq-study</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="co"># Add ChIP-seq specific packages</span></span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"ChIPseeker"</span><span class="ex">,</span> <span class="st">"ChIPpeakAnno"</span>, <span class="st">"DiffBind"</span>, <span class="st">"csaw"</span><span class="kw">))</span></span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages in renv.lock</span></span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
 <p><strong>Result</strong>: - Both use <strong>identical Layer
 1</strong> (Bioconductor base via team image) - Each has
 <strong>different Layer 2</strong> (analysis-specific packages in
@@ -718,20 +760,20 @@ truth)</p>
 </h3>
 <p>Docker images provide foundation and performance, but
 <strong>renv.lock ensures reproducibility</strong>:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># Five years later, reproduce Alice's RNA-seq analysis</span></span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a></span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a><span class="co"># Can use ANY compatible Docker base image</span></span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--profile</span> minimal  <span class="co"># or analysis, or rstudio</span></span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a></span>
-<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="co"># renv automatically restores EXACT packages Alice used on R startup</span></span>
-<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a><span class="co"># Auto-restore installs: tximport, DESeq2, apeglm, EnhancedVolcano at exact versions</span></span>
-<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a><span class="co"># (No manual renv::restore() call needed - happens automatically)</span></span>
-<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a></span>
-<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="co"># Run analysis - identical results</span></span>
-<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/differential_expression.R</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Five years later, reproduce Alice's RNA-seq analysis</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="co"># Can use ANY compatible Docker base image</span></span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--profile</span> minimal  <span class="co"># or analysis, or rstudio</span></span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="co"># renv automatically restores EXACT packages Alice used on R startup</span></span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="co"># Auto-restore installs: tximport, DESeq2, apeglm, EnhancedVolcano at exact versions</span></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="co"># (No manual renv::restore() call needed - happens automatically)</span></span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="co"># Run analysis - identical results</span></span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/differential_expression.R</span></code></pre></div>
 <p><strong>Why this works</strong>: renv.lock specifies exact package
 versions from CRAN/Bioconductor/GitHub snapshots, independent of Docker
 image.</p>
@@ -809,17 +851,17 @@ core)</li>
 <p><strong>Goal</strong>: Quick project setup, standard data analysis
 tools</p>
 <p><strong>Configuration</strong>:</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># One-time setup</span></span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"datasci"</span></span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="co"># Create projects with configured defaults</span></span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">mkdir</span> customer-churn <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> customer-churn</span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Uses all configured defaults</span></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a></span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="fu">mkdir</span> sales-forecast <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> sales-forecast</span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Consistent environment across projects</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># One-time setup</span></span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"datasci"</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co"># Create projects with configured defaults</span></span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="fu">mkdir</span> customer-churn <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> customer-churn</span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Uses all configured defaults</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="fu">mkdir</span> sales-forecast <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> sales-forecast</span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Consistent environment across projects</span></span></code></pre></div>
 <p><strong>Benefits</strong>: - No repetitive flag typing - Consistent
 environment across projects - Professional reproducibility for
 portfolio</p>
@@ -830,46 +872,46 @@ portfolio</p>
 <p><strong>Goal</strong>: Team collaboration, consistent environments,
 specialized workflows</p>
 <p><strong>Team Lead Setup</strong>:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># Personal config</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"psychlab"</span></span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"psychlab"</span></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co"># Create shared project</span></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="fu">mkdir</span> attention-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> attention-study</span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a></span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="co"># Customize for team</span></span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> zzcollab.yaml <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="st">team:</span></span>
-<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="st">  name: "psychlab"</span></span>
-<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="st">  project: "attention-study"</span></span>
-<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a></span>
-<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a><span class="st">defaults:</span></span>
-<span id="cb32-17"><a href="#cb32-17" tabindex="-1"></a><span class="st">  profile-name: "analysis"</span></span>
-<span id="cb32-18"><a href="#cb32-18" tabindex="-1"></a></span>
-<span id="cb32-19"><a href="#cb32-19" tabindex="-1"></a><span class="st">collaboration:</span></span>
-<span id="cb32-20"><a href="#cb32-20" tabindex="-1"></a><span class="st">  github:</span></span>
-<span id="cb32-21"><a href="#cb32-21" tabindex="-1"></a><span class="st">    auto-create-repo: true</span></span>
-<span id="cb32-22"><a href="#cb32-22" tabindex="-1"></a><span class="st">    default-visibility: "private"</span></span>
-<span id="cb32-23"><a href="#cb32-23" tabindex="-1"></a><span class="st">    enable-actions: true</span></span>
-<span id="cb32-24"><a href="#cb32-24" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb32-25"><a href="#cb32-25" tabindex="-1"></a></span>
-<span id="cb32-26"><a href="#cb32-26" tabindex="-1"></a><span class="co"># Build and share</span></span>
-<span id="cb32-27"><a href="#cb32-27" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb32-28"><a href="#cb32-28" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb32-29"><a href="#cb32-29" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p><strong>Team Member Workflow</strong>:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># Minimal personal setup</span></span>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># Personal config</span></span>
 <span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"psychlab"</span></span>
-<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a></span>
-<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a><span class="co"># Join project</span></span>
-<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/psychlab/attention-study.git</span>
-<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a><span class="bu">cd</span> attention-study</span>
-<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a></span>
-<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a><span class="co"># Start working immediately</span></span>
-<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"psychlab"</span></span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a></span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="co"># Create shared project</span></span>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a><span class="fu">mkdir</span> attention-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> attention-study</span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
+<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a></span>
+<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a><span class="co"># Customize for team</span></span>
+<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> zzcollab.yaml <span class="op">&lt;&lt; 'EOF'</span></span>
+<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a><span class="st">team:</span></span>
+<span id="cb33-13"><a href="#cb33-13" tabindex="-1"></a><span class="st">  name: "psychlab"</span></span>
+<span id="cb33-14"><a href="#cb33-14" tabindex="-1"></a><span class="st">  project: "attention-study"</span></span>
+<span id="cb33-15"><a href="#cb33-15" tabindex="-1"></a></span>
+<span id="cb33-16"><a href="#cb33-16" tabindex="-1"></a><span class="st">defaults:</span></span>
+<span id="cb33-17"><a href="#cb33-17" tabindex="-1"></a><span class="st">  profile-name: "analysis"</span></span>
+<span id="cb33-18"><a href="#cb33-18" tabindex="-1"></a></span>
+<span id="cb33-19"><a href="#cb33-19" tabindex="-1"></a><span class="st">collaboration:</span></span>
+<span id="cb33-20"><a href="#cb33-20" tabindex="-1"></a><span class="st">  github:</span></span>
+<span id="cb33-21"><a href="#cb33-21" tabindex="-1"></a><span class="st">    auto-create-repo: true</span></span>
+<span id="cb33-22"><a href="#cb33-22" tabindex="-1"></a><span class="st">    default-visibility: "private"</span></span>
+<span id="cb33-23"><a href="#cb33-23" tabindex="-1"></a><span class="st">    enable-actions: true</span></span>
+<span id="cb33-24"><a href="#cb33-24" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb33-25"><a href="#cb33-25" tabindex="-1"></a></span>
+<span id="cb33-26"><a href="#cb33-26" tabindex="-1"></a><span class="co"># Build and share</span></span>
+<span id="cb33-27"><a href="#cb33-27" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb33-28"><a href="#cb33-28" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb33-29"><a href="#cb33-29" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<p><strong>Team Member Workflow</strong>:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Minimal personal setup</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"psychlab"</span></span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="co"># Join project</span></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/psychlab/attention-study.git</span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="bu">cd</span> attention-study</span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a></span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a><span class="co"># Start working immediately</span></span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="scenario-3-bioinformatics-core-facility">Scenario 3: Bioinformatics Core Facility<a class="anchor" aria-label="anchor" href="#scenario-3-bioinformatics-core-facility"></a>
@@ -878,44 +920,44 @@ specialized workflows</p>
 organization-wide standards</p>
 <p><strong>System Admin Setup</strong>
 (<code>/etc/zzcollab/config.yaml</code>):</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="fu">organization</span><span class="kw">:</span></span>
-<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"Bioinformatics Core"</span></span>
-<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker-registry</span><span class="kw">:</span><span class="at"> </span><span class="st">"registry.core.university.edu"</span></span>
-<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a></span>
-<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="at">  </span><span class="fu">github-account</span><span class="kw">:</span><span class="at"> </span><span class="st">"bioinformatics-core"</span></span>
-<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a></span>
-<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span></span>
-<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a><span class="at">    </span><span class="fu">enable-actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">organization</span><span class="kw">:</span></span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"Bioinformatics Core"</span></span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker-registry</span><span class="kw">:</span><span class="at"> </span><span class="st">"registry.core.university.edu"</span></span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a><span class="at">  </span><span class="fu">github-account</span><span class="kw">:</span><span class="at"> </span><span class="st">"bioinformatics-core"</span></span>
+<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span></span>
+<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a><span class="at">    </span><span class="fu">enable-actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
 <p><strong>Core Director Setup</strong>:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="co"># Base images for different workflows</span></span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="fu">mkdir</span> biocore-rnaseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-rnaseq</span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; add genomics packages via renv</span></span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a></span>
-<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-chipseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-chipseq</span>
-<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a></span>
-<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-singlecell <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-singlecell</span>
-<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Base images for different workflows</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">mkdir</span> biocore-rnaseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-rnaseq</span>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; add genomics packages via renv</span></span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a></span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-chipseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-chipseq</span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
+<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-singlecell <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-singlecell</span>
+<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
+<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span></code></pre></div>
 <p><strong>Researcher Workflow</strong>:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Join workflow-specific project</span></span>
-<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/biocore/rnaseq-study.git</span>
-<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="fu">make</span> docker-build  <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a></span>
-<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a><span class="co"># Add analysis-specific packages</span></span>
-<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"workflow_specific_package"</span><span class="kw">)</span></span>
-<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures the package</span></span>
-<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="co"># Join workflow-specific project</span></span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/biocore/rnaseq-study.git</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a><span class="fu">make</span> docker-build  <span class="co"># Build from project Dockerfile</span></span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a></span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="co"># Add analysis-specific packages</span></span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"workflow_specific_package"</span><span class="kw">)</span></span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures the package</span></span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="scenario-4-data-science-consulting-firm">Scenario 4: Data Science Consulting Firm<a class="anchor" aria-label="anchor" href="#scenario-4-data-science-consulting-firm"></a>
@@ -923,46 +965,46 @@ organization-wide standards</p>
 <p><strong>Goal</strong>: Client projects, quarterly environment
 updates, reproducible deliverables</p>
 <p><strong>DevOps Team Setup</strong>:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="co"># Quarterly standardized environment</span></span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">mkdir</span> q1-2025-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> q1-2025-base</span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
-<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a></span>
-<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="co"># Document package versions</span></span>
-<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ENVIRONMENT.md <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="st"># Q1 2025 Standardized Environment</span></span>
-<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a></span>
-<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="st">Base: rocker/ml:latest (R 4.4.0)</span></span>
-<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="st">Profile: analysis</span></span>
-<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a></span>
-<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a><span class="st">Key packages:</span></span>
-<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="st">- tidyverse 2.0.0</span></span>
-<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="st">- tidymodels 1.2.0</span></span>
-<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a><span class="st">- xgboost 1.7.6</span></span>
-<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a><span class="st">- shiny 1.8.0</span></span>
-<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a></span>
-<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a><span class="st">Last updated: 2025-01-15</span></span>
-<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a></span>
-<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Q1 2025 base environment"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p><strong>Data Scientist Workflow</strong>:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Create client project using quarterly base</span></span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="fu">mkdir</span> client-churn-prediction <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> client-churn-prediction</span>
+<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Quarterly standardized environment</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="fu">mkdir</span> q1-2025-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> q1-2025-base</span>
 <span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
 <span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
 <span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a></span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a><span class="co"># Team base image provides foundation</span></span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a></span>
-<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a><span class="co"># Add client-specific packages</span></span>
-<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"probably"</span><span class="ex">,</span> <span class="st">"workflowsets"</span>, <span class="st">"themis"</span><span class="kw">))</span></span>
-<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages</span></span>
-<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span>
-<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a></span>
-<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a><span class="co"># All projects use same Q1 2025 foundation</span></span>
-<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a><span class="co"># Client-specific packages in renv.lock</span></span></code></pre></div>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a><span class="co"># Document package versions</span></span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ENVIRONMENT.md <span class="op">&lt;&lt; 'EOF'</span></span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a><span class="st"># Q1 2025 Standardized Environment</span></span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a></span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="st">Base: rocker/ml:latest (R 4.4.0)</span></span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="st">Profile: analysis</span></span>
+<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a></span>
+<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a><span class="st">Key packages:</span></span>
+<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a><span class="st">- tidyverse 2.0.0</span></span>
+<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a><span class="st">- tidymodels 1.2.0</span></span>
+<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a><span class="st">- xgboost 1.7.6</span></span>
+<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a><span class="st">- shiny 1.8.0</span></span>
+<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a></span>
+<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a><span class="st">Last updated: 2025-01-15</span></span>
+<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a><span class="op">EOF</span></span>
+<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a></span>
+<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Q1 2025 base environment"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<p><strong>Data Scientist Workflow</strong>:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Create client project using quarterly base</span></span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">mkdir</span> client-churn-prediction <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> client-churn-prediction</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a></span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="co"># Team base image provides foundation</span></span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a></span>
+<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co"># Add client-specific packages</span></span>
+<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"probably"</span><span class="ex">,</span> <span class="st">"workflowsets"</span>, <span class="st">"themis"</span><span class="kw">))</span></span>
+<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages</span></span>
+<span id="cb39-12"><a href="#cb39-12" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span>
+<span id="cb39-13"><a href="#cb39-13" tabindex="-1"></a></span>
+<span id="cb39-14"><a href="#cb39-14" tabindex="-1"></a><span class="co"># All projects use same Q1 2025 foundation</span></span>
+<span id="cb39-15"><a href="#cb39-15" tabindex="-1"></a><span class="co"># Client-specific packages in renv.lock</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -974,38 +1016,38 @@ updates, reproducible deliverables</p>
 <div class="section level4">
 <h4 id="check-configuration-integrity">Check Configuration Integrity<a class="anchor" aria-label="anchor" href="#check-configuration-integrity"></a>
 </h4>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Validate all configuration files</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a></span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co"># Expected output:</span></span>
-<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="co"># ✓ User configuration valid: ~/.zzcollab/config.yaml</span></span>
-<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="co"># ✓ No project configuration found (not in project directory)</span></span>
-<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="co"># ✓ No system configuration found (not installed system-wide)</span></span>
-<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="co"># ✓ Configuration hierarchy is consistent</span></span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Validate all configuration files</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a></span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="co"># Expected output:</span></span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="co"># ✓ User configuration valid: ~/.zzcollab/config.yaml</span></span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="co"># ✓ No project configuration found (not in project directory)</span></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="co"># ✓ No system configuration found (not installed system-wide)</span></span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="co"># ✓ Configuration hierarchy is consistent</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="view-effective-configuration">View Effective Configuration<a class="anchor" aria-label="anchor" href="#view-effective-configuration"></a>
 </h4>
-<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># See merged configuration from all sources</span></span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a></span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="co"># See which file provides each value</span></span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
-<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a></span>
-<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="co"># Output:</span></span>
-<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="co"># team-name: "genomicslab"</span></span>
-<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a><span class="co">#   Source: ~/.zzcollab/config.yaml (user config)</span></span>
-<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
-<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]</span></span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># See merged configuration from all sources</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co"># See which file provides each value</span></span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a></span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="co"># team-name: "genomicslab"</span></span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a><span class="co">#   Source: ~/.zzcollab/config.yaml (user config)</span></span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="test-configuration">Test Configuration<a class="anchor" aria-label="anchor" href="#test-configuration"></a>
 </h4>
-<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Validate the effective configuration before creating a project</span></span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co"># Review the merged configuration and its sources</span></span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="co"># Validate the effective configuration before creating a project</span></span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="co"># Review the merged configuration and its sources</span></span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1015,85 +1057,85 @@ updates, reproducible deliverables</p>
 <h4 id="issue-1-configuration-hierarchy-confusion">Issue 1: Configuration Hierarchy Confusion<a class="anchor" aria-label="anchor" href="#issue-1-configuration-hierarchy-confusion"></a>
 </h4>
 <p><strong>Problem</strong>: Settings not taking effect as expected</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="co"># Symptom: Set profile-name in user config but project uses different profile</span></span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="ex">zzcollab</span> config get profile-name</span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="co"># Output: rstudio  (Expected: analysis)</span></span></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="co"># Symptom: Set profile-name in user config but project uses different profile</span></span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a><span class="ex">zzcollab</span> config get profile-name</span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a><span class="co"># Output: rstudio  (Expected: analysis)</span></span></code></pre></div>
 <p><strong>Solution</strong>: Check configuration sources</p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
-<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="co"># Output shows:</span></span>
-<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
-<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]</span></span>
-<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a></span>
-<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a><span class="co"># Project config (./zzcollab.yaml) overrides user config</span></span>
-<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a><span class="co"># Remove from project config or understand this is intentional</span></span>
-<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a><span class="ex">vim</span> ./zzcollab.yaml  <span class="co"># Remove profile-name to use user default</span></span></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="co"># Output shows:</span></span>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]</span></span>
+<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="co"># Project config (./zzcollab.yaml) overrides user config</span></span>
+<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="co"># Remove from project config or understand this is intentional</span></span>
+<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a><span class="ex">vim</span> ./zzcollab.yaml  <span class="co"># Remove profile-name to use user default</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="issue-2-docker-platform-compatibility">Issue 2: Docker Platform Compatibility<a class="anchor" aria-label="anchor" href="#issue-2-docker-platform-compatibility"></a>
 </h4>
 <p><strong>Problem</strong>: An ARM64 Mac cannot build an AMD64-only
 base image.</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="co"># Error when building on the rocker/geospatial base image:</span></span>
-<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="co"># Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8</span></span></code></pre></div>
+<div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="co"># Error when building on the rocker/geospatial base image:</span></span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a><span class="co"># Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8</span></span></code></pre></div>
 <p><strong>Solution 1</strong>: Use an ARM64-compatible base and add
 packages via renv</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a><span class="co"># Then add spatial packages inside the container:</span></span>
-<span id="cb45-3"><a href="#cb45-3" tabindex="-1"></a><span class="co"># install.packages(c("sf", "terra", "raster"))</span></span>
-<span id="cb45-4"><a href="#cb45-4" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
+<div class="sourceCode" id="cb46"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
+<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="co"># Then add spatial packages inside the container:</span></span>
+<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="co"># install.packages(c("sf", "terra", "raster"))</span></span>
+<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
 <p><strong>Solution 2</strong>: Force the AMD64 platform (runs under
 emulation)</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span>
-<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
-<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="co"># Slower under emulation, but compatible</span></span></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span>
+<span id="cb47-2"><a href="#cb47-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
+<span id="cb47-3"><a href="#cb47-3" tabindex="-1"></a><span class="co"># Slower under emulation, but compatible</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="issue-3-missing-configuration-file">Issue 3: Missing Configuration File<a class="anchor" aria-label="anchor" href="#issue-3-missing-configuration-file"></a>
 </h4>
 <p><strong>Problem</strong>: Configuration file not found</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="co"># Error: Configuration file not found: ~/.zzcollab/config.yaml</span></span></code></pre></div>
+<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="co"># Error: Configuration file not found: ~/.zzcollab/config.yaml</span></span></code></pre></div>
 <p><strong>Solution</strong>: Initialize configuration</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb48-2"><a href="#cb48-2" tabindex="-1"></a><span class="co"># Interactive prompts:</span></span>
-<span id="cb48-3"><a href="#cb48-3" tabindex="-1"></a><span class="co"># Team name: myteam</span></span>
-<span id="cb48-4"><a href="#cb48-4" tabindex="-1"></a><span class="co"># GitHub account: myusername</span></span>
-<span id="cb48-5"><a href="#cb48-5" tabindex="-1"></a><span class="co"># Docker profile (default: analysis):</span></span>
-<span id="cb48-6"><a href="#cb48-6" tabindex="-1"></a></span>
-<span id="cb48-7"><a href="#cb48-7" tabindex="-1"></a><span class="co"># Configuration created at: ~/.zzcollab/config.yaml</span></span></code></pre></div>
+<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
+<span id="cb49-2"><a href="#cb49-2" tabindex="-1"></a><span class="co"># Interactive prompts:</span></span>
+<span id="cb49-3"><a href="#cb49-3" tabindex="-1"></a><span class="co"># Team name: myteam</span></span>
+<span id="cb49-4"><a href="#cb49-4" tabindex="-1"></a><span class="co"># GitHub account: myusername</span></span>
+<span id="cb49-5"><a href="#cb49-5" tabindex="-1"></a><span class="co"># Docker profile (default: analysis):</span></span>
+<span id="cb49-6"><a href="#cb49-6" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" tabindex="-1"></a><span class="co"># Configuration created at: ~/.zzcollab/config.yaml</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="issue-4-docker-daemon-not-running">Issue 4: Docker Daemon Not Running<a class="anchor" aria-label="anchor" href="#issue-4-docker-daemon-not-running"></a>
 </h4>
 <p><strong>Problem</strong>: Cannot connect to Docker daemon</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="co"># Error: Cannot connect to the Docker daemon at unix:///var/run/docker.sock</span></span></code></pre></div>
+<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="co"># Error: Cannot connect to the Docker daemon at unix:///var/run/docker.sock</span></span></code></pre></div>
 <p><strong>Solution</strong>: Start Docker daemon</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="co"># macOS/Windows: Start Docker Desktop app</span></span>
-<span id="cb50-2"><a href="#cb50-2" tabindex="-1"></a></span>
-<span id="cb50-3"><a href="#cb50-3" tabindex="-1"></a><span class="co"># Linux: Start Docker service</span></span>
-<span id="cb50-4"><a href="#cb50-4" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span>
-<span id="cb50-5"><a href="#cb50-5" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable docker  <span class="co"># Auto-start on boot</span></span>
-<span id="cb50-6"><a href="#cb50-6" tabindex="-1"></a></span>
-<span id="cb50-7"><a href="#cb50-7" tabindex="-1"></a><span class="co"># Verify Docker is running</span></span>
-<span id="cb50-8"><a href="#cb50-8" tabindex="-1"></a><span class="ex">docker</span> info</span></code></pre></div>
+<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="co"># macOS/Windows: Start Docker Desktop app</span></span>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a></span>
+<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a><span class="co"># Linux: Start Docker service</span></span>
+<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span>
+<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable docker  <span class="co"># Auto-start on boot</span></span>
+<span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a></span>
+<span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a><span class="co"># Verify Docker is running</span></span>
+<span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a><span class="ex">docker</span> info</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="issue-5-profile-not-found">Issue 5: Profile Not Found<a class="anchor" aria-label="anchor" href="#issue-5-profile-not-found"></a>
 </h4>
 <p><strong>Problem</strong>: Custom profile specified but not
 defined</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="co"># Error: Profile 'my-custom' not found in configuration</span></span></code></pre></div>
+<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Error: Profile 'my-custom' not found in configuration</span></span></code></pre></div>
 <p><strong>Solution</strong>: Define the profile</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Edit user configuration</span></span>
-<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="ex">vim</span> ~/.zzcollab/config.yaml</span>
-<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a></span>
-<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a><span class="co"># Add custom profile:</span></span>
-<span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a><span class="ex">profiles:</span></span>
-<span id="cb52-6"><a href="#cb52-6" tabindex="-1"></a>  <span class="ex">my-custom:</span></span>
-<span id="cb52-7"><a href="#cb52-7" tabindex="-1"></a>    <span class="ex">base-image:</span> <span class="st">"rocker/r-ver:latest"</span></span>
-<span id="cb52-8"><a href="#cb52-8" tabindex="-1"></a>    <span class="ex">libs-bundle:</span> <span class="st">"minimal"</span></span>
-<span id="cb52-9"><a href="#cb52-9" tabindex="-1"></a>    <span class="ex">pkgs-bundle:</span> <span class="st">"tidyverse"</span></span>
-<span id="cb52-10"><a href="#cb52-10" tabindex="-1"></a>    <span class="ex">description:</span> <span class="st">"My custom analysis environment"</span></span></code></pre></div>
+<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="co"># Edit user configuration</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="ex">vim</span> ~/.zzcollab/config.yaml</span>
+<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a></span>
+<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="co"># Add custom profile:</span></span>
+<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="ex">profiles:</span></span>
+<span id="cb53-6"><a href="#cb53-6" tabindex="-1"></a>  <span class="ex">my-custom:</span></span>
+<span id="cb53-7"><a href="#cb53-7" tabindex="-1"></a>    <span class="ex">base-image:</span> <span class="st">"rocker/r-ver:latest"</span></span>
+<span id="cb53-8"><a href="#cb53-8" tabindex="-1"></a>    <span class="ex">libs-bundle:</span> <span class="st">"minimal"</span></span>
+<span id="cb53-9"><a href="#cb53-9" tabindex="-1"></a>    <span class="ex">pkgs-bundle:</span> <span class="st">"tidyverse"</span></span>
+<span id="cb53-10"><a href="#cb53-10" tabindex="-1"></a>    <span class="ex">description:</span> <span class="st">"My custom analysis environment"</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -1105,7 +1147,7 @@ management.</p>
 <div class="section level3">
 <h3 id="configuration-functions">Configuration Functions<a class="anchor" aria-label="anchor" href="#configuration-functions"></a>
 </h3>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rgt47/zzcollab" class="external-link">zzcollab</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Initialize configuration</span></span>
@@ -1134,7 +1176,7 @@ management.</p>
 <div class="section level3">
 <h3 id="configuration-aware-project-functions">Configuration-Aware Project Functions<a class="anchor" aria-label="anchor" href="#configuration-aware-project-functions"></a>
 </h3>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Functions use configuration defaults automatically</span></span>
 <span></span>
 <span><span class="co"># Create project with defaults from config</span></span>
@@ -1158,7 +1200,7 @@ management.</p>
 <div class="section level3">
 <h3 id="configuration-inspection">Configuration Inspection<a class="anchor" aria-label="anchor" href="#configuration-inspection"></a>
 </h3>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get effective configuration from all sources</span></span>
 <span><span class="va">effective</span> <span class="op">&lt;-</span> <span class="fu">get_effective_config</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">effective</span><span class="op">)</span></span>
@@ -1234,24 +1276,24 @@ project configs</li>
 <div class="section level4">
 <h4 id="private-repository-settings">Private Repository Settings<a class="anchor" aria-label="anchor" href="#private-repository-settings"></a>
 </h4>
-<div class="sourceCode" id="cb56"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb56-1"><a href="#cb56-1" tabindex="-1"></a><span class="co"># ./zzcollab.yaml</span></span>
-<span id="cb56-2"><a href="#cb56-2" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb56-3"><a href="#cb56-3" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb56-4"><a href="#cb56-4" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span><span class="co">  # Always private</span></span>
-<span id="cb56-5"><a href="#cb56-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branch-protection</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">         # Require PR reviews</span></span>
-<span id="cb56-6"><a href="#cb56-6" tabindex="-1"></a></span>
-<span id="cb56-7"><a href="#cb56-7" tabindex="-1"></a><span class="fu">repository</span><span class="kw">:</span></span>
-<span id="cb56-8"><a href="#cb56-8" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-merge-commits</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">       # Clean history</span></span>
-<span id="cb56-9"><a href="#cb56-9" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-squash-merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Allow squash</span></span>
-<span id="cb56-10"><a href="#cb56-10" tabindex="-1"></a><span class="at">  </span><span class="fu">delete-head-branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Auto-cleanup</span></span></code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="co"># ./zzcollab.yaml</span></span>
+<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
+<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
+<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span><span class="co">  # Always private</span></span>
+<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branch-protection</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">         # Require PR reviews</span></span>
+<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a></span>
+<span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a><span class="fu">repository</span><span class="kw">:</span></span>
+<span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-merge-commits</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">       # Clean history</span></span>
+<span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-squash-merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Allow squash</span></span>
+<span id="cb57-10"><a href="#cb57-10" tabindex="-1"></a><span class="at">  </span><span class="fu">delete-head-branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Auto-cleanup</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="container-security">Container Security<a class="anchor" aria-label="anchor" href="#container-security"></a>
 </h4>
-<div class="sourceCode" id="cb57"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="fu">development</span><span class="kw">:</span></span>
-<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
-<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="at">    </span><span class="fu">default-user</span><span class="kw">:</span><span class="at"> </span><span class="st">"analyst"</span><span class="co">        # Never run as root</span></span>
-<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a><span class="at">    </span><span class="fu">read-only-volumes</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">        # Mount shared volumes read-only</span></span></code></pre></div>
+<div class="sourceCode" id="cb58"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="fu">development</span><span class="kw">:</span></span>
+<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
+<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a><span class="at">    </span><span class="fu">default-user</span><span class="kw">:</span><span class="at"> </span><span class="st">"analyst"</span><span class="co">        # Never run as root</span></span>
+<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="at">    </span><span class="fu">read-only-volumes</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">        # Mount shared volumes read-only</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="sensitive-data">Sensitive Data<a class="anchor" aria-label="anchor" href="#sensitive-data"></a>
@@ -1304,13 +1346,13 @@ project configs</li>
 <div class="section level4">
 <h4 id="container-size-optimization">Container Size Optimization<a class="anchor" aria-label="anchor" href="#container-size-optimization"></a>
 </h4>
-<div class="sourceCode" id="cb58"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="co"># Prefer lightweight profiles for CI/CD</span></span>
-<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="fu">profiles</span><span class="kw">:</span></span>
-<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span><span class="co">           # ~650MB</span></span>
-<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb58-5"><a href="#cb58-5" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span><span class="co">          # ~1.2GB (for development)</span></span>
-<span id="cb58-6"><a href="#cb58-6" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb58-7"><a href="#cb58-7" tabindex="-1"></a><span class="co">  # Avoid enabling unnecessary heavy profiles</span></span></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="co"># Prefer lightweight profiles for CI/CD</span></span>
+<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a><span class="fu">profiles</span><span class="kw">:</span></span>
+<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span><span class="co">           # ~650MB</span></span>
+<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span><span class="co">          # ~1.2GB (for development)</span></span>
+<span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a><span class="co">  # Avoid enabling unnecessary heavy profiles</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -1319,24 +1361,24 @@ project configs</li>
 <ol style="list-style-type: decimal">
 <li>
 <p><strong>Check configuration hierarchy</strong></p>
-<div class="sourceCode" id="cb59"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span></code></pre></div>
+<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span></code></pre></div>
 </li>
 <li>
 <p><strong>Validate configuration</strong></p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span></code></pre></div>
-</li>
-<li>
-<p><strong>Test with dry-run</strong></p>
 <div class="sourceCode" id="cb61"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span></code></pre></div>
 </li>
 <li>
+<p><strong>Test with dry-run</strong></p>
+<div class="sourceCode" id="cb62"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span></code></pre></div>
+</li>
+<li>
 <p><strong>Check Docker status</strong></p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" tabindex="-1"></a><span class="ex">docker</span> info</span>
-<span id="cb62-2"><a href="#cb62-2" tabindex="-1"></a><span class="ex">docker</span> images</span></code></pre></div>
+<div class="sourceCode" id="cb63"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a><span class="ex">docker</span> info</span>
+<span id="cb63-2"><a href="#cb63-2" tabindex="-1"></a><span class="ex">docker</span> images</span></code></pre></div>
 </li>
 <li>
 <p><strong>Verbose output</strong></p>
-<div class="sourceCode" id="cb63"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-v</span> analysis</span></code></pre></div>
+<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-v</span> analysis</span></code></pre></div>
 </li>
 </ol>
 </div>
@@ -1354,9 +1396,10 @@ research environments through multiple layers:</p>
 <strong>Configuration hierarchy</strong>: Command-line → environment
 → project → user → system → defaults</li>
 <li>
-<strong>Docker profiles</strong>: three built-in profiles (minimal
-~650MB, analysis ~1.2GB, rstudio ~980MB); other environments via a
-custom base image</li>
+<strong>Docker profiles</strong>: four built-in profiles (minimal
+~650MB, tidyverse ~1.2GB, rstudio ~980MB, publishing ~4.2GB;
+<code>analysis</code> is a deprecated alias for <code>tidyverse</code>);
+other environments via a custom base image</li>
 <li>
 <strong>Two-layer architecture</strong>: Docker profiles (shared) +
 renv packages (flexible)</li>
@@ -1372,25 +1415,31 @@ within R</li>
 <h3 id="quick-reference">Quick Reference<a class="anchor" aria-label="anchor" href="#quick-reference"></a>
 </h3>
 <p><strong>Initialize configuration</strong>:</p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb64-2"><a href="#cb64-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myteam"</span></span>
-<span id="cb64-3"><a href="#cb64-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span></code></pre></div>
+<div class="sourceCode" id="cb65"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
+<span id="cb65-2"><a href="#cb65-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myteam"</span></span>
+<span id="cb65-3"><a href="#cb65-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span></code></pre></div>
 <p><strong>Create project</strong>:</p>
-<div class="sourceCode" id="cb65"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb65-2"><a href="#cb65-2" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb65-3"><a href="#cb65-3" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span></code></pre></div>
+<div class="sourceCode" id="cb66"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb66-2"><a href="#cb66-2" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
+<span id="cb66-3"><a href="#cb66-3" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span></code></pre></div>
 <p><strong>Team collaboration</strong>:</p>
-<div class="sourceCode" id="cb66"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" tabindex="-1"></a><span class="co"># Team lead:</span></span>
-<span id="cb66-2"><a href="#cb66-2" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb66-3"><a href="#cb66-3" tabindex="-1"></a></span>
-<span id="cb66-4"><a href="#cb66-4" tabindex="-1"></a><span class="co"># Team member:</span></span>
-<span id="cb66-5"><a href="#cb66-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb66-6"><a href="#cb66-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
+<div class="sourceCode" id="cb67"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb67-1"><a href="#cb67-1" tabindex="-1"></a><span class="co"># Team lead:</span></span>
+<span id="cb67-2"><a href="#cb67-2" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
+<span id="cb67-3"><a href="#cb67-3" tabindex="-1"></a></span>
+<span id="cb67-4"><a href="#cb67-4" tabindex="-1"></a><span class="co"># Team member:</span></span>
+<span id="cb67-5"><a href="#cb67-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb67-6"><a href="#cb67-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
 <p><strong>Package management</strong>:</p>
-<div class="sourceCode" id="cb67"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb67-1"><a href="#cb67-1" tabindex="-1"></a><span class="co"># Inside container:</span></span>
-<span id="cb67-2"><a href="#cb67-2" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"package"</span><span class="kw">)</span></span>
-<span id="cb67-3"><a href="#cb67-3" tabindex="-1"></a><span class="co"># Auto-snapshot on exit - no manual snapshot needed</span></span>
-<span id="cb67-4"><a href="#cb67-4" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
+<div class="sourceCode" id="cb68"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb68-1"><a href="#cb68-1" tabindex="-1"></a><span class="co"># Inside container:</span></span>
+<span id="cb68-2"><a href="#cb68-2" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"package"</span><span class="kw">)</span></span>
+<span id="cb68-3"><a href="#cb68-3" tabindex="-1"></a><span class="co"># Auto-snapshot on exit - no manual snapshot needed</span></span>
+<span id="cb68-4"><a href="#cb68-4" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
+<p><strong>Common make targets</strong>:</p>
+<div class="sourceCode" id="cb69"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb69-1"><a href="#cb69-1" tabindex="-1"></a><span class="fu">make</span> snapshot      <span class="co"># grow renv.lock + DESCRIPTION from the image (run</span></span>
+<span id="cb69-2"><a href="#cb69-2" tabindex="-1"></a>                   <span class="co"># before commit): hydrate, snapshot, then zzrenvcheck</span></span>
+<span id="cb69-3"><a href="#cb69-3" tabindex="-1"></a><span class="fu">make</span> check-renv    <span class="co"># validate deps: strict + auto-fix (run before commit)</span></span>
+<span id="cb69-4"><a href="#cb69-4" tabindex="-1"></a><span class="fu">make</span> style         <span class="co"># format R code with styler (code-quality feature)</span></span>
+<span id="cb69-5"><a href="#cb69-5" tabindex="-1"></a><span class="fu">make</span> lint          <span class="co"># lint R code with lintr (code-quality feature)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="further-reading">Further Reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
@@ -1405,7 +1454,7 @@ documentation</li>
 <code><a href="../articles/getting-started.html">vignette("getting-started")</a></code> - Comprehensive
 tutorial</li>
 <li>
-<code>docs/VARIANTS.md</code> - The three built-in profiles and the
+<code>docs/VARIANTS.md</code> - The four built-in profiles and the
 custom base-image workflow for specialized environments</li>
 <li>
 <code>docs/CONFIGURATION.md</code> - Advanced configuration

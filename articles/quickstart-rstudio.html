@@ -550,6 +550,9 @@ workspace:</p>
 <ul>
 <li>Running tests: <code>make docker-test</code>
 </li>
+<li>Capture dependencies: <code>make snapshot</code> (renv::hydrate +
+snapshot + zzrenvcheck; grows renv.lock and DESCRIPTION before a
+commit)</li>
 <li>Validation: <code>make check-renv</code> (runs zzrenvcheck in the
 container)</li>
 <li>Git operations: <code>git commit</code>, <code>git push</code>
@@ -741,7 +744,13 @@ environment</li>
 <li>R (latest or specified version)</li>
 <li>RStudio Server</li>
 <li>Essential packages: renv, here, usethis, devtools</li>
-<li>System libraries: git, pandoc, LaTeX (basic)</li>
+<li>Development tooling baked into the image (not renv.lock): the R
+<code>languageserver</code> for in-container completion and diagnostics
+(default on; opt out with
+<code>zzc config set languageserver false</code>)</li>
+<li>System libraries: git, pandoc, LaTeX (basic). For full
+PDF/manuscript rendering use the <code>publishing</code> profile
+(rocker/verse), which pre-bakes the LaTeX closure</li>
 <li>Auto-snapshot on container exit</li>
 <li>Auto-restore on R startup</li>
 </ul>
