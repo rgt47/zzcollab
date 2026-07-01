@@ -81,8 +81,15 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
         cmds+="$(cat <<'WARMUP_BLOCK'
 # Pre-bake the LaTeX package closure at build time (as root, where tlmgr can
 # write) so PDF rendering works for the non-root user with no runtime install.
+# The closure is installed in one bulk tlmgr pass: relying on tinytex to
+# discover packages lazily during a render installs them one at a time, and
+# each missing .sty triggers a full pdflatex recompile (~14s x ~24 packages,
+# ~5 min of build). A single tlmgr call fetches them in ~20-30s; the render
+# below then finds everything present and acts as a fast smoke test that also
+# self-heals any package this list omits.
 RUN <<'WARMUP'
 set -eu
+R -e "tinytex::tlmgr_install(c('amsfonts','booktabs','setspace','multirow','wrapfig','float','colortbl','pdflscape','tabu','varwidth','threeparttable','threeparttablex','environ','trimspaces','ulem','makecell','mathtools','fancyhdr','caption','enumitem','fp','pgf','pgfplots','siunitx'))"
 d=/tmp/texwarmup
 mkdir -p "$d"
 cat > "$d/01-report.Rmd" <<'RMD'
