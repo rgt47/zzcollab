@@ -69,25 +69,38 @@ help: ## Show this help
 	  /^[a-zA-Z0-9_.-]+:.*## / {printf "  %-22s %s\n", $$1, $$2}' \
 	  $(MAKEFILE_LIST)
 
-##@ Validation (runs inside Docker, no host R required)
+##@ Validation & formatting (deps checked on host; snapshot/style/lint use Docker)
 
-# Validate package dependencies using zzrenvcheck inside the Docker container.
-# Scans R/, analysis/, scripts/ (and tests/, vignettes/ in strict mode) for
-# library()/require()/:: calls, then checks DESCRIPTION and renv.lock are in sync.
-check-renv: ## Validate deps: strict + auto-fix (run before commit)
-	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+# Dependency validation runs zzrenvcheck on the HOST, not in the container: it
+# is static analysis (it reads R/, analysis/, scripts/ - and tests/, vignettes/
+# in strict mode - plus DESCRIPTION and renv.lock, and queries the repos for
+# versions) and never needs the container's installed library. Only
+# renv::snapshot, which does need that library, runs in the container. Host
+# repos are pinned to the image's PPM snapshot (parsed from the Dockerfile) so
+# any version zzrenvcheck resolves matches the container; falls back to CRAN
+# when no Dockerfile is present.
+PPM_REPO := $(shell sed -n 's/.*RENV_CONFIG_REPOS_OVERRIDE="\([^"]*\)".*/\1/p' Dockerfile 2>/dev/null | head -1)
+PPM_REPO := $(if $(PPM_REPO),$(PPM_REPO),https://cloud.r-project.org)
+HOST_CHECK := Rscript -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 
-check-renv-no-fix: ## Validate deps: report only, no modifications
-	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+ensure-zzrenvcheck: ## Install zzrenvcheck on the host if missing (validation tool)
+	@Rscript -e "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
 
-check-renv-no-strict: ## Validate deps: skip tests/ and vignettes/
-	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
+check-renv: ensure-zzrenvcheck ## Validate deps on host: strict + auto-fix (run before commit)
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
-snapshot: ## Capture code deps into renv.lock + DESCRIPTION (run before commit)
-	$(DOCKER_RUN) Rscript -e "renv::hydrate(); renv::snapshot(prompt = FALSE); zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+check-renv-no-fix: ensure-zzrenvcheck ## Validate deps on host: report only, no modifications
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
 
-reset-lock: ## Rebuild renv.lock from a fresh code scan, refreshing ALL versions (deliberate bump)
-	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(fresh = TRUE, strict = TRUE)"
+check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host: skip tests/ and vignettes/
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
+
+snapshot: ensure-zzrenvcheck ## renv snapshot (container) then validate deps (host); run before commit
+	$(DOCKER_RUN) Rscript -e "renv::hydrate(); renv::snapshot(prompt = FALSE)"
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+
+reset-lock: ensure-zzrenvcheck ## Rebuild renv.lock from a fresh host code scan, refreshing ALL versions
+	$(HOST_CHECK) "zzrenvcheck::check_packages(fresh = TRUE, strict = TRUE)"
 
 style: ## Format R code with styler (in container; needs code-quality enabled)
 	$(DOCKER_RUN) Rscript -e "styler::style_dir('R'); if (dir.exists('analysis')) styler::style_dir('analysis')"
@@ -185,7 +198,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		read _ans; \
 		case "$$_ans" in \
 			[Nn]*) echo "Skipping validation." ;; \
-			*) Rscript -e "install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck@v0.3.1')" \
+			*) Rscript -e "install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never')" \
 			   && Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
 			   || echo "⚠️  Package validation failed" ;; \
 		esac; \
@@ -407,4 +420,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
