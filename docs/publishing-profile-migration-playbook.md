@@ -70,17 +70,39 @@ was done for the reference migration.
   convention (one `report.Rmd` per subdirectory), not to broaden the discovery
   glob. Broadening would also sweep in every intentionally excluded draft
   variant and script, so it is the wrong move (see Phase 0, CI).
+  Distinguish two legitimate classes of manuscript. A CI-rendered report is
+  named `report.Rmd`, renders in the sealed container image, and its packages
+  belong in the manifest. A host-rendered manuscript (a submission paper with a
+  personal LaTeX preamble, a `knit:` hook routing through a host tool such as
+  `stamp-render.R`, absolute host-path includes like `~/shr/preamble.tex`, or a
+  runtime `pacman::p_load`) is deliberately not a container report: it renders
+  on the host with the author's toolchain and is correctly skipped by CI. Such
+  a manuscript, and the packages it alone uses, are out of the sealed-manifest
+  scope. Do not delete it, do not de-landmine it, and do not treat its
+  dependencies as manifest gaps. Classify each skipped manuscript as draft
+  variant, host-rendered manuscript, or genuinely-missing report, and act only
+  on the last.
 - A4. Manifest health. Cross-reference every non-base package used by code
   against `DESCRIPTION` and `renv.lock`. Split by role: `R/` usage maps to
   `Imports`, `analysis/` (and tests/vignettes) usage maps to `Suggests`.
   Produce two lists: packages missing from `renv.lock` (restore breakers) and
   packages misdeclared (an analysis-only package sitting in `Imports`, which
-  `R CMD check` would hard-require).
+  `R CMD check` would hard-require). Scope this to code on the sealed path:
+  packages used only by a host-rendered manuscript (A3) or by scaffold
+  boilerplate (see below) are not manifest gaps. Before locking a package,
+  confirm it is referenced by a CI-rendered report, by `R/`, or by a real test.
+  A package that appears only in a skipped manuscript's `p_load`, or only in a
+  leftover scaffold test (for example a `palmerpenguins` data-pipeline test in
+  a project that has nothing to do with penguins), should be excluded, and the
+  boilerplate test deleted, rather than added to the manifest.
 - A5. Runtime-install landmines. Grep analysis and render code for
   `pacman::p_load`, `p_load`, `install.packages`, and `pak::` used at render
   time. Grep report and preamble sources for absolute host paths (`~/`,
-  `/Users/`) that will not exist in the image. These defeat both a sealed
-  render and renv's static dependency discovery.
+  `/Users/`) that will not exist in the image. In a CI-rendered report these
+  defeat both a sealed render and renv's static dependency discovery and must
+  be fixed in Phase 1. In a host-rendered manuscript (A3) the same patterns are
+  expected and are left in place; a landmine is only a landmine on the sealed
+  path.
 - A6. Vendored drift. Diff `Dockerfile`, `Makefile`, `.Rprofile`,
   `renv/activate.R`, and both CI workflows against the current zzcollab
   templates. Specifically check: does `.Rprofile` still contain unsubstituted
