@@ -22,6 +22,21 @@ idempotent: re-running the Phase A audit after any phase confirms convergence.
   editor that does not race the file provider. Never use `sed -i`, `perl -i`,
   or other in-place CLI editors on those paths.
 
+## Governing convention: report.Rmd is canonical
+
+`report.Rmd` is the canonical document. In every report unit (a numbered
+subdirectory under `analysis/report/`) exactly one `report.Rmd` is the single
+source of truth that CI renders and that the dependency manifest must cover.
+Every other Rmd is subordinate to it and outside the sealed scope: draft
+variants (`report-slim.Rmd`, `report_short.Rmd`), a host-rendered submission
+manuscript (`paper.Rmd`, `supplement.Rmd`) with its own author toolchain,
+working scripts, and vignettes. This is why the render workflow discovers
+`^report[.]Rmd$` and nothing else, and it is the anchor for the discovery
+(A3), manifest-scope (A4), and landmine (A5) rules below: a package or a
+runtime-install pattern matters to the migration only insofar as it reaches a
+`report.Rmd` on the sealed path. Migrating a non-conforming repo means making
+its canonical output a `report.Rmd`, not teaching CI to render everything.
+
 ## Per-repo parameters
 
 Resolve these once per repo; they drive every phase.
