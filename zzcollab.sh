@@ -528,10 +528,12 @@ HELPEOF
 cmd_renv() {
 
     local r_version=""
+    local newlock=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --r-version) r_version="$2"; shift 2 ;;
+            --newlock)   newlock=true; shift ;;
             help|--help|-h)
                 cat << 'EOF'
 RENV SETUP (without Docker)
@@ -543,6 +545,9 @@ USAGE:
 
 OPTIONS:
     --r-version VERSION    Specify R version (default: query CRAN)
+    --newlock              Reset renv.lock to the minimal seed (renv +
+                           tinytest), backing up the old lock first; then
+                           regrow the closure with 'make snapshot'
     --help, -h             Show this help
 
 CREATES:
@@ -562,6 +567,34 @@ EOF
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
     done
+
+    # --newlock: overwrite renv.lock with the minimal two-package seed (renv +
+    # tinytest) and return, without the full interactive renv setup. Resets the
+    # lock to a clean base so the closure can be regrown from code with
+    # 'make snapshot'. The R version is taken from the current lock (falling
+    # back to config, then the default), and the existing lock is backed up to
+    # renv.lock.bak first so the reset is reversible.
+    if [[ "$newlock" == true ]]; then
+        if [[ ! -f renv.lock && ! -f DESCRIPTION ]]; then
+            log_error "Not a project directory (no renv.lock or DESCRIPTION)."
+            exit 1
+        fi
+        if [[ -z "$r_version" && -f renv.lock ]]; then
+            r_version="$(_vrf_renv_r_version renv.lock)"
+        fi
+        if [[ -z "$r_version" ]]; then
+            load_config 2>/dev/null || true
+            r_version="${CONFIG_R_VERSION:-$ZZCOLLAB_DEFAULT_R_VERSION}"
+        fi
+        if [[ -f renv.lock ]]; then
+            cp renv.lock renv.lock.bak
+            log_info "Backed up existing renv.lock to renv.lock.bak"
+        fi
+        create_renv_lock_minimal "$r_version"
+        log_info "Reset renv.lock to the base seed (renv + tinytest)."
+        log_info "Regrow the closure from code with 'make snapshot'."
+        return 0
+    fi
 
     # Ensure zzcollab workspace is initialized
     ensure_workspace_initialized "renv" || exit 1
@@ -2786,9 +2819,19 @@ main() {
                 done
                 ;;
             renv)
-                cmd_renv
-                commands_run=$((commands_run + 1))
                 shift
+                # Collect renv's leading flags (e.g. --newlock, --r-version) and
+                # forward them; leave any following command for the next loop
+                # iteration so 'zzc renv docker' still chains.
+                local renv_args=()
+                while [[ $# -gt 0 ]] && [[ "$1" == -* ]]; do
+                    case "$1" in
+                        --r-version) renv_args+=("--r-version" "$2"); shift 2 ;;
+                        *)           renv_args+=("$1"); shift ;;
+                    esac
+                done
+                cmd_renv ${renv_args[@]+"${renv_args[@]}"}
+                commands_run=$((commands_run + 1))
                 ;;
             data)
                 shift

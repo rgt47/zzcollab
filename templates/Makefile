@@ -86,6 +86,9 @@ check-renv-no-strict: ## Validate deps: skip tests/ and vignettes/
 snapshot: ## Capture code deps into renv.lock + DESCRIPTION (run before commit)
 	$(DOCKER_RUN) Rscript -e "renv::hydrate(); renv::snapshot(prompt = FALSE); zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
+reset-lock: ## Rebuild renv.lock from a fresh code scan, refreshing ALL versions (deliberate bump)
+	$(DOCKER_RUN) Rscript -e "zzrenvcheck::check_packages(fresh = TRUE, strict = TRUE)"
+
 style: ## Format R code with styler (in container; needs code-quality enabled)
 	$(DOCKER_RUN) Rscript -e "styler::style_dir('R'); if (dir.exists('analysis')) styler::style_dir('analysis')"
 
@@ -404,4 +407,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
