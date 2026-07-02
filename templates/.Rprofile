@@ -44,12 +44,14 @@ renv_enabled <- in_container && install_mode != "description"
 
 # Set repos based on environment
 if (in_container) {
-  # Use Posit Package Manager for pre-compiled binaries in container
-  # Set both repos AND renv.repos.cran (renv uses this option as its default)
-  options(
-    repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"),
-    renv.repos.cran = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"
-  )
+  # Use Posit Package Manager for pre-compiled binaries in container. Derive the
+  # mirror from RENV_CONFIG_REPOS_OVERRIDE, which the Dockerfile sets to the
+  # dated PPM URL, so the Ubuntu codename and PPM snapshot live in exactly one
+  # place (the Dockerfile) and cannot drift or be left unsubstituted. Set both
+  # repos AND renv.repos.cran (renv uses the latter as its default).
+  ppm_repo <- Sys.getenv("RENV_CONFIG_REPOS_OVERRIDE",
+                         "https://packagemanager.posit.co/cran/__linux__/noble/latest")
+  options(repos = c(CRAN = ppm_repo), renv.repos.cran = ppm_repo)
 } else {
   options(repos = c(CRAN = "https://cloud.r-project.org"))
 }
@@ -226,7 +228,7 @@ if (!renv_enabled) {
   }
 
   # Re-apply Posit PM repos AFTER renv::load() (which overrides from lockfile)
-  options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/$UBUNTU_CODENAME/$PPM_SNAPSHOT"))
+  options(repos = c(CRAN = ppm_repo))
 }
 
 # ==========================================
