@@ -226,3 +226,66 @@ runtime-install landmines, no unsubstituted `.Rprofile` placeholders, a
 `Makefile` with the snapshot loop, CI resolving the renv library via
 `renv::paths` with the manifest gate present, and a `renv.lock`/`DESCRIPTION`
 pair in which every code-referenced package is both locked and role-declared.
+
+## Appendix C. File portability: verbatim vs repo-specific
+
+When migrating or keeping a fleet in sync, it helps to know which scaffold
+files can be copied between compendia unchanged and which carry per-project
+content. Classifying the zzcollab-managed files (verified by diffing two
+converged publishing-profile repos) gives four groups.
+
+**1. Verbatim-portable (infrastructure, no project content).** These reference
+the project only through runtime derivation, never a hardcoded name, so they
+are byte-identical across repos and copy as-is:
+
+- `Dockerfile`
+- `Makefile` (`PACKAGE_NAME := $(shell basename $(CURDIR))`)
+- `.github/workflows/r-package.yml` (globs `*.tar.gz`, operates on the CWD)
+- `.github/workflows/render-report.yml` (discovers `report.Rmd` by convention)
+- `.Rprofile` (generic once on the same template version)
+- `renv/.gitignore`
+
+Caveat: "verbatim" holds only within a **profile + version cohort**. The
+`Dockerfile` is identical across two repos only because they share the same
+profile, R version, base image digest, and PPM snapshot. A repo on a different
+R version or PPM date differs in exactly those fields (`FROM` digest,
+`RENV_CONFIG_REPOS_OVERRIDE`, the OCI labels), even though the rest is identical.
+
+**2. Template-with-substitution (same skeleton, a few filled fields).** Copy the
+template, then fill the substituted values. Distinguish two kinds of field,
+because they differ in how "portable" they are:
+
+- *Project-varying* (differ per repo): the package name in `DESCRIPTION`
+  (`${PKG_NAME}`) and `tests/tinytest.R` (`test_package("<pkgname>")`), and the
+  title in `CITATION.cff`.
+- *Author-constant* (the same across one author's whole fleet, so standardize
+  them): the copyright holder in `LICENSE`, and `Authors@R` in `DESCRIPTION` /
+  the authors in `CITATION.cff`. These should be identical across all of an
+  author's repos; a difference here is almost always an un-customized scaffold
+  default (for example `COPYRIGHT HOLDER: Your Name`) that should be corrected
+  to the author's real name, not a legitimate per-project value. Only the
+  `LICENSE` year is nominally per-project (the copyright year), and even that is
+  commonly standardized.
+
+**3. Genuinely repo-specific (never copy).** These are the identity and work of
+the compendium:
+
+- `renv.lock` (the pinned closure)
+- `NAMESPACE` (roxygen-generated exports)
+- `.Rbuildignore` / `.gitignore` (project additions)
+- `R/`, `src/`, `analysis/` (the actual code and manuscripts)
+
+**4. renv-managed or conditional (leave to the tool, or present-when-needed).**
+
+- `renv/activate.R` is written by renv and pinned to the project's renv
+  version; a cross-repo diff here reflects differing renv versions, not
+  zzcollab drift. Do not hand-copy it; let `renv` manage it.
+- `renv/settings.json` is renv configuration.
+- `.renvignore` exists only when the repo has host-rendered manuscripts to
+  exclude (Appendix, host-rendered-manuscript rule).
+
+Practical use during migration: sync group 1 freely to bring an old scaffold up
+to the current infrastructure, regenerate group 2 from the template with the
+project's values, never touch group 3, and let renv own group 4. Two forms of
+*accidental* difference to watch for and re-sync: a stale `.Rprofile` template
+version, and `renv/activate.R` lagging the fleet's renv version.
