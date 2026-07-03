@@ -903,9 +903,12 @@ ${install_block}
 # issues during docker build on cloud-mounted filesystems.
 
 
-# Create non-root user
+# Create non-root user. Own the renv library AND cache (populated as root by
+# the restore above) so the run user can hydrate/snapshot into them at runtime;
+# the earlier chmod is non-recursive and predates the restore, so it does not
+# cover the root-owned package subdirectories (F-2).
 RUN useradd --create-home --shell /bin/bash \${USERNAME} && \\
-    chown -R \${USERNAME}:\${USERNAME} /usr/local/lib/R/site-library
+    chown -R \${USERNAME}:\${USERNAME} /usr/local/lib/R/site-library /opt/renv
 
 USER \${USERNAME}
 WORKDIR /home/\${USERNAME}/project

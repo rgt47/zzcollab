@@ -67,7 +67,19 @@
       "Bash(git commit *)",
       "Bash(sed -i '' 's/RUN R -e \"renv::restore\\(\\)\"/RUN R -e \"renv::init\\(bare=TRUE, force=TRUE, restart=FALSE\\); renv::restore\\(\\)\"/' Dockerfile)",
       "Bash(docker build *)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(git *)",
+      "Bash(yq keys *)",
+      "Bash(yq .stages templates/gitlab/.gitlab-ci.yml)",
+      "Bash(yq '.[\"render-host\"].rules' templates/gitlab/.gitlab-ci.yml)",
+      "Bash(yq '.[\"check-container\"] | has\\(\"cache\"\\)' templates/gitlab/.gitlab-ci.yml)",
+      "Bash(yq 'to_entries | .[] | select\\(.key | test\\(\"^\\(check|render\\)\"\\)\\) | .key + \" -> \" + .value.image' templates/gitlab/.gitlab-ci.yml)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(gh pr create --base main --head release/v0.3.2 --title 'Release v0.3.2: bug fixes + clean R CMD check' --body ' *)",
+      "Bash(pandoc dockerfile-template-optimization-whitepaper.md -o dockerfile-template-optimization-whitepaper.pdf --pdf-engine=xelatex -V monofont=\"DejaVu Sans Mono\" -V geometry:margin=1in)",
+      "Bash(python3 -c \"import yaml,sys; yaml.safe_load\\(open\\('.github/workflows/integration-tests.yml'\\)\\); print\\('YAML OK'\\)\")",
+      "Bash(shellcheck --severity=warning modules/docker.sh)",
+      "Bash(gh pr *)"
     ]
   }
 }
