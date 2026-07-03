@@ -89,7 +89,7 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
 # self-heals any package this list omits.
 RUN <<'WARMUP'
 set -eu
-R -e "tinytex::tlmgr_install(c('amsfonts','booktabs','setspace','multirow','wrapfig','float','colortbl','pdflscape','tabu','varwidth','threeparttable','threeparttablex','environ','trimspaces','ulem','makecell','mathtools','fancyhdr','caption','enumitem','fp','pgf','pgfplots','siunitx'))"
+R -e "tinytex::tlmgr_install(c('amsfonts','booktabs','setspace','multirow','wrapfig','float','colortbl','pdflscape','tabu','varwidth','threeparttable','threeparttablex','environ','trimspaces','ulem','makecell','mathtools','fancyhdr','caption','enumitem','fp','pgf','pgfplots','siunitx','lineno'))"
 d=/tmp/texwarmup
 mkdir -p "$d"
 cat > "$d/01-report.Rmd" <<'RMD'
@@ -112,6 +112,7 @@ cat > "$d/02-kitchensink.Rmd" <<'RMD'
 title: warm-up kitchen sink
 output:
   pdf_document:
+    latex_engine: xelatex
     extra_dependencies:
       - booktabs
       - longtable
@@ -903,11 +904,14 @@ ${install_block}
 # issues during docker build on cloud-mounted filesystems.
 
 
-# Create non-root user. Own the renv library AND cache (populated as root by
-# the restore above) so the run user can hydrate/snapshot into them at runtime;
-# the earlier chmod is non-recursive and predates the restore, so it does not
-# cover the root-owned package subdirectories (F-2).
-RUN useradd --create-home --shell /bin/bash \${USERNAME} && \\
+# Create non-root user, in the 'staff' group. rocker/verse owns its TeX tree
+# (/opt/texlive, /usr/local/texlive) as root:staff and makes it group-writable,
+# so a render that installs LaTeX packages at run time (tinytex) needs the run
+# user to be in 'staff'; otherwise tlmgr/fmtutil fail with permission errors.
+# Own the renv library AND cache (populated as root by the restore above) so the
+# run user can hydrate/snapshot into them; the earlier chmod is non-recursive
+# and predates the restore, so it does not cover the package subdirectories (F-2).
+RUN useradd --create-home --shell /bin/bash --groups staff \${USERNAME} && \\
     chown -R \${USERNAME}:\${USERNAME} /usr/local/lib/R/site-library /opt/renv
 
 USER \${USERNAME}
