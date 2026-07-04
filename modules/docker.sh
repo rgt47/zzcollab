@@ -50,23 +50,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
 "
     fi
 
-    # R dev-tooling install (none of these belong in renv.lock; see the
-    # package-placement white paper). yaml and here are always installed: yaml
-    # is needed by renv's R Markdown dependency parser, here is the common
-    # compendium path-resolution helper. languageserver (in-container LSP) is
-    # installed unless disabled (zzc config set languageserver false). styler
-    # and lintr are added when the code-quality feature is active, since with no
-    # host R the linters must run in the container. Ncpus parallelises the
-    # binary install (white paper F-8).
+    # R dev-tooling install only. None of these belong in renv.lock (see the
+    # package-placement white paper). languageserver (in-container LSP) is
+    # installed unless disabled (zzc config set languageserver false). styler and
+    # lintr are added when the code-quality feature is active, since with no host
+    # R the linters must run in the container. Project packages such as yaml and
+    # here are NOT installed here: they are ordinary dependencies declared in
+    # DESCRIPTION and restored from renv.lock. Ncpus parallelises the binary
+    # install (white paper F-8).
     load_config 2>/dev/null || true
-    local pkgs="'yaml', 'here'"
-    [[ "${CONFIG_LANGUAGESERVER:-true}" == "true" ]] && pkgs="'languageserver', ${pkgs}"
+    local pkgs=""
+    [[ "${CONFIG_LANGUAGESERVER:-true}" == "true" ]] && pkgs="'languageserver'"
     if [[ -f .pre-commit-config.yaml || "${CONFIG_FEAT_CODE_QUALITY:-off}" == "on" ]]; then
-        pkgs="${pkgs}, 'styler', 'lintr'"
+        [[ -n "$pkgs" ]] && pkgs="${pkgs}, "
+        pkgs="${pkgs}'styler', 'lintr'"
     fi
-    cmds+="# Install R dev tooling (languageserver/styler/lintr are config-gated)
+    if [[ -n "$pkgs" ]]; then
+        cmds+="# Install R dev tooling only (languageserver/styler/lintr, config-gated;
+# never in renv.lock). Project packages come from renv::restore(), not here.
 RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores()))\"
 "
+    fi
 
     # For LaTeX-capable bases (rocker/verse, the publishing profile), pre-bake
     # the LaTeX package closure at build time so PDF rendering works for the
@@ -577,8 +581,58 @@ derive_system_deps() {
     printf '%s\n' "${all_deps[@]}" | sort -u | paste -sd' ' -
 }
 
+# Libraries already present in "full" rocker bases (tidyverse/verse/rstudio/
+# shiny), which build the tidyverse from source and so ship the standard build
+# toolchain and the common -dev libraries. A package whose only system needs are
+# in this set requires no extra apt layer on those bases.
+BASE_PROVIDED_SYSLIBS="build-essential pkg-config \
+libcurl4-openssl-dev libssl-dev libxml2-dev libxslt1-dev \
+libfontconfig1-dev libfreetype6-dev libfribidi-dev libharfbuzz-dev \
+libjpeg-dev libpng-dev libtiff-dev libcairo2-dev libxt-dev \
+libicu-dev zlib1g-dev libblas-dev liblapack-dev"
+
+# Remove base-provided libraries from a space-separated dep list, returning the
+# genuinely-extra libraries (sorted, deduplicated) or the empty string.
+filter_base_provided_deps() {
+    local deps="$1" out=() d
+    for d in $deps; do
+        case " $BASE_PROVIDED_SYSLIBS " in
+            *" $d "*) : ;;
+            *) out+=("$d") ;;
+        esac
+    done
+    [[ ${#out[@]} -gt 0 ]] && printf '%s\n' "${out[@]}" | sort -u | paste -sd' ' -
+}
+
 generate_system_deps_install() {
-    local deps="$1"
+    local deps="$1" base_image="${2:-}"
+
+    # On a full base (tidyverse/verse/rstudio/shiny) the build toolchain and the
+    # common -dev libraries are already present; drop them and emit an apt layer
+    # only for genuinely-extra libraries (for example libgdal-dev, libudunits2-
+    # dev). On a minimal base, emit the standard toolchain preamble plus deps.
+    local full_base="false"
+    case "$base_image" in
+        *tidyverse*|*verse*|*rstudio*|*shiny*) full_base="true" ;;
+    esac
+
+    if [[ "$full_base" == "true" ]]; then
+        deps=$(filter_base_provided_deps "$deps")
+        if [[ -z "$deps" ]]; then
+            echo "# No additional system dependencies required"
+            return 0
+        fi
+        cat << EOF
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \\
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \\
+    set -ex && \\
+    apt-get update && \\
+    apt-get install -y --no-install-recommends \\
+        $deps && \\
+    rm -rf /var/lib/apt/lists/*
+EOF
+        return 0
+    fi
 
     if [[ -z "$deps" ]]; then
         echo "# No additional system dependencies required"
@@ -683,7 +737,7 @@ generate_dockerfile() {
     fi
 
     local system_deps_install
-    system_deps_install=$(generate_system_deps_install "$system_deps")
+    system_deps_install=$(generate_system_deps_install "$system_deps" "$base_image")
 
     local deps_comment="Packages: (none)"
     if [[ ${#r_packages[@]} -gt 5 ]]; then
@@ -760,8 +814,13 @@ resolve_image_digest() {
         return 0
     fi
 
-    log_info "  Pulling ${image_ref} to resolve digest..."
-    if ! docker pull "$image_ref" > /dev/null 2>&1; then
+    # Pull the amd64 image explicitly. The rocker images publish amd64 manifests
+    # and CI builds on amd64, so on an arm64 host a plain pull fails with "no
+    # matching manifest for linux/arm64". --platform makes digest resolution work
+    # on Apple Silicon too. RepoDigests still records the tag's (arch-independent)
+    # repo digest, so the pinned FROM is the same digest CI resolves.
+    log_info "  Pulling ${image_ref} (linux/amd64) to resolve digest..."
+    if ! docker pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
         log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
         echo ""
         return 0
