@@ -29,6 +29,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     source "${_doctor_dir}/../lib/constants.sh"
     # shellcheck source=/dev/null
     source "${_doctor_dir}/../lib/core.sh"
+    # templates.sh provides regenerate_template_file, used by --force.
+    # shellcheck source=/dev/null
+    source "${_doctor_dir}/../lib/templates.sh"
     unset _doctor_dir
 fi
 
@@ -37,6 +40,11 @@ CURRENT_VERSION="${ZZCOLLAB_TEMPLATE_VERSION}"
 # --fix state (populated by check_version_stamps, applied after check_workspace)
 FIX_MODE=false
 DRY_RUN=false
+# --force: regenerate the managed template files from the current templates
+# (full content, not a stamp bump), ignoring the version comparison. Needed to
+# migrate a re-baselined scaffold whose stamp reads as "newer" than the new
+# template line, and whose content genuinely changed.
+FORCE=false
 declare -a FIX_TARGETS=()
 
 readonly COL_RESET='\033[0m'
@@ -738,6 +746,43 @@ print_info_status() {
 }
 
 # Main entry point
+# Regenerate the managed static-template files from the current templates, with
+# substitution (CONTAINER_RUNTIME, PKG_NAME, author, ...). Used by --force to
+# migrate a scaffold whose files are stale despite a "newer" stamp. The
+# Dockerfile is not handled here (it is generated, profile-specific); refresh it
+# with 'zzc docker --base-image <image>'.
+force_refresh_workspace() {
+    local dir="$1"
+    echo ""
+    echo "  Force refresh (regenerate managed files from templates):"
+    local pairs=(
+        "Makefile:Makefile"
+        ".Rprofile:.Rprofile"
+        "workflows/r-package.yml:.github/workflows/r-package.yml"
+        "workflows/render-report.yml:.github/workflows/render-report.yml"
+    )
+    (
+        cd "$dir" || return 1
+        load_config 2>/dev/null || true
+        local pair tmpl dest
+        for pair in "${pairs[@]}"; do
+            tmpl="${pair%%:*}"; dest="${pair##*:}"
+            [[ -f "$dest" ]] || continue
+            if [[ "$DRY_RUN" == "true" ]]; then
+                printf "    %-38s ${COL_DIM}would regenerate from %s${COL_RESET}\n" \
+                    "$dest" "$tmpl"
+            elif regenerate_template_file "$tmpl" "$dest" >/dev/null 2>&1; then
+                printf "    ${COL_GREEN}✓${COL_RESET} %-36s (from %s)\n" "$dest" "$tmpl"
+            else
+                printf "    ${COL_RED}✗${COL_RESET} %-36s (regeneration failed)\n" "$dest"
+            fi
+        done
+    )
+    if [[ -f "$dir/Dockerfile" ]]; then
+        printf "    ${COL_YELLOW}Dockerfile:${COL_RESET} generated per profile; refresh with 'zzc docker --base-image <image>'\n"
+    fi
+}
+
 main() {
     local dirs=()
 
@@ -750,6 +795,11 @@ main() {
             --dry-run)
                 FIX_MODE=true
                 DRY_RUN=true
+                shift
+                ;;
+            --force)
+                FIX_MODE=true
+                FORCE=true
                 shift
                 ;;
             help|--help|-h)
@@ -767,7 +817,12 @@ main() {
                 echo "  DIR            One or more workspace directories (default: .)"
                 echo "  --fix          Bump outdated stamp lines in place. Only the"
                 echo "                 stamp line is modified; other content preserved."
-                echo "  --dry-run      Preview --fix actions without writing."
+                echo "  --force        Regenerate the managed files (Makefile, .Rprofile,"
+                echo "                 workflows) from the current templates, replacing"
+                echo "                 content. Ignores the version comparison; use to"
+                echo "                 migrate a re-baselined scaffold. (Dockerfile is"
+                echo "                 profile-specific: refresh with 'zzc docker'.)"
+                echo "  --dry-run      Preview --fix/--force actions without writing."
                 echo "  help           Show this help"
                 echo ""
                 echo "Reference: docs/workspace-structure.md"
@@ -791,6 +846,7 @@ main() {
         local abs_dir
         abs_dir="$(cd "$dir" && pwd)"
         check_workspace "$abs_dir" || exit_code=1
+        [[ "$FORCE" == "true" ]] && force_refresh_workspace "$abs_dir"
     done
 
     return $exit_code
