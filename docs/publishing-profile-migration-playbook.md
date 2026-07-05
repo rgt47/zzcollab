@@ -117,7 +117,19 @@ was done for the reference migration.
   defeat both a sealed render and renv's static dependency discovery and must
   be fixed in Phase 1. In a host-rendered manuscript (A3) the same patterns are
   expected and are left in place; a landmine is only a landmine on the sealed
-  path.
+  path. Also grep report chunks for `rm(list = ls())`: a report that clears the
+  environment formerly broke the render harness by deleting its loop variables
+  (`old_wd`). This is now neutralized because the render workflow renders each
+  report in a fresh environment (`envir = new.env()`), so the grep is
+  informational rather than blocking; the pattern remains a code smell worth
+  removing, since it does not actually guarantee a clean slate (attached
+  packages and changed options survive it). Two further report-side render
+  dependencies are now handled by the render workflow rather than a per-repo
+  fix: a report calling `library(<own_pkg>)` works because the workflow
+  self-installs the compendium package before rendering, and a report with a
+  custom output format (for example `bookdown::pdf_document2` with an
+  `in_header:` include) keeps its includes because the workflow renders with the
+  report's own format instead of forcing `pdf_document`.
 - A6. Vendored drift. Diff `Dockerfile`, `Makefile`, `.Rprofile`,
   `renv/activate.R`, and both CI workflows against the current zzcollab
   templates. Specifically check: does `.Rprofile` still contain unsubstituted
