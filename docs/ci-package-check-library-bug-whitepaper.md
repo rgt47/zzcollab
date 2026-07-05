@@ -133,11 +133,39 @@ bottom.
 - **Interpretation.** Established the symptom and, with the cross-repository
   control, the root cause above. Baseline for all subsequent experiments.
 
-### E1: F1, activate renv and pass libpath (PLANNED)
+### E1: F1, activate renv and pass libpath (FAILED)
 
-- **Change.** Replace the check step's `--no-init-file` path computation with
-  `if (file.exists('renv.lock')) renv::load()` and call
+- **Change.** Replaced the check step's `--no-init-file` path computation with
+  `if (file.exists('renv.lock')) renv::load()` and called
   `rcmdcheck::rcmdcheck(..., libpath = c(CI_TOOLS_LIB, .libPaths()))`.
+- **Commit.** `35fcee1` (adaptive-alloc-mmrm).
+- **Outcome.** `R Package Check`: failure. New error (verified, from the log):
+  `Error in loadNamespace(x) : there is no package called 'renv'` at the
+  `renv::load()` call.
+- **Interpretation.** The failure mode changed, which is informative. `renv`
+  itself is not on the check step's library path. The check step is a separate
+  shell running `--no-init-file`, so the project `.Rprofile` never activates
+  renv, and the renv installed by the restore step went to a location this step
+  does not see. This also explains E0 more precisely: E0's
+  `tryCatch(renv::paths[['library']](), error = Sys.glob('renv/library/*/*'))`
+  was silently catching the same missing-renv error and falling back to a
+  project-relative glob that does not match where restore installed (the
+  cache-rooted `~/.cache/R/renv/library/<project>-<hash>/`), so `mmrm` appeared
+  missing. The deeper root cause is thus library *provisioning* across steps,
+  not merely path resolution. F1 as written is rejected because it presumes
+  renv is importable in the check step.
+
+### E2: F2, single explicit library for tools, restore, and check (PLANNED)
+
+- **Change.** Stop relying on renv activation and cross-step library visibility.
+  Install `renv`, `rcmdcheck`, `tinytest` into the fixed `CI_TOOLS_LIB`
+  (`/tmp/ci-tools`, which persists across steps in the same container job) with
+  that path first on `.libPaths()`; run `renv::restore(library = CI_TOOLS_LIB)`
+  so the pinned packages (including `mmrm`) land in that same library; then
+  `rcmdcheck::rcmdcheck(libpath = c(CI_TOOLS_LIB, .libPaths()))`. Everything the
+  check needs is then in one known library on the path, independent of renv's
+  project-library resolution and activation state. renv's global cache still
+  backs the install, so `actions/cache` continues to help.
 - **Commit.** (pending)
 - **Outcome.** (pending)
 - **Interpretation.** (pending)
