@@ -204,13 +204,19 @@ explicit about which folders exist, what each contains, and which R session can
 see each one. During a check run there are, at various moments, five distinct
 library locations on the machine.
 
+Their filesystem locations, referenced below by the short labels L1 to L5, are:
+L1 is `/usr/local/lib/R/site-library`; L2 is a per-project folder under
+`~/.cache/R/renv/library/` (named `<project>-<hash>`); L3 is
+`~/.cache/R/renv/cache`; L4 is `/tmp/ci-tools` (the value of `CI_TOOLS_LIB`); and
+L5 has no fixed folder, being whatever path the check subprocess is handed.
+
 | # | Location | Put there by | Contains | Default visibility |
 | --- | --- | --- | --- | --- |
-| L1 | Container base site-library, `/usr/local/lib/R/site-library` | Baked into `rocker/tidyverse` | the tidyverse and its dependencies (`dplyr`, `ggplot2`, `Rcpp`, ...), base-recommended packages (`MASS`, `nlme`, `survival`) | On `.libPaths()` of *every* R session in the container, automatically |
-| L2 | renv project library, `~/.cache/R/renv/library/<project>-<hash>/.../` | `renv::restore` when renv is *activated* | the pinned packages from `renv.lock`, including `mmrm` | Only visible to a session where renv has been activated |
-| L3 | renv global cache, `~/.cache/R/renv/cache/...` | renv, underneath everything | one content-addressed copy of each package binary; L2 is symlinks into it | Not a library path itself; it backs L2 and is what `actions/cache` persists |
-| L4 | CI tools library, `/tmp/ci-tools` (`CI_TOOLS_LIB`) | an explicit `install.packages(lib = ...)` step | `rcmdcheck`, `tinytest` | Only when a step explicitly prepends it to `.libPaths()` |
-| L5 | The R CMD check subprocess's path | `rcmdcheck` via `R_LIBS` | whatever `libpath` it is handed | Set fresh for the child process; does *not* inherit the parent's `.libPaths()` unless passed |
+| L1 | Container base site-library | Baked into the `rocker/tidyverse` image | the tidyverse and its dependencies (`dplyr`, `ggplot2`, `Rcpp`), and base-recommended packages (`MASS`, `nlme`, `survival`) | On `.libPaths()` of every R session in the container, automatically |
+| L2 | renv project library | `renv::restore`, when renv is activated | the pinned packages from `renv.lock`, including `mmrm` | Only a session where renv has been activated |
+| L3 | renv global cache | renv, underneath everything | one content-addressed copy of each package binary; L2 is symlinks into it | Not a library path itself; it backs L2 and is what `actions/cache` persists |
+| L4 | CI tools library (`CI_TOOLS_LIB`) | an explicit `install.packages(lib = ...)` step | `rcmdcheck`, `tinytest` | Only when a step prepends it to `.libPaths()` |
+| L5 | Check subprocess path | `rcmdcheck`, via `R_LIBS` | whatever `libpath` it is handed | Set fresh for the child; does not inherit the parent's `.libPaths()` unless passed |
 
 The three things that make this confusing are all in this table. First, L1 is
 free and always present, which is exactly why the bug hides: if an Import is in
@@ -397,4 +403,5 @@ Three lessons generalise beyond this bug.
 
 ---
 
+*Rendered on 2026-07-05 at 11:28 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-package-check-library-bug-whitepaper.md*
