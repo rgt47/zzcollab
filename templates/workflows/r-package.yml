@@ -78,11 +78,19 @@ jobs:
           restore-keys: |
             renv-
 
+      # Restore the pinned library into the fixed CI_TOOLS_LIB (not renv's
+      # default project library), so the exact folder that receives the packages
+      # is one that later steps can put on the path. See the CI library-path
+      # white paper (docs/ci-package-check-library-bug-whitepaper.md): a check
+      # subprocess only sees packages that are on the library path handed to it.
       - name: Install renv and restore project packages
         if: steps.mode.outputs.renv == 'true'
         run: |
-          Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
-          Rscript -e "renv::restore(prompt = FALSE)"
+          mkdir -p "$CI_TOOLS_LIB"
+          Rscript --no-init-file -e "\
+            .libPaths(c(Sys.getenv('CI_TOOLS_LIB'), .libPaths())); \
+            install.packages('renv', lib = Sys.getenv('CI_TOOLS_LIB'), repos = 'https://cloud.r-project.org'); \
+            renv::restore(prompt = FALSE, library = Sys.getenv('CI_TOOLS_LIB'))"
 
       # --- DESCRIPTION backend: install declared dependencies via pak ---
       - name: Install dependencies from DESCRIPTION
@@ -98,13 +106,15 @@ jobs:
                                        lib = Sys.getenv('CI_TOOLS_LIB'),
                                        repos = 'https://cloud.r-project.org')"
 
+      # CI_TOOLS_LIB now holds renv, the restored dependencies, and the check
+      # tools; hand it to the check subprocess via libpath so every Import
+      # resolves (not just those already in the container base image).
       - name: Run R CMD check
         run: |
           Rscript --no-init-file -e "\
-            rlib <- tryCatch(renv::paths[['library']](), error = function(e) normalizePath(Sys.glob('renv/library/*/*')[1], mustWork = FALSE)); \
-            libs <- c(Sys.getenv('CI_TOOLS_LIB'), rlib, .libPaths()); \
-            .libPaths(libs[!is.na(libs) & nchar(libs) > 0]); \
-            rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'error')"
+            libs <- c(Sys.getenv('CI_TOOLS_LIB'), .libPaths()); \
+            libs <- libs[!is.na(libs) & nchar(libs) > 0]; \
+            rcmdcheck::rcmdcheck(args = '--no-manual', error_on = 'error', libpath = libs)"
 
       - name: Run tests
         continue-on-error: true

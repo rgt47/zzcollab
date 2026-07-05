@@ -2,10 +2,10 @@
 
 *2026-07-05 10:31 PDT*
 
-Status: OPEN (diagnosis complete, fix in progress). This is a live document. It
-is updated after every debugging experiment, whether the experiment succeeds or
-fails, so that the reasoning trail is preserved in full. The running record is
-the Experiment Log at the end.
+Status: FIX VALIDATED ON PILOT (E2), template port and regression guard in
+progress (E3). This is a live document. It is updated after every debugging
+experiment, whether the experiment succeeds or fails, so that the reasoning trail
+is preserved in full. The running record is the Experiment Log at the end.
 
 This paper is written to be followed by a careful reader who is not an R or
 continuous-integration specialist. The first section is a primer on the moving
@@ -193,6 +193,69 @@ will strike every compendium in the fleet that imports a specialised package
 (for example `mmrm`, other `TMB`-based models, `rstan`, geospatial stacks). The
 migration must not be batched until the template is fixed and re-verified.
 
+### 4.1 The library paths in play, in detail
+
+The whole bug is an accounting error about folders. It is worth being fully
+explicit about which folders exist, what each contains, and which R session can
+see each one. During a check run there are, at various moments, five distinct
+library locations on the machine.
+
+| # | Location | Put there by | Contains | Default visibility |
+| --- | --- | --- | --- | --- |
+| L1 | Container base site-library, `/usr/local/lib/R/site-library` | Baked into `rocker/tidyverse` | the tidyverse and its dependencies (`dplyr`, `ggplot2`, `Rcpp`, ...), base-recommended packages (`MASS`, `nlme`, `survival`) | On `.libPaths()` of *every* R session in the container, automatically |
+| L2 | renv project library, `~/.cache/R/renv/library/<project>-<hash>/.../` | `renv::restore` when renv is *activated* | the pinned packages from `renv.lock`, including `mmrm` | Only visible to a session where renv has been activated |
+| L3 | renv global cache, `~/.cache/R/renv/cache/...` | renv, underneath everything | one content-addressed copy of each package binary; L2 is symlinks into it | Not a library path itself; it backs L2 and is what `actions/cache` persists |
+| L4 | CI tools library, `/tmp/ci-tools` (`CI_TOOLS_LIB`) | an explicit `install.packages(lib = ...)` step | `rcmdcheck`, `tinytest` | Only when a step explicitly prepends it to `.libPaths()` |
+| L5 | The R CMD check subprocess's path | `rcmdcheck` via `R_LIBS` | whatever `libpath` it is handed | Set fresh for the child process; does *not* inherit the parent's `.libPaths()` unless passed |
+
+The three things that make this confusing are all in this table. First, L1 is
+free and always present, which is exactly why the bug hides: if an Import is in
+L1, no other location matters. Second, L2 (where `mmrm` actually goes) is only
+visible after activation, and activation is precisely what the check step
+suppresses with `--no-init-file`. Third, L5 is a *separate* path belonging to the
+check subprocess; the parent session's `.libPaths()` is not automatically the
+child's, so a package can be perfectly visible to the calling `Rscript` and still
+invisible to the check.
+
+It helps to trace the path arithmetic of each experiment as a small ledger of
+'where did the package go' versus 'where did the check look'.
+
+**E0 (baseline).** Restore ran with `.Rprofile` active, so renv activated and
+installed `mmrm` into L2. The check step ran `--no-init-file`, so renv did not
+activate and L2 was not on its path. Its path was, in effect, `[L4, rlib, L1]`,
+where `rlib` was computed by `tryCatch(renv::paths[['library']](), error =
+Sys.glob('renv/library/*/*')[1])`. Because renv was not importable in this step
+(see E1), the `tryCatch` fell to the glob, which matched the *project-relative*
+folder `renv/library/...`, an empty or non-existent path, not the real L2 under
+`~/.cache`. So the effective path was `[L4, (nothing useful), L1]`, and since
+`mmrm` lives only in L2, the check subprocess (whose L5 defaulted to the parent
+path) could not find it. `MASS` and `nlme` did resolve, but only because they are
+base-recommended packages sitting in L1. The failure was thus guaranteed for
+`mmrm` and impossible for `MASS`, which matches the observation exactly.
+
+**E1 (activate renv, pass libpath).** The intent was to replace the guesswork
+with `renv::load()`, which would set the path to L2 authoritatively, then pass
+that path into L5 via `libpath`. But the step tried to call `renv::load()` before
+renv was on the path: renv had been installed into L2 (redirected there by
+activation during E0's restore), and the check step could not see L2. So the very
+first token, `renv::`, failed with 'there is no package called renv'. The
+experiment never reached the check. Its value was diagnostic: it proved that even
+renv itself was mislocated, upgrading the diagnosis from 'the path is computed
+wrongly' to 'the provisioning put things where this step cannot look'.
+
+**E2 (one explicit library).** The remedy is to stop using L2 at all and route
+everything through L4, which is an ordinary folder on the shared disk that any
+step can see if it prepends it to the path. renv is installed into L4; then
+`renv::restore(library = L4)` is told, explicitly, to place the pinned packages
+(including `mmrm`) into L4 rather than into renv's default L2; the pre-existing
+step installs `rcmdcheck` and `tinytest` into L4; and the check hands `libpath =
+[L4, ...]` to the subprocess so L5 includes L4. Now a single folder, L4, holds
+renv, the restored dependencies, and the check tools, and it is on the path of
+both the calling session and the check subprocess. L3 (the global cache) still
+does its job underneath, so nothing is recompiled needlessly and the between-run
+cache still helps. If the accounting is right, `mmrm` is finally in the one place
+the check looks.
+
 ## 5. Fix plan
 
 A correct fix must guarantee that the check subprocess searches the same library
@@ -264,19 +327,39 @@ Entries are appended in order; the newest is at the bottom.
   library *provisioning* across steps, one level deeper than path *resolution*.
   F1 is rejected because it presumes renv is importable in the check step.
 
-### E2: F2, single explicit library for tools, restore, and check (PLANNED)
+### E2: F2, single explicit library for tools, restore, and check (SUCCEEDED)
 
 - **Change.** Install `renv` into the fixed `CI_TOOLS_LIB` with that folder first
   on `.libPaths()`; run `renv::restore(library = CI_TOOLS_LIB)` so the pinned
   packages (including `mmrm`) install into the same folder; leave the existing
   step that installs `rcmdcheck` and `tinytest` into `CI_TOOLS_LIB`; and run the
   check with `libpath = c(CI_TOOLS_LIB, .libPaths())`. After this, renv, the
-  restored dependencies, and the check tools all live in one folder that is on
-  the path, so the check subprocess can find every Import. renv's global package
-  cache still backs the installs, so caching between runs is preserved.
+  restored dependencies, and the check tools all live in one folder (L4) that is
+  on the path, so the check subprocess can find every Import. renv's global
+  package cache (L3) still backs the installs, so caching between runs is
+  preserved.
 - **Commit.** `59d7981` (adaptive-alloc-mmrm).
-- **Outcome.** (pending; CI in progress)
-- **Interpretation.** (pending)
+- **Outcome.** `R Package Check`: success (verified). `Render Reports` remained
+  success (unaffected by the workflow-only change). Both jobs green on `03`.
+- **Interpretation.** The path accounting is now correct: `mmrm` is installed
+  into L4 and the check subprocess is handed L4, so the 'checking package
+  dependencies' phase finds it. F2 is validated on the pilot. Remaining before
+  the fix is considered complete: (i) the regression guard, re-verify a
+  known-good repository still passes under the same change, and (ii) port the
+  change into `templates/workflows/r-package.yml` and regenerate it onto the
+  already-migrated repositories, confirming they stay green. These are E3 and E4
+  below.
+
+### E3: Port F2 to the template and regenerate on migrated repos (PLANNED)
+
+- **Change.** Apply the E2 edit to `templates/workflows/r-package.yml` in
+  zzcollab, then regenerate the workflow on `fisher`, `peng1`, and `02` and push.
+- **Commit.** (pending)
+- **Outcome.** (pending)
+- **Interpretation.** (pending). Acceptance requires all three to remain green,
+  proving the fix does not regress repositories whose Imports were already
+  satisfied by the base image (the regression guard from the validation
+  protocol).
 
 ---
 
