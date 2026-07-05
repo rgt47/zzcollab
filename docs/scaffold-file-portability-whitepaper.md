@@ -94,6 +94,19 @@ creation.
 | `tests/tinytest.R` | `test_package("<pkg>")` |
 | `.devcontainer/devcontainer.json` | `name`, `image` |
 
+A caution on `DESCRIPTION` and `report.Rmd`. The substitution axis is not the
+whole story for these two. In a mature repository they also accumulate genuine
+research content: `DESCRIPTION` carries the real `Title` and the one-paragraph
+`Description` abstract, and the actual `Imports`/`Suggests` dependency set with
+its role split; `report.Rmd` carries the manuscript body. The scaffold ships
+them as generic seeds, but a migration must treat them like the static-by-seed
+files (`renv.lock`, `references.bib`): edit surgically and preserve the content,
+never overwrite from the template. Regenerating `DESCRIPTION` from the template
+would replace a real methodological title and abstract with
+`<pkg> Data Analysis` and wipe every dependency declaration; the correct action
+is a targeted edit (fix roles, drop a stale `renv` import) that leaves the title,
+abstract, and real dependencies intact.
+
 ### 5. Generated metadata: per-build variation
 
 These vary by build timestamp, content-addressed digest, or resolved closure
