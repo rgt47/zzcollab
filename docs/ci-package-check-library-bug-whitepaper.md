@@ -439,6 +439,23 @@ render workflow (fixed at the template) and one a report-content defect.
   the `html_document` fallback when no LaTeX is available. Verified: repository
   04 renders green.
 
+### E6: A report clobbers the render harness's variables (FIXED)
+
+- **Symptom.** Repository 07 rendered its PDF successfully (`Output created:
+  report.pdf`) and then failed with `Error: object 'old_wd' not found`.
+- **Diagnosis.** The render harness loops over reports, saving the working
+  directory in `old_wd` before each render and restoring it after. It rendered
+  each report in the harness's own environment, and 07's report opens with
+  `rm(list = ls())` (a habitual 'clean slate'), which deleted the harness's
+  `old_wd`, `rmds`, and `failed`. The report succeeded; the harness could not
+  clean up after it.
+- **Fix.** Render each report in a fresh environment
+  (`rmarkdown::render(..., envir = new.env())`), so a report's `rm(list = ls())`
+  clears only its own environment and cannot reach the harness. Verified:
+  repository 07 (which needed both the host-path removal below and this fix) is
+  green. Three fleet reports use `rm(list = ls())` (07, 12, 18); the fix protects
+  all of them without editing report content.
+
 ### Report-content findings (not workflow defects)
 
 Two failures were defects in the reports themselves, exposed rather than caused
