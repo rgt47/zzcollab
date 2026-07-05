@@ -2,11 +2,14 @@
 
 *2026-07-05 10:31 PDT*
 
-Status: RESOLVED (E2 fixed the pilot; E3 confirmed no regression and ported the
-fix to the shared template). This is a live document. It is updated after every
-debugging experiment, whether the experiment succeeds or fails, so that the
-reasoning trail is preserved in full. The running record is the Experiment Log at
-the end.
+Status: LIVE. The original library-path defect is RESOLVED (E2 fixed the pilot;
+E3 confirmed no regression and ported the fix to the shared template). The
+document remains open because the fleet migration is ongoing and each additional
+repository may surface further CI problems; any new issue is appended to the
+Experiment Log as a new experiment (E4, E5, ...) with the same discipline, and
+the Status line is updated accordingly. This is a live document, updated after
+every debugging experiment, success or failure, so that the reasoning trail is
+preserved in full. The running record is the Experiment Log at the end.
 
 This paper is written to be followed by a careful reader who is not an R or
 continuous-integration specialist. The first section is a primer on the moving
