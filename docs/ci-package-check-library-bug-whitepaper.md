@@ -2,10 +2,11 @@
 
 *2026-07-05 10:31 PDT*
 
-Status: FIX VALIDATED ON PILOT (E2), template port and regression guard in
-progress (E3). This is a live document. It is updated after every debugging
-experiment, whether the experiment succeeds or fails, so that the reasoning trail
-is preserved in full. The running record is the Experiment Log at the end.
+Status: RESOLVED (E2 fixed the pilot; E3 confirmed no regression and ported the
+fix to the shared template). This is a live document. It is updated after every
+debugging experiment, whether the experiment succeeds or fails, so that the
+reasoning trail is preserved in full. The running record is the Experiment Log at
+the end.
 
 This paper is written to be followed by a careful reader who is not an R or
 continuous-integration specialist. The first section is a primer on the moving
@@ -350,16 +351,46 @@ Entries are appended in order; the newest is at the bottom.
   already-migrated repositories, confirming they stay green. These are E3 and E4
   below.
 
-### E3: Port F2 to the template and regenerate on migrated repos (PLANNED)
+### E3: Port F2 to the template and regenerate on migrated repos (SUCCEEDED)
 
-- **Change.** Apply the E2 edit to `templates/workflows/r-package.yml` in
-  zzcollab, then regenerate the workflow on `fisher`, `peng1`, and `02` and push.
-- **Commit.** (pending)
-- **Outcome.** (pending)
-- **Interpretation.** (pending). Acceptance requires all three to remain green,
-  proving the fix does not regress repositories whose Imports were already
-  satisfied by the base image (the regression guard from the validation
-  protocol).
+- **Change.** Applied the E2 edit to `templates/workflows/r-package.yml` in
+  zzcollab (commit `39eeaa0`), then regenerated the workflow on `fisher`,
+  `peng1`, and `02` via `zzc doctor --fix --force` and pushed (`743de58`,
+  `041d8b1`, `b79f08d`).
+- **Outcome.** All three `R Package Check` runs: success (verified). No
+  regression.
+- **Interpretation.** The fix is confirmed safe for repositories whose Imports
+  were already satisfied by the base image: routing everything through
+  `CI_TOOLS_LIB` does not disturb them, and it repairs the case (`03`) that the
+  base image could not satisfy. The bug is resolved at the template source, so
+  every future scaffold and every migrated repository inherits the working check.
+
+## 7. Resolution and lessons
+
+The `R Package Check` workflow now installs renv, restores the pinned
+dependencies, and installs the check tools all into one explicit library
+(`CI_TOOLS_LIB`), and hands that library to the `R CMD check` subprocess via
+`rcmdcheck`'s `libpath`. Because that single folder is on the path of both the
+calling session and the check subprocess, every declared Import resolves,
+whether or not it happens to be present in the container base image.
+
+Three lessons generalise beyond this bug.
+
+- **A dormant defect needs an adversarial input to surface.** The workflow had
+  passed for three repositories only because their Imports coincided with the
+  base image. The bug became visible the moment a repository imported something
+  outside it (`mmrm`). Piloting one representative repository end to end, rather
+  than batching, is what exposed it before it could fail a large fraction of the
+  fleet.
+- **A changing error message is progress.** E1 did not fix the problem, but by
+  turning 'mmrm not available' into 'no package called renv' it proved the first
+  error had been masking a deeper one, and it redirected the fix from path
+  *resolution* to library *provisioning*.
+- **Cross-boundary state is where CI bugs hide.** The two boundaries here were
+  the fresh-shell boundary between steps (in-session `.libPaths()` does not
+  persist) and the parent-to-subprocess boundary inside `rcmdcheck` (the child's
+  path must be passed explicitly). Both were invisible until a package depended
+  on crossing them correctly.
 
 ---
 
