@@ -66,7 +66,20 @@ one author's repositories and differ only across authors.
 | File | Driver |
 | --- | --- |
 | `LICENSE` | Copyright holder (configuration author) |
-| `zzcollab.yaml` | Configuration snapshot (author, account, profile) |
+
+A note on `zzcollab.yaml`. An earlier draft placed `zzcollab.yaml` here, on the
+strength of the two-scaffold comparison, in which the file was identical. That
+comparison used `ZZCOLLAB_ACCEPT_DEFAULTS`, which never sets a `team_name`, and
+so masked a repository-specific field. A real project's `zzcollab.yaml` carries
+`defaults.team_name` derived from the project name (for example
+`peng1_team`) and a `defaults.archetype` that can legitimately differ per
+repository. The file is therefore mixed rather than author-constant: only
+`docker.default_profile` is worth propagating across a fleet, and it should be
+set with a targeted `zzc config set-local docker.default_profile <profile>`
+rather than by copying the file, which would overwrite the per-repository
+`team_name` and `archetype`. This is a caution about the method: a
+defaults-only scaffold understates the per-repository fields that interactive
+initialisation fills in.
 
 ### 4. Repository-specific: package name substituted at scaffold time
 
