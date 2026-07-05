@@ -401,6 +401,64 @@ Three lessons generalise beyond this bug.
   path must be passed explicitly). Both were invisible until a package depended
   on crossing them correctly.
 
+## 8. Fleet batch: render-stage findings
+
+Batching repositories 04 to 10 kept this document open (as intended: the fleet
+migration surfaces new problems). The library-path bug of sections 2 to 7 was an
+`R Package Check` problem; the batch surfaced a distinct class of problem in the
+`Render Reports` job. Three causes appeared, two of them defects in the shared
+render workflow (fixed at the template) and one a report-content defect.
+
+### E4: The render never installs the compendium's own package (FIXED)
+
+- **Symptom.** Repository 04's render failed with `there is no package called
+  'runinpower'`. Its report has a chunk `library(runinpower)`, loading the
+  workspace package to use its `R/` functions.
+- **Diagnosis.** The container render builds the project image (which has the
+  restored dependencies) and renders inside it, but nothing installs the
+  compendium package itself. So `library(<pkg>)` fails. This was invisible for
+  repositories whose report loads only external packages (03) or whose `R/` is
+  empty (05, 09, 10).
+- **Fix.** Before rendering, self-install the package from source into the baked
+  library (`install.packages('.', repos = NULL, type = 'source')`), non-fatal on
+  error and harmless when `R/` is empty. Verified: the install ran
+  (`* DONE (runinpower)`) and the missing-package error disappeared, exposing E5.
+
+### E5: The render forced an output format, discarding the report's includes (FIXED)
+
+- **Symptom.** After E4, repository 04 failed with `LaTeX Error: Environment
+  bullets undefined`. The `bullets` (and `orig`) environments are defined in an
+  in-header file, `claudecode.tex`, that the report declares under
+  `output: bookdown::pdf_document2: includes: in_header:`.
+- **Diagnosis.** The render called
+  `rmarkdown::render(..., output_format = 'pdf_document')`. Forcing the format
+  discards the report's own `output:` block, so its `includes:` (which pulls in
+  `claudecode.tex`) never applied, leaving the custom environments undefined.
+- **Fix.** Pass `output_format = NULL` when a PDF engine is present, so
+  `render()` honours the report's own YAML output format and its includes; keep
+  the `html_document` fallback when no LaTeX is available. Verified: repository
+  04 renders green.
+
+### Report-content findings (not workflow defects)
+
+Two failures were defects in the reports themselves, exposed rather than caused
+by the migration.
+
+- **Repository 08, a false regression.** Its render was green before migration
+  and failed after with `LaTeX Error: Missing \begin{document}`. The cause was a
+  YAML indentation typo in `header-includes` (three-space versus two-space
+  items), which folds several items into one malformed string. It had never
+  surfaced because the pre-migration `tidyverse` image had no LaTeX and rendered
+  HTML; the `verse` image renders PDF and compiles the broken preamble. Fixed by
+  correcting the indentation. The lesson repeats E0's: enabling a capability
+  (PDF) surfaces latent defects that the old environment silently tolerated.
+- **Repository 07, a host-path dependency.** Its report ran
+  `source('~/shr/zz.tools.R')`, a personal file absent in CI
+  (`cannot open the connection`). The report calls none of that file's
+  functions, so the `source` was removed; a vendored copy under
+  `analysis/scripts/` is excluded from dependency discovery via `.renvignore`
+  so its demonstration dependencies do not enter the lockfile.
+
 ---
 
 *Rendered on 2026-07-05 at 11:28 PDT.*<br>
