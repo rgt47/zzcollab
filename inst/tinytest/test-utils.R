@@ -261,19 +261,19 @@ if (!requireNamespace("renv", quietly = TRUE)) {
 
 # null-coalescing operator works correctly
 # Test with NULL
-expect_equal(NULL %||% "default", "default")
+expect_equal(zzcollab:::`%||%`(NULL, "default"), "default")
 
 # Test with non-NULL value
-expect_equal("value" %||% "default", "value")
+expect_equal(zzcollab:::`%||%`("value", "default"), "value")
 
 # Test with empty string (should not be NULL)
-expect_equal("" %||% "default", "")
+expect_equal(zzcollab:::`%||%`("", "default"), "")
 
 # Test with FALSE (should not be NULL)
-expect_equal(FALSE %||% TRUE, FALSE)
+expect_equal(zzcollab:::`%||%`(FALSE, TRUE), FALSE)
 
 # Test with 0 (should not be NULL)
-expect_equal(0 %||% 1, 0)
+expect_equal(zzcollab:::`%||%`(0, 1), 0)
 
 # init_project validates required parameters
 # Should error without project_name

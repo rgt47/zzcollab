@@ -46,11 +46,11 @@ expect_error(zzcollab:::validate_docker_name(long_name, "project_name"),
 ################################################################################
 
 # %||% operator returns left value when not NULL
-result <- "value" %||% "default"
+result <- zzcollab:::`%||%`("value", "default")
 expect_equal(result, "value")
 
 # %||% operator returns right value when left is NULL
-result <- NULL %||% "default"
+result <- zzcollab:::`%||%`(NULL, "default")
 expect_equal(result, "default")
 
 ################################################################################
