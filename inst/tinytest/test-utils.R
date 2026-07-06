@@ -6,11 +6,11 @@ expect_true(exists("find_zzcollab_script"))
 
 # Test that it returns a character string
 # Note: This might fail if zzcollab is not installed, which is expected
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab.sh not found in current directory")
-
-result <- find_zzcollab_script()
-expect_type(result, "character")
-expect_length(result, 1)
+if (file.exists("zzcollab.sh")) {
+  result <- find_zzcollab_script()
+  expect_true(is.character(result))
+  expect_equal(length(result), 1L)
+}
 
 # helper functions exist
 # Test that all exported functions exist
@@ -44,18 +44,18 @@ expect_error(init_project(), "project_name is required")
 expect_error(join_project(), "project_name is required")
 
 # Docker status function works
-skip_if_not(nzchar(Sys.which("docker")), "Docker not available")
-
-result <- status()
-expect_type(result, "character")
-expect_gte(length(result), 0)
+if (nzchar(Sys.which("docker"))) {
+  result <- status()
+  expect_true(is.character(result))
+  expect_true(length(result) >= 0)
+}
 
 # team_images function works
-skip_if_not(nzchar(Sys.which("docker")), "Docker not available")
-
-result <- team_images()
-expect_true(is.data.frame(result))
-expect_gte(nrow(result), 0)
+if (nzchar(Sys.which("docker"))) {
+  result <- team_images()
+  expect_true(is.data.frame(result))
+  expect_true(nrow(result) >= 0)
+}
 
 # git functions handle missing git repository
 # Test git functions in non-git directory
@@ -85,7 +85,7 @@ result <- tryCatch({
   character(0)
 })
 
-expect_type(result, "character")
+expect_true(is.character(result))
 
 setwd(old_wd)
 
@@ -168,72 +168,68 @@ expect_error(
 
 setwd(old_wd)
 
-# run_script builds a make docker-script command
-calls <- character(0)
-local_mocked_bindings(
-  safe_system = function(command, ...) {
-    calls[[length(calls) + 1]] <<- command
-    0L
-  },
-  .package = "zzcollab"
-)
+# run_script and render_report routing tests use local_mocked_bindings
+# (testthat-only); load testthat explicitly.
+if (requireNamespace("testthat", quietly = TRUE)) {
+  # run_script builds a make docker-script command
+  calls <- character(0)
+  testthat::local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
 
-temp_dir <- tempfile()
-dir.create(temp_dir)
-file.create(file.path(temp_dir, "Makefile"))
-file.create(file.path(temp_dir, "analysis.R"))
-old_wd <- setwd(temp_dir)
-# withr::defer (not on.exit) so we append to, rather than clobber, the
-# restoration handler that local_mocked_bindings registered on this frame.
-withr::defer({
-  setwd(old_wd)
-  unlink(temp_dir, recursive = TRUE)
-})
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  file.create(file.path(temp_dir, "Makefile"))
+  file.create(file.path(temp_dir, "analysis.R"))
+  old_wd <- setwd(temp_dir)
+  withr::defer({
+    setwd(old_wd)
+    unlink(temp_dir, recursive = TRUE)
+  })
 
-expect_true(run_script("analysis.R"))
-# Target and SCRIPT= variable must match templates/Makefile docker-script.
-expect_true(any(grepl("make docker-script SCRIPT=", calls, fixed = TRUE)))
-expect_true(any(grepl("analysis.R", calls, fixed = TRUE)))
-# The removed ARGS mechanism and nonexistent docker-r target must not return.
-expect_false(any(grepl("docker-r ", calls, fixed = TRUE)))
-expect_false(any(grepl("ARGS=", calls, fixed = TRUE)))
+  expect_true(run_script("analysis.R"))
+  expect_true(any(grepl("make docker-script SCRIPT=", calls, fixed = TRUE)))
+  expect_true(any(grepl("analysis.R", calls, fixed = TRUE)))
+  expect_false(any(grepl("docker-r ", calls, fixed = TRUE)))
+  expect_false(any(grepl("ARGS=", calls, fixed = TRUE)))
 
-# render_report passes REPORT= without a stray space
-calls <- character(0)
-local_mocked_bindings(
-  safe_system = function(command, ...) {
-    calls[[length(calls) + 1]] <<- command
-    0L
-  },
-  .package = "zzcollab"
-)
+  # render_report passes REPORT= without a stray space
+  calls <- character(0)
+  testthat::local_mocked_bindings(
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      0L
+    },
+    .package = "zzcollab"
+  )
 
-temp_dir <- tempfile()
-dir.create(temp_dir)
-file.create(file.path(temp_dir, "Makefile"))
-custom <- file.path("analysis", "report", "custom.Rmd")
-dir.create(file.path(temp_dir, "analysis", "report"), recursive = TRUE)
-file.create(file.path(temp_dir, custom))
-old_wd <- setwd(temp_dir)
-# withr::defer (not on.exit) so we append to, rather than clobber, the
-# restoration handler that local_mocked_bindings registered on this frame.
-withr::defer({
-  setwd(old_wd)
-  unlink(temp_dir, recursive = TRUE)
-})
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  file.create(file.path(temp_dir, "Makefile"))
+  custom <- file.path("analysis", "report", "custom.Rmd")
+  dir.create(file.path(temp_dir, "analysis", "report"), recursive = TRUE)
+  file.create(file.path(temp_dir, custom))
+  old_wd <- setwd(temp_dir)
+  withr::defer({
+    setwd(old_wd)
+    unlink(temp_dir, recursive = TRUE)
+  })
 
-expect_true(render_report(custom))
-# REPORT= must be immediately followed by the quoted path (no space, which
-# would split it into a separate make goal and silently render the default).
-expect_true(any(grepl(
-  paste0("make docker-render REPORT=", shQuote(custom)),
-  calls, fixed = TRUE
-)))
+  expect_true(render_report(custom))
+  expect_true(any(grepl(
+    paste0("make docker-render REPORT=", shQuote(custom)),
+    calls, fixed = TRUE
+  )))
 
-calls <- character(0)
-expect_true(render_report())
-expect_true(any(grepl("make docker-render", calls, fixed = TRUE)))
-expect_false(any(grepl("REPORT=", calls, fixed = TRUE)))
+  calls <- character(0)
+  expect_true(render_report())
+  expect_true(any(grepl("make docker-render", calls, fixed = TRUE)))
+  expect_false(any(grepl("REPORT=", calls, fixed = TRUE)))
+}
 
 # sync_env validates renv.lock exists
 # Test without renv.lock
@@ -255,15 +251,13 @@ expect_error(
 
 setwd(old_wd)
 
-# add_package requires renv
-# This test assumes renv might not be available in test environment
-# Function should handle this gracefully
-skip_if(requireNamespace("renv", quietly = TRUE), "renv is available")
-
-expect_error(
-  add_package("test_package"),
-  "renv package is required"
-)
+# add_package requires renv (only testable when renv is absent)
+if (!requireNamespace("renv", quietly = TRUE)) {
+  expect_error(
+    add_package("test_package"),
+    "renv package is required"
+  )
+}
 
 # null-coalescing operator works correctly
 # Test with NULL
@@ -319,46 +313,33 @@ expect_error(
   "project_name must contain only lowercase"
 )
 
-# setup_project validates parameters
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab.sh not found")
+# setup_project validates parameters (requires CLI in cwd)
+if (file.exists("zzcollab.sh")) {
+  expect_error(
+    setup_project(base_image = "invalid_image"),
+    "base_image must be in format"
+  )
+  expect_error(
+    setup_project(base_image = c("image1", "image2")),
+    "base_image must be a single character string"
+  )
+}
 
-# Should handle invalid base_image format
-expect_error(
-  setup_project(base_image = "invalid_image"),
-  "base_image must be in format"
-)
+# create_pr validates GitHub CLI availability (only when gh is absent)
+if (system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE) != 0) {
+  expect_error(
+    create_pr("Test PR"),
+    "GitHub CLI.*is required"
+  )
+}
 
-# Should handle multiple base_image values
-expect_error(
-  setup_project(base_image = c("image1", "image2")),
-  "base_image must be a single character string"
-)
+# create_branch and git_commit in a git repository
+if (dir.exists(".git")) {
+  result <- suppressMessages(create_branch("..invalid.."))
+  expect_true(is.logical(result))
 
-# create_pr validates GitHub CLI availability
-skip_if(system("which gh", ignore.stdout = TRUE, ignore.stderr = TRUE) == 0,
-        "GitHub CLI is available")
-
-# Should error if gh CLI not available
-expect_error(
-  create_pr("Test PR"),
-  "GitHub CLI.*is required"
-)
-
-# create_branch returns logical
-skip_if(!dir.exists(".git"), "Not a git repository")
-
-# Test with invalid branch name (should fail but return FALSE)
-result <- suppressMessages(create_branch("..invalid.."))
-expect_type(result, "logical")
-
-# git_commit handles errors gracefully
-skip_if(!dir.exists(".git"), "Not a git repository")
-
-# Function should return logical even on error
-result <- tryCatch({
-  git_commit("", add_all = FALSE)  # Empty message should fail
-}, error = function(e) {
-  FALSE
-})
-
-expect_type(result, "logical")
+  result <- tryCatch({
+    git_commit("", add_all = FALSE)
+  }, error = function(e) FALSE)
+  expect_true(is.logical(result))
+}

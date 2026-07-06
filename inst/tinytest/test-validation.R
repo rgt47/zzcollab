@@ -71,59 +71,49 @@ expect_error(
 # safe_system handles successful commands
 # Simple successful command
 result <- safe_system("echo 'test'", intern = TRUE)
-expect_type(result, "character")
+expect_true(is.character(result))
 expect_equal(result, "test")
 
 # Command that returns exit code
 result <- safe_system("echo 'test'", intern = FALSE)
 expect_equal(result, 0)
 
-# safe_system handles failed commands
-skip_on_os("windows")
+# safe_system handles failed commands (shell-dependent: skip on Windows)
+if (.Platform$OS.type != "windows") {
+  expect_warning(
+    result <- safe_system("exit 1", intern = FALSE),
+    "Command failed with exit code 1"
+  )
+  expect_equal(result, 1)
 
-# Command that fails (non-zero exit code)
-expect_warning(
-  result <- safe_system("exit 1", intern = FALSE),
-  "Command failed with exit code 1"
-)
-expect_equal(result, 1)
+  expect_warning(
+    safe_system("exit 1", intern = FALSE, error_msg = "Custom error"),
+    "Custom error.*exit code: 1"
+  )
 
-# Command with custom error message
-expect_warning(
-  safe_system("exit 1", intern = FALSE, error_msg = "Custom error"),
-  "Custom error.*exit code: 1"
-)
+  expect_error(
+    safe_system("nonexistent_command_12345", intern = TRUE),
+    "System command error"
+  )
 
-# safe_system handles command errors
-# Command that doesn't exist
-expect_error(
-  safe_system("nonexistent_command_12345", intern = TRUE),
-  "System command error"
-)
+  expect_error(
+    safe_system("nonexistent_command_12345", intern = TRUE, error_msg = "Custom error"),
+    "Custom error"
+  )
 
-# Command with custom error message
-expect_error(
-  safe_system("nonexistent_command_12345", intern = TRUE, error_msg = "Custom error"),
-  "Custom error"
-)
+  result <- safe_system("echo 'test'", intern = FALSE, ignore.stdout = TRUE)
+  expect_equal(result, 0)
 
-# safe_system respects ignore flags
-# Should suppress stdout
-result <- safe_system("echo 'test'", intern = FALSE, ignore.stdout = TRUE)
-expect_equal(result, 0)
-
-# Should suppress stderr
-result <- safe_system("echo 'test' >&2", intern = FALSE, ignore.stderr = TRUE)
-expect_equal(result, 0)
+  result <- safe_system("echo 'test' >&2", intern = FALSE, ignore.stderr = TRUE)
+  expect_equal(result, 0)
+}
 
 # safe_system integrates with find_zzcollab_script
-# This tests the real-world usage of safe_system
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab.sh not found")
-
-# find_zzcollab_script uses safe_system internally
-result <- find_zzcollab_script()
-expect_type(result, "character")
-expect_length(result, 1)
+if (file.exists("zzcollab.sh")) {
+  result <- find_zzcollab_script()
+  expect_true(is.character(result))
+  expect_equal(length(result), 1L)
+}
 
 # validation functions provide helpful error messages
 # validate_docker_name should mention parameter name
