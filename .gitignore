@@ -46,6 +46,8 @@ index/
 test-*/
 *test/
 *_test/
+# Exception: tinytest source files are version-controlled
+!inst/tinytest/
 temp_*/
 *_check/
 *.Rcheck/
