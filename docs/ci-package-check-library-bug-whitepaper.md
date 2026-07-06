@@ -640,7 +640,69 @@ unrelated to the library-path defect of sections 2-7.
   as the indicator -- and omit the step automatically when regenerating
   compendium workflows.
 
+**Phase 3: Testthat-to-tinytest migration and container upgrade (E9-E10)**
+
+The global standard for this fleet is `tinytest`. A scan found testthat
+evidence (DESCRIPTION Suggests/Imports field, or a `tests/testthat/`
+directory) in 58 of 109 repos. A fleet-wide migration was executed via
+a multi-agent workflow, converting `test_that()` blocks to flat tinytest
+format, moving files from `tests/testthat/` to `inst/tinytest/`, updating
+DESCRIPTION, and creating `tests/tinytest.R` runners. Concurrently, all
+repos were upgraded from `rocker/tidyverse:4.6.0` to `rocker/verse:4.6.0`
+as the CI container. These two operations together exposed two new
+failure modes.
+
+### E9: Stale testthat.R runner survives tinytest migration (FIXED)
+
+- **Symptom.** After the tinytest migration, three repos (zztable1paper,
+  testtrend, zzedc_paper) continued to fail `R CMD check` with
+  `Running the tests in 'tests/testthat.R' failed`. The tinytest test
+  files were present and correct in `inst/tinytest/`, and `tests/tinytest.R`
+  existed.
+- **Diagnosis.** The migration script correctly deleted the `tests/testthat/`
+  directory and created `tests/tinytest.R`, but left `tests/testthat.R`
+  (the old testthat runner file, distinct from the directory) in place.
+  `R CMD check` finds runner files in `tests/` lexicographically; it
+  discovered `testthat.R` before `tinytest.R` and attempted to run it.
+  Because testthat was no longer in the library, the runner failed
+  immediately.
+- **Fix.** Deleted `tests/testthat.R` from all three repos (committed and
+  pushed). `tests/tinytest.R` remains and is the sole runner.
+- **Lesson.** The migration checklist must include: remove `tests/testthat.R`
+  (the runner file) in addition to `tests/testthat/` (the directory). These
+  are separate filesystem objects with similar names.
+
+### E10: testthat-only expect functions survive conversion (FIXED)
+
+- **Symptom.** After the tinytest migration, mixedr2 failed `R CMD check`
+  with `Error in expect_type(result, "list") : 0 tests`. The test file
+  was being loaded but failed at the first assertion.
+- **Diagnosis.** The migration correctly restructured `test_that()` blocks
+  into flat tinytest format, but several assertion functions used in the
+  original tests are testthat-specific and have no direct tinytest
+  counterpart: `expect_type()`, `expect_named()`, `expect_length()`,
+  `expect_s3_class()`, `expect_s4_class()`. Tinytest does not export
+  these names; the calls fail immediately with a `0 tests` result rather
+  than an assertion error, because the runner cannot even load the test
+  file.
+- **Fix.** Converted all non-portable assertions to tinytest equivalents:
+  `expect_type(x, "list")` to `expect_true(is.list(x))`;
+  `expect_type(x, "logical")` to `expect_true(is.logical(x))`;
+  `expect_s4_class(x, "cls")` to `expect_true(is(x, "cls"))`;
+  `expect_s3_class(x, "cls")` to `expect_inherits(x, "cls")`;
+  `expect_named(x, nms)` to `expect_equal(names(x), nms)`;
+  `expect_length(x, n)` to `expect_equal(length(x), nL)`.
+  The `label=` parameter in `expect_equal` was renamed to `info=`
+  (tinytest's name for the same concept).
+- **Lesson.** The migration conversion script handles structural
+  transformation (`test_that()` to flat format) but cannot mechanically
+  replace assertion functions that have no name-identical counterpart in
+  tinytest. A post-migration grep for `expect_type|expect_named|
+  expect_length|expect_s3_class|expect_s4_class|expect_snapshot|
+  expect_contains|expect_setequal` should be run against all converted
+  `inst/tinytest/` files as a verification step.
+
 ---
 
-*Rendered on 2026-07-06 at 09:50 PDT.*<br>
+*Rendered on 2026-07-06 at 11:18 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-package-check-library-bug-whitepaper.md*
