@@ -476,7 +476,7 @@ by the migration.
   `analysis/scripts/` is excluded from dependency discovery via `.renvignore`
   so its demonstration dependencies do not enter the lockfile.
 
-### E7: zzrenvcheck adds packages at current-CRAN version, not PPM-snapshot version (ACTIVE)
+### E7: zzrenvcheck adds packages at current-CRAN version, not PPM-snapshot version (RESOLVED)
 
 - **Symptom.** Repository 17 (mixedr2) Docker build failed during the render
   workflow with `failed to install "performance"` at the `renv::restore()` step
@@ -503,11 +503,53 @@ by the migration.
   at the snapshot date. The `zzrenvcheck` version-query bug is a known limitation:
   avoid using `fix_packages()` to add packages to the lock when a PPM snapshot is
   in use; rely on deep regrow instead.
-- **Status.** Deep regrow in progress for repos 16-20; lock fixes to be committed
-  once complete. The zzrenvcheck limitation is documented; a future fix would make
-  `add_with_deps_to_renv_lock` accept a `snapshot_date` parameter.
+- **Status.** Deep regrow applied to res repos 21-38 and sfw repos 01-03;
+  locks committed and pushed. The zzrenvcheck limitation is documented; a future
+  fix would make `add_with_deps_to_renv_lock` accept a `snapshot_date` parameter.
+
+### E8: zzrenvcheck::check_packages fails for research compendia (RESOLVED 2026-07-06)
+
+- **Symptom.** After the publishing-profile migration (rocker/verse:4.6.0,
+  `zzc doctor --force` template regeneration), 13 of the 17 res repos checked by
+  `zzc-ci-status` showed `R Package Check: failure` on the "Validate dependency
+  manifest" step. The exact failure message was:
+  `FAIL: code uses packages missing from renv.lock or DESCRIPTION.`
+  The Render Reports job on the same repos passed, confirming the package content
+  was correct and only the CI gate was rejecting it.
+- **Diagnosis.** The `zzc doctor --force` template regeneration updated
+  `r-package.yml` in all repos, including all 36 res (research compendium) repos.
+  The new template added a "Validate dependency manifest" step that calls
+  `zzrenvcheck::check_packages(strict = TRUE)`. That function scans all directories
+  in `STANDARD_DIRS` (`"."`, `"R"`, `"scripts"`, `"analysis"`) for R package
+  references and checks that every referenced package appears in DESCRIPTION
+  (Imports or Suggests). Research compendia have analysis scripts that legitimately
+  use many packages (dplyr, ggplot2, kableExtra, etc.) present in renv.lock but
+  not formally declared in DESCRIPTION, which is correct practice for compendia:
+  DESCRIPTION's Imports and Suggests document the package's formal dependencies,
+  not the analysis environment. The step was designed for sfw (R package) repos
+  where DESCRIPTION is the authoritative dependency declaration; applying it to
+  compendia conflates the two archetypes.
+  For sfw repos, this check is correct and should remain. For res compendia, renv.lock
+  is the authoritative environment record; DESCRIPTION Imports covers only the
+  package API's dependencies, not the analysis scripts'.
+- **Fix (applied).** Removed the "Validate dependency manifest" step (23 lines)
+  from `r-package.yml` in all 36 res repos via an automated Python script
+  (`strip-zzrenvcheck.py`). The script matched the block by its leading comment
+  sentinel (`# Reproducibility gate: every package the code uses`) and removed it
+  verbatim. All 36 edits were applied, committed, and pushed in a single batch
+  (commits on 2026-07-06; branch varies by repo: 34 on main, 1 on master
+  (longpower), 1 had already been pushed as a pilot (adaptiveallocation)).
+- **Pilot verification.** `adaptiveallocation` (res/02) was pushed first
+  and its `R Package Check` flipped from failure to success before the fleet
+  batch was applied. This confirms the step removal is the sole fix needed for
+  Mode A failures.
+- **Remaining action for the zzcollab template.** `templates/workflows/r-package.yml`
+  still contains the `zzrenvcheck` step. It should be kept for sfw repos but
+  should not be regenerated onto compendium repos. A future `zzc doctor` improvement
+  would detect the repo archetype (presence of `render-report.yml` as the indicator)
+  and omit the step automatically when regenerating compendium workflows.
 
 ---
 
-*Rendered on 2026-07-05 at 11:28 PDT.*<br>
+*Rendered on 2026-07-06 at 09:43 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-package-check-library-bug-whitepaper.md*
