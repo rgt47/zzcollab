@@ -1,40 +1,35 @@
 library(tinytest)
 
-# get_config_default returns defaults correctly
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
-
-# Test that function exists
+# get_config_default returns defaults correctly -- pure R, no CLI needed
 expect_true(exists("get_config_default"))
 
-# Test with default value
 result <- get_config_default("nonexistent_key", "default_value")
 expect_equal(result, "default_value")
 
-# Test with NULL default
 result <- get_config_default("nonexistent_key", NULL)
 expect_null(result)
 
-# config functions validate input
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
+# %||% operator works correctly
+test_null <- NULL
+expect_equal(test_null %||% "default", "default")
+expect_equal("actual" %||% "default", "actual")
 
-# Test that set_config requires key
+# All remaining tests require the zzcollab CLI in cwd
+if (!file.exists("zzcollab.sh")) exit_file("zzcollab script not found in current directory")
+
+# config functions validate input
 expect_error(set_config(), "argument.*is missing")
 
-# Test that get_config can handle NULL
 result <- get_config(NULL)
 expect_null(result)
-
-# list_config returns character vector or NULL
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
 
 result <- list_config()
 expect_true(is.character(result) || is.null(result))
 
 # validate_config handles missing config gracefully
-skip_if_not(file.exists("zzcollab.sh"), "zzcollab script not found in current directory")
-
-# Should not error even if config doesn't exist
-expect_no_error(validate_config())
+err_result <- tryCatch(validate_config(), error = function(e) e)
+expect_false(inherits(err_result, "error"),
+             info = "validate_config() should not throw")
 
 # config file operations are safe
 # Create temporary config directory
@@ -60,7 +55,7 @@ result <- tryCatch({
 })
 
 # Result should be logical
-expect_type(result, "logical")
+expect_true(is.logical(result))
 
 setwd(old_wd)
 
@@ -85,11 +80,11 @@ expect_equal(result, "actual")
 skip_without_cli <- function() {
   ok <- tryCatch({ find_zzcollab_script(); TRUE },
                  error = function(e) FALSE)
-  skip_if_not(ok, "no zzcollab CLI with config support found")
+  if (!ok) exit_file("no zzcollab CLI with config support found")
 }
 
 # set_config / get_config round-trip through the CLI
-skip_on_cran()
+if (nchar(Sys.getenv("NOT_CRAN")) == 0) exit_file("skipping CLI round-trip on CRAN")
 skip_without_cli()
 
 # Isolate the user config so we never touch the developer's real ~/.zzcollab
@@ -120,7 +115,7 @@ expect_equal(get_config("github_account"), "rt_roundtrip_test")
 expect_true(validate_config())
 
 # zzcollab_next_steps returns guidance, not an error topic
-skip_on_cran()
+if (nchar(Sys.getenv("NOT_CRAN")) == 0) exit_file("skipping CLI round-trip on CRAN")
 skip_without_cli()
 
 result <- zzcollab_next_steps()
