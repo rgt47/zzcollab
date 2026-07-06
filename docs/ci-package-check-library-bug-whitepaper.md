@@ -476,6 +476,37 @@ by the migration.
   `analysis/scripts/` is excluded from dependency discovery via `.renvignore`
   so its demonstration dependencies do not enter the lockfile.
 
+### E7: zzrenvcheck adds packages at current-CRAN version, not PPM-snapshot version (ACTIVE)
+
+- **Symptom.** Repository 17 (mixedr2) Docker build failed during the render
+  workflow with `failed to install "performance"` at the `renv::restore()` step
+  (Dockerfile layer 9/11). Repository 16 had a related symptom: `there is no
+  package called 'kableExtra'` at render time even though kableExtra was in
+  DESCRIPTION.
+- **Diagnosis.** The root cause is two-stage. First, `renv::snapshot(type='implicit')`
+  in the verse container only captures packages that are already installed; packages
+  not pre-baked in the verse image are silently omitted from the lock even if
+  referenced in code. Second, `zzrenvcheck::fix_packages()` detects these omissions
+  and calls `add_with_deps_to_renv_lock` to add the missing packages. That function
+  queries current CRAN (2026-07-05) for the package version, not the PPM
+  2026-06-29 snapshot. So it records `performance 0.17.1`, a version released
+  after the snapshot date. When `renv::restore()` tries to download that version
+  from PPM 2026-06-29 it finds no matching binary and fails.
+  The two sub-defects are: (a) `renv::snapshot()` omits non-installed packages;
+  (b) `zzrenvcheck::add_with_deps_to_renv_lock` resolves version from live CRAN
+  rather than the project's pinned snapshot date.
+- **Fix (applied).** Replace the single-phase regrow (`renv::snapshot()`) with a
+  two-phase deep regrow: (1) `renv::install(prompt=FALSE)` to install all
+  dependencies declared in DESCRIPTION and referenced in code, sourcing from the
+  PPM 2026-06-29 snapshot; (2) `renv::snapshot()` to capture the actually-installed
+  closure. This guarantees every lock entry corresponds to a version installable
+  at the snapshot date. The `zzrenvcheck` version-query bug is a known limitation:
+  avoid using `fix_packages()` to add packages to the lock when a PPM snapshot is
+  in use; rely on deep regrow instead.
+- **Status.** Deep regrow in progress for repos 16-20; lock fixes to be committed
+  once complete. The zzrenvcheck limitation is documented; a future fix would make
+  `add_with_deps_to_renv_lock` accept a `snapshot_date` parameter.
+
 ---
 
 *Rendered on 2026-07-05 at 11:28 PDT.*<br>
