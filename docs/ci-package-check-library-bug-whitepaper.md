@@ -7,9 +7,11 @@ E3 confirmed no regression and ported the fix to the shared template). The
 document remains open because the fleet migration is ongoing and each additional
 repository may surface further CI problems; any new issue is appended to the
 Experiment Log as a new experiment (E4, E5, ...) with the same discipline, and
-the Status line is updated accordingly. This is a live document, updated after
-every debugging experiment, success or failure, so that the reasoning trail is
-preserved in full. The running record is the Experiment Log at the end.
+the Status line is updated accordingly. Experiments resolved are marked
+accordingly; experiments with incomplete remediation retain an open status note.
+This is a live document, updated after every debugging experiment, success or
+failure, so that the reasoning trail is preserved in full. The running record is
+the Experiment Log at the end.
 
 This paper is written to be followed by a careful reader who is not an R or
 continuous-integration specialist. The first section is a primer on the moving
@@ -88,6 +90,8 @@ them*. The whole bug lives in that last clause.
 
 ### 1.6 R CMD check, and why it runs as a subprocess
 
+
+
 `R CMD check` is R's official quality gate for a package. Among many checks, an
 early one, labelled 'checking package dependencies', verifies that every package
 named in `DESCRIPTION` under `Imports` is actually installed and findable. If an
@@ -105,6 +109,77 @@ setting the `R_LIBS` environment variable). This means that adjusting
 `.libPaths()` in the *calling* session does not, by itself, change what the
 *check subprocess* can see; the library must be handed over explicitly through
 `libpath`. This distinction is the second half of the bug.
+
+### 1.7 Two repository archetypes: R package versus research compendium
+
+The repositories in this fleet come in two fundamentally different kinds, and the
+distinction becomes critical in E8.
+
+An *R package* repository (tree `sfw`) contains reusable code organised to the
+CRAN standard: a `DESCRIPTION` file that lists all dependencies under `Imports`
+or `Suggests`, an `R/` directory of exported functions, a `NAMESPACE` file, a
+`man/` directory of documentation, and a `tests/` directory. For this archetype,
+`DESCRIPTION` is the *authoritative and complete* declaration of what the package
+needs. Every package a user might encounter when using the software must be
+declared there; undeclared dependencies are a defect and `R CMD check` flags them.
+
+A *research compendium* repository (tree `res`, `alz`) is structured differently.
+Its `DESCRIPTION` and `R/` export a small package of project-specific functions,
+but the primary artefact is a manuscript produced by the `analysis/report/`
+directory. Analysis scripts in `analysis/` import many general-purpose packages
+(for example `dplyr` for data manipulation, `ggplot2` for figures, `kableExtra`
+for formatted tables) that are part of the analysis *environment* rather than the
+package *API*. For this archetype, `renv.lock` is the authoritative environment
+record: it pins every package the analysis needs. `DESCRIPTION` Imports covers
+only the packages that the project's own `R/` functions expose to the outside
+world, not the analysis scripts. A research compendium with twenty analysis
+packages in `renv.lock` and three in `DESCRIPTION` is correctly structured, not
+deficient.
+
+Conflating the two archetypes is the root cause of E8.
+
+### 1.8 Posit Package Manager and snapshot-pinned reproducibility
+
+Package repositories are the servers from which `install.packages()` and renv
+download packages. The default server is CRAN, which always provides the
+*current* version of each package. For a reproducible research environment, this
+is insufficient: the version available today may differ from the version used when
+the analysis was run, and differences in package behaviour can silently alter
+results.
+
+This fleet uses *Posit Package Manager* (PPM) configured with a *snapshot date*
+of 2026-06-29. PPM stores complete historical snapshots of CRAN; pointing renv at
+the snapshot URL `https://packagemanager.posit.co/cran/2026-06-29` means that
+every package install resolves to the version that was current on that date. The
+snapshot date is recorded in `renv.lock` alongside each package entry, making the
+environment reproducible for any future collaborator. The analogy in statistical
+terms is citing a software version in a methods section: the snapshot pin is an
+assurance that the computational environment can be reconstructed exactly.
+
+The practical consequence is that any tool that injects a package version into
+`renv.lock` must resolve that version from the same snapshot, not from live CRAN.
+When a tool uses live CRAN, it may record a version that post-dates the snapshot
+and is therefore unavailable from the snapshot server, causing `renv::restore()`
+to fail. This is the mechanism of E7.
+
+### 1.9 zzrenvcheck: the dependency-manifest gate
+
+`zzrenvcheck` is a project-internal R package that provides two related services.
+
+The first is `fix_packages()`: it compares the packages referenced in code against
+`renv.lock` and `DESCRIPTION`, and attempts to add any missing entries to the lock
+file. This service is designed to repair a lock that was built before all packages
+were installed.
+
+The second is `check_packages(strict)`: it scans the directories in
+`STANDARD_DIRS` (by default `"."`, `"R"`, `"scripts"`, `"analysis"`) for calls
+to `library()`, `require()`, or the `pkg::fn()` double-colon operator, collects
+the unique set of referenced packages, and checks two conditions: (a) every
+package referenced in code must appear in `DESCRIPTION` (Imports or Suggests);
+(b) every package declared in `DESCRIPTION` must appear in `renv.lock`. Condition
+(a) is the right criterion for an R package (archetype sfw) but the wrong
+criterion for a research compendium (archetype res), as section 1.7 explains. E8
+is the consequence of applying this gate indiscriminately to both archetypes.
 
 ## 2. Symptom
 
@@ -401,11 +476,16 @@ Three lessons generalise beyond this bug.
   path must be passed explicitly). Both were invisible until a package depended
   on crossing them correctly.
 
-## 8. Fleet batch: render-stage findings
+## 8. Fleet migration: subsequent findings
 
-Batching repositories 04 to 10 kept this document open (as intended: the fleet
-migration surfaces new problems). The library-path bug of sections 2 to 7 was an
-`R Package Check` problem; the batch surfaced a distinct class of problem in the
+The original library-path bug (sections 2-7) was an `R Package Check` problem
+discovered on the pilot repository. Subsequent batching and a later profile
+upgrade each surfaced new, distinct failure modes. This section groups them by
+phase.
+
+**Phase 1: Initial fleet batch -- render-stage findings (E4-E6)**
+
+Batching repositories 04 to 10 surfaced a distinct class of problem in the
 `Render Reports` job. Three causes appeared, two of them defects in the shared
 render workflow (fixed at the template) and one a report-content defect.
 
@@ -476,7 +556,15 @@ by the migration.
   `analysis/scripts/` is excluded from dependency discovery via `.renvignore`
   so its demonstration dependencies do not enter the lockfile.
 
-### E7: zzrenvcheck adds packages at current-CRAN version, not PPM-snapshot version (RESOLVED)
+**Phase 2: Publishing-profile migration -- lock and manifest findings (E7-E8)**
+
+A second migration phase upgraded all repositories to the `publishing` profile:
+the project Dockerfile was rebased onto `rocker/verse:4.6.0` (which adds LaTeX),
+the PPM snapshot was pinned to 2026-06-29, and `zzc doctor --force` regenerated
+workflow templates across all repos. This phase exposed two new failure modes,
+unrelated to the library-path defect of sections 2-7.
+
+### E7: zzrenvcheck adds packages at current-CRAN version, not PPM-snapshot version (PARTIALLY RESOLVED)
 
 - **Symptom.** Repository 17 (mixedr2) Docker build failed during the render
   workflow with `failed to install "performance"` at the `renv::restore()` step
@@ -503,53 +591,56 @@ by the migration.
   at the snapshot date. The `zzrenvcheck` version-query bug is a known limitation:
   avoid using `fix_packages()` to add packages to the lock when a PPM snapshot is
   in use; rely on deep regrow instead.
-- **Status.** Deep regrow applied to res repos 21-38 and sfw repos 01-03;
-  locks committed and pushed. The zzrenvcheck limitation is documented; a future
-  fix would make `add_with_deps_to_renv_lock` accept a `snapshot_date` parameter.
+- **Status.** Deep regrow applied and locks committed for res repos 21-34 and
+  sfw repos 01-03. Repos 35-38 (pmsimstats-ng, adniml, covariancematrix,
+  zzmesoimpute_paper) still require deep regrow; their CI remains failing on
+  the restore step until those locks are updated. The `zzrenvcheck` limitation
+  is documented; a future fix would make `add_with_deps_to_renv_lock` accept
+  a `snapshot_date` parameter and resolve against the PPM snapshot rather than
+  live CRAN.
 
-### E8: zzrenvcheck::check_packages fails for research compendia (RESOLVED 2026-07-06)
+### E8: zzrenvcheck::check_packages fails for research compendia (WORKFLOW STEP REMOVED; TEMPLATE FIX PENDING)
 
-- **Symptom.** After the publishing-profile migration (rocker/verse:4.6.0,
-  `zzc doctor --force` template regeneration), 13 of the 17 res repos checked by
-  `zzc-ci-status` showed `R Package Check: failure` on the "Validate dependency
-  manifest" step. The exact failure message was:
+- **Symptom.** After the publishing-profile migration, 13 of the 17 res repos
+  checked by `zzc-ci-status` showed `R Package Check: failure` exclusively on the
+  "Validate dependency manifest" step. The exact failure message was:
   `FAIL: code uses packages missing from renv.lock or DESCRIPTION.`
-  The Render Reports job on the same repos passed, confirming the package content
-  was correct and only the CI gate was rejecting it.
+  Notably, the `Render Reports` job on the same repos passed, confirming the
+  analysis code and renv.lock were intact; only the CI gate was rejecting the
+  repos.
 - **Diagnosis.** The `zzc doctor --force` template regeneration updated
   `r-package.yml` in all repos, including all 36 res (research compendium) repos.
   The new template added a "Validate dependency manifest" step that calls
-  `zzrenvcheck::check_packages(strict = TRUE)`. That function scans all directories
-  in `STANDARD_DIRS` (`"."`, `"R"`, `"scripts"`, `"analysis"`) for R package
-  references and checks that every referenced package appears in DESCRIPTION
-  (Imports or Suggests). Research compendia have analysis scripts that legitimately
-  use many packages (dplyr, ggplot2, kableExtra, etc.) present in renv.lock but
-  not formally declared in DESCRIPTION, which is correct practice for compendia:
-  DESCRIPTION's Imports and Suggests document the package's formal dependencies,
-  not the analysis environment. The step was designed for sfw (R package) repos
-  where DESCRIPTION is the authoritative dependency declaration; applying it to
-  compendia conflates the two archetypes.
-  For sfw repos, this check is correct and should remain. For res compendia, renv.lock
-  is the authoritative environment record; DESCRIPTION Imports covers only the
-  package API's dependencies, not the analysis scripts'.
+  `zzrenvcheck::check_packages(strict = TRUE)`. As described in section 1.9,
+  this function checks that every package referenced in code appears in
+  DESCRIPTION. That criterion is correct for sfw (R package) repos but incorrect
+  for res compendia, where analysis scripts legitimately import many packages
+  (dplyr, ggplot2, kableExtra, and so on) that are present in renv.lock but not
+  declared in DESCRIPTION. This is correct compendium structure, not a defect.
+  The template regeneration applied the sfw-appropriate gate indiscriminately
+  to compendium repos, conflating the two archetypes described in section 1.7.
 - **Fix (applied).** Removed the "Validate dependency manifest" step (23 lines)
   from `r-package.yml` in all 36 res repos via an automated Python script
   (`strip-zzrenvcheck.py`). The script matched the block by its leading comment
-  sentinel (`# Reproducibility gate: every package the code uses`) and removed it
-  verbatim. All 36 edits were applied, committed, and pushed in a single batch
-  (commits on 2026-07-06; branch varies by repo: 34 on main, 1 on master
-  (longpower), 1 had already been pushed as a pilot (adaptiveallocation)).
-- **Pilot verification.** `adaptiveallocation` (res/02) was pushed first
-  and its `R Package Check` flipped from failure to success before the fleet
-  batch was applied. This confirms the step removal is the sole fix needed for
-  Mode A failures.
-- **Remaining action for the zzcollab template.** `templates/workflows/r-package.yml`
-  still contains the `zzrenvcheck` step. It should be kept for sfw repos but
-  should not be regenerated onto compendium repos. A future `zzc doctor` improvement
-  would detect the repo archetype (presence of `render-report.yml` as the indicator)
-  and omit the step automatically when regenerating compendium workflows.
+  sentinel (`# Reproducibility gate: every package the code uses`) and removed
+  it verbatim. All 36 edits were applied, committed, and pushed in a single
+  batch (commits on 2026-07-06; branches: 34 repos on main, 1 on master
+  (longpower), 1 already pushed as a pilot (adaptiveallocation)).
+- **Pilot verification.** `adaptiveallocation` (res/02) was pushed first and its
+  `R Package Check` flipped from failure to success before the fleet batch was
+  applied. This confirms that, for compendia whose renv.lock is otherwise
+  complete, removing the step is the sole fix needed. Repos that also have an
+  incomplete renv.lock (e.g., zzmesoimpute_paper, which is missing its primary
+  dependency from the lock) exhibit a separate failure after the step is removed;
+  those require the deep-regrow procedure documented in E7.
+- **Remaining action: zzcollab template.** `templates/workflows/r-package.yml`
+  still contains the `zzrenvcheck` step. It should remain for sfw repos but must
+  not be regenerated onto compendium repos. A future `zzc doctor` improvement
+  would detect the repo archetype -- using the presence of `render-report.yml`
+  as the indicator -- and omit the step automatically when regenerating
+  compendium workflows.
 
 ---
 
-*Rendered on 2026-07-06 at 09:43 PDT.*<br>
+*Rendered on 2026-07-06 at 09:50 PDT.*<br>
 *Source: ~/prj/sfw/07-zzcollab/zzcollab/docs/ci-package-check-library-bug-whitepaper.md*
