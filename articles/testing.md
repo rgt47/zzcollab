@@ -101,8 +101,12 @@ lightweight, zero-dependency framework that requires no scaffolding:
 test files contain bare, top-level expectation calls rather than tests
 wrapped in a `test_that()` block. It offers:
 
-- Rich expectation functions (`expect_equal()`, `expect_true()`,
-  `expect_identical()`, `expect_inherits()`, and others)
+- Rich expectation functions
+  ([`expect_equal()`](https://rdrr.io/pkg/tinytest/man/expect_equal.html),
+  [`expect_true()`](https://rdrr.io/pkg/tinytest/man/expect_equal.html),
+  [`expect_identical()`](https://rdrr.io/pkg/tinytest/man/expect_equal.html),
+  [`expect_inherits()`](https://rdrr.io/pkg/tinytest/man/expect_equal.html),
+  and others)
 - A flat file structure with no helper boilerplate
 - Tests that double as runnable scripts during development
 
