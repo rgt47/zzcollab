@@ -78,23 +78,20 @@ if (dir.create(test_dir, showWarnings = FALSE, recursive = TRUE)) {
 # rebuild function validates Makefile exists
 # Test in directory without Makefile
 temp_dir <- tempfile()
-dir.create(temp_dir)
-old_wd <- getwd()
+if (dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)) {
+  old_wd <- getwd()
+  setwd(temp_dir)
+  on.exit({ setwd(old_wd); unlink(temp_dir, recursive = TRUE) }, add = TRUE)
 
-on.exit({
+  expect_error(
+    rebuild(),
+    "No Makefile found"
+  )
+
   setwd(old_wd)
+  on.exit(NULL)
   unlink(temp_dir, recursive = TRUE)
-})
-
-setwd(temp_dir)
-
-# Should error without Makefile
-expect_error(
-  rebuild(),
-  "No Makefile found"
-)
-
-setwd(old_wd)
+}
 
 # run_script validates inputs
 # Should error with non-existent script
@@ -105,54 +102,47 @@ expect_error(
 
 # Should error without Makefile
 temp_dir <- tempfile()
-dir.create(temp_dir)
-temp_script <- file.path(temp_dir, "test.R")
-file.create(temp_script)
-old_wd <- getwd()
+if (dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)) {
+  temp_script <- file.path(temp_dir, "test.R")
+  file.create(temp_script)
+  old_wd <- getwd()
+  setwd(temp_dir)
+  on.exit({ setwd(old_wd); unlink(temp_dir, recursive = TRUE) }, add = TRUE)
 
-on.exit({
+  expect_error(
+    run_script("test.R"),
+    "No Makefile found"
+  )
+
   setwd(old_wd)
+  on.exit(NULL)
   unlink(temp_dir, recursive = TRUE)
-})
-
-setwd(temp_dir)
-
-expect_error(
-  run_script("test.R"),
-  "No Makefile found"
-)
-
-setwd(old_wd)
+}
 
 # render_report validates inputs
 # Test without Makefile
 temp_dir <- tempfile()
-dir.create(temp_dir)
-old_wd <- getwd()
+if (dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)) {
+  old_wd <- getwd()
+  setwd(temp_dir)
+  on.exit({ setwd(old_wd); unlink(temp_dir, recursive = TRUE) }, add = TRUE)
 
-on.exit({
+  expect_error(
+    render_report(),
+    "No Makefile found"
+  )
+
+  file.create("Makefile")
+
+  expect_error(
+    render_report("/nonexistent/report.Rmd"),
+    "Report file not found"
+  )
+
   setwd(old_wd)
+  on.exit(NULL)
   unlink(temp_dir, recursive = TRUE)
-})
-
-setwd(temp_dir)
-
-# Without Makefile, should error
-expect_error(
-  render_report(),
-  "No Makefile found"
-)
-
-# Create a fake Makefile so we can test file validation
-file.create("Makefile")
-
-# Test with non-existent report (now should check file)
-expect_error(
-  render_report("/nonexistent/report.Rmd"),
-  "Report file not found"
-)
-
-setwd(old_wd)
+}
 
 # run_script and render_report routing tests use local_mocked_bindings
 # (testthat-only); load testthat explicitly.
@@ -220,22 +210,20 @@ if (requireNamespace("testthat", quietly = TRUE)) {
 # sync_env validates renv.lock exists
 # Test without renv.lock
 temp_dir <- tempfile()
-dir.create(temp_dir)
-old_wd <- getwd()
+if (dir.create(temp_dir, recursive = TRUE, showWarnings = FALSE)) {
+  old_wd <- getwd()
+  setwd(temp_dir)
+  on.exit({ setwd(old_wd); unlink(temp_dir, recursive = TRUE) }, add = TRUE)
 
-on.exit({
+  expect_error(
+    sync_env(),
+    "No renv.lock file found"
+  )
+
   setwd(old_wd)
+  on.exit(NULL)
   unlink(temp_dir, recursive = TRUE)
-})
-
-setwd(temp_dir)
-
-expect_error(
-  sync_env(),
-  "No renv.lock file found"
-)
-
-setwd(old_wd)
+}
 
 # add_package requires renv (only testable when renv is absent)
 if (!requireNamespace("renv", quietly = TRUE)) {
