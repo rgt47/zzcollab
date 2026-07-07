@@ -1,8 +1,9 @@
 library(tinytest)
 
-# find_zzcollab_script works
-# Test that the function exists
-expect_true(exists("find_zzcollab_script"))
+# find_zzcollab_script exists in the package namespace (unexported helper)
+expect_true(exists("find_zzcollab_script",
+                    envir = asNamespace("zzcollab"),
+                    inherits = FALSE))
 
 # Test that it returns a character string
 # Note: This might fail if zzcollab is not installed, which is expected
@@ -57,37 +58,22 @@ if (nzchar(Sys.which("docker"))) {
   expect_true(nrow(result) >= 0)
 }
 
-# git functions handle missing git repository
-# Test git functions in non-git directory
-# Create a temporary directory for testing
-temp_dir <- tempdir()
-old_wd <- getwd()
-
-# Create a test directory
-test_dir <- file.path(temp_dir, "test_git")
-if (dir.exists(test_dir)) unlink(test_dir, recursive = TRUE)
-dir.create(test_dir)
-
-on.exit({
+# git_status handles missing git repository
+# Use tempfile() for unique path; guard setwd in case dir creation fails
+test_dir <- tempfile(pattern = "zzc_test_git_")
+if (dir.create(test_dir, showWarnings = FALSE, recursive = TRUE)) {
+  old_wd <- getwd()
+  setwd(test_dir)
+  result <- tryCatch({
+    git_status()
+  }, error = function(e) {
+    expect_true(TRUE)
+    character(0)
+  })
+  expect_true(is.character(result))
   setwd(old_wd)
-  if (dir.exists(test_dir)) unlink(test_dir, recursive = TRUE)
-})
-
-setwd(test_dir)
-
-# Test git_status in non-git directory
-# This should either work (if git is installed) or fail gracefully
-result <- tryCatch({
-  git_status()
-}, error = function(e) {
-  # Expected behavior - git commands may fail in non-git directories
-  expect_true(TRUE)
-  character(0)
-})
-
-expect_true(is.character(result))
-
-setwd(old_wd)
+  unlink(test_dir, recursive = TRUE)
+}
 
 # rebuild function validates Makefile exists
 # Test in directory without Makefile
