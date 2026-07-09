@@ -52,55 +52,58 @@ result <- tryCatch({
 })
 expect_true(is.character(result))
 
-# Mock-based routing tests: verify the exact shell commands built by the
-# wrappers. local_mocked_bindings is testthat-only; load it explicitly.
+# Mock-based routing tests: local_mocked_bindings requires a testthat test_that()
+# environment to bind correctly. Wrap each section so the mock takes effect.
 if (!requireNamespace("testthat", quietly = TRUE)) {
   exit_file("testthat not available -- skipping mock-based routing tests")
 }
 
 # zzcollab_help builds 'help TOPIC' commands for valid topics
-calls <- character(0)
-testthat::local_mocked_bindings(
-  find_zzcollab_script = function() "zzcollab",
-  safe_system = function(command, ...) {
-    calls[[length(calls) + 1]] <<- command
-    character(0)
-  },
-  .package = "zzcollab"
-)
-
-for (topic in help_topics) {
+testthat::test_that("zzcollab_help routes topics via help subcommand", {
   calls <- character(0)
-  zzcollab_help(topic)
-  expect_true(any(grepl(paste("zzcollab help", topic), calls, fixed = TRUE)))
-}
+  testthat::local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      character(0)
+    },
+    .package = "zzcollab"
+  )
+  for (topic in help_topics) {
+    calls <- character(0)
+    zzcollab_help(topic)
+    testthat::expect_true(any(grepl(paste("zzcollab help", topic), calls, fixed = TRUE)))
+  }
+})
 
 # zzcollab_help with NULL or 'general' builds the bare help command
-calls <- character(0)
-testthat::local_mocked_bindings(
-  find_zzcollab_script = function() "zzcollab",
-  safe_system = function(command, ...) {
-    calls[[length(calls) + 1]] <<- command
-    character(0)
-  },
-  .package = "zzcollab"
-)
-
-zzcollab_help(NULL)
-zzcollab_help("general")
-expect_true(all(grepl("^zzcollab help$", trimws(calls))))
+testthat::test_that("zzcollab_help NULL and general build bare help command", {
+  calls <- character(0)
+  testthat::local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      calls[[length(calls) + 1]] <<- command
+      character(0)
+    },
+    .package = "zzcollab"
+  )
+  zzcollab_help(NULL)
+  zzcollab_help("general")
+  testthat::expect_true(all(grepl("^zzcollab help$", trimws(calls))))
+})
 
 # zzcollab_help routes via 'help' subcommand (not a --help-TOPIC flag)
-captured <- NULL
-testthat::local_mocked_bindings(
-  find_zzcollab_script = function() "zzcollab",
-  safe_system = function(command, ...) {
-    captured <<- command
-    character(0)
-  },
-  .package = "zzcollab"
-)
-
-zzcollab_help("docker")
-expect_true(grepl("zzcollab help docker", captured, fixed = TRUE))
-expect_false(grepl("--help-docker", captured, fixed = TRUE))
+testthat::test_that("zzcollab_help uses help subcommand not --help-TOPIC flag", {
+  captured <- NULL
+  testthat::local_mocked_bindings(
+    find_zzcollab_script = function() "zzcollab",
+    safe_system = function(command, ...) {
+      captured <<- command
+      character(0)
+    },
+    .package = "zzcollab"
+  )
+  zzcollab_help("docker")
+  testthat::expect_true(grepl("zzcollab help docker", captured, fixed = TRUE))
+  testthat::expect_false(grepl("--help-docker", captured, fixed = TRUE))
+})
