@@ -1,5 +1,5 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   configuration: configuration.html
@@ -23,7 +23,7 @@ articles:
   workflow-scholarly-manuscript: workflow-scholarly-manuscript.html
   workflow-simulation-study: workflow-simulation-study.html
   workflow-zzvim-r-plots: workflow-zzvim-r-plots.html
-last_built: 2026-07-07T18:13Z
+last_built: 2026-07-09T14:18Z
 urls:
   reference: https://rgt47.github.io/zzcollab/reference
   article: https://rgt47.github.io/zzcollab/articles
