@@ -2065,12 +2065,17 @@ _quickstart_existing_project() {
         if [[ -n "$current_profile" ]]; then
             log_error "This project is configured with the '$current_profile' profile."
             log_info  "To switch it to '$profile':  zzcollab docker --profile $profile"
+            log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
+            return 1
         else
-            log_error "This project has no profile set."
-            log_info  "To configure it with '$profile':  zzcollab docker --profile $profile"
+            # Project has DESCRIPTION but no zzcollab config -- initialize it
+            log_info "Configuring existing project with '$profile' profile"
+            config_set "profile-name" "$profile" true 2>/dev/null || true
+            export BASE_IMAGE="$base_image"
+            generate_dockerfile || return 1
+            log_success "Project configured with '$profile' profile"
+            return 0
         fi
-        log_info  "(That regenerates the Dockerfile only; your .Rprofile and Makefile are left untouched.)"
-        return 1
     fi
 
     # Same profile, missing Dockerfile
