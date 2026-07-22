@@ -167,7 +167,7 @@ create_renv_lock_minimal() {
     local r_ver="$1"
     local codename snapshot default_url
     codename="$(get_ubuntu_codename "$r_ver")"
-    snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     default_url="https://packagemanager.posit.co/cran/__linux__/${codename}/${snapshot}"
     local repo_url="${2:-$default_url}"
 
@@ -658,7 +658,7 @@ EOF
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
     local tag="${ZZRENVCHECK_TAG:-v0.3.1}"
-    local snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    local snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     local digest_field
     if [[ -n "$image_digest" ]]; then
         digest_field="\"${image_digest}\""
@@ -850,7 +850,7 @@ generate_dockerfile_inline() {
     local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
     local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag zzrenvcheck_version
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
-    ppm_snapshot="${PPM_SNAPSHOT:-$(date +%Y-%m-%d)}"
+    ppm_snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
     zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.1}"
     zzrenvcheck_version="${zzrenvcheck_tag#v}"
