@@ -179,6 +179,24 @@ jobs:
               }
             '
 
+      # --- Book archetype: render the whole Quarto book PROJECT (multi-chapter,
+      # driven by analysis/book/_quarto.yml), not a single report.Rmd. This is
+      # the render-gate generalisation the 'blog' archetype comment also flags:
+      # one project-level `quarto render` instead of per-file rmarkdown::render.
+      # Runs only when the book config exists. Container backend only for now,
+      # since the project image (publishing/verse base) ships quarto; extending
+      # to the nix and host backends requires quarto in those environments
+      # (plan §9.4 follow-up). The baked renv library is put on .libPaths() for
+      # the R sessions quarto spawns (which run outside the project root, in
+      # analysis/book/) via the Rprofile.site shim baked by modules/docker.sh.
+      - name: Render Quarto book (container)
+        if: steps.mode.outputs.backend == 'docker' && hashFiles('analysis/book/_quarto.yml') != ''
+        run: |
+          docker run --rm --user root -e CI=true \
+            -v ${{ github.workspace }}:/project \
+            -w /project compendium-env \
+            quarto render analysis/book
+
       # --- Host render: no Dockerfile; renv pins packages when present ---
       - name: Set up pandoc
         if: steps.mode.outputs.backend == 'host'

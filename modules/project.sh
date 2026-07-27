@@ -194,6 +194,50 @@ output: html_document
 Write the post here. Add further posts as `analysis/posts/<slug>.Rmd`.'
         create_file_if_missing "analysis/posts/first-post.Rmd" "$post" "blog starter post"
     fi
+
+    # Book archetype: a multi-chapter Quarto book under analysis/book/, driven by
+    # its own _quarto.yml (project type: book) rather than a single report.Rmd.
+    # It is therefore excluded from the report scaffold above; the render gate
+    # detects analysis/book/_quarto.yml and runs `quarto render` on the project
+    # (see workflows/render-report.yml and the docker-render-book Makefile
+    # target). A book carries the compendium skeleton (R/, tests/) so chapters
+    # can call tested helper functions; a bare-book variant that omits the
+    # package apparatus is a follow-up (plan §9.4).
+    if [[ "$_arch" == "book" ]]; then
+        local book_yml='project:
+  type: book
+
+book:
+  title: "Book Title"
+  author: "'"${AUTHOR_NAME:-Your Name}"'"
+  chapters:
+    - index.qmd
+    - 01-intro.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+  pdf:
+    documentclass: scrbook'
+        create_file_if_missing "analysis/book/_quarto.yml" "$book_yml" "book Quarto config"
+
+        local book_index='# Preface {.unnumbered}
+
+Describe the book here. This preface is unnumbered front matter.'
+        create_file_if_missing "analysis/book/index.qmd" "$book_index" "book preface"
+
+        local book_ch1='# Introduction
+
+Write the first chapter here. Add chapters as `analysis/book/NN-name.qmd`
+and list them under `book.chapters` in `_quarto.yml`.'
+        create_file_if_missing "analysis/book/01-intro.qmd" "$book_ch1" "book chapter 1"
+
+        create_file_if_missing "analysis/book/references.bib" \
+            "% Add BibTeX entries here; cite them in chapters with [@key]." \
+            "book bibliography"
+    fi
 }
 
 #=============================================================================

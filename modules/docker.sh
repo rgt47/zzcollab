@@ -958,6 +958,17 @@ ${tools_install}
 # RENV_PATHS_LIBRARY.
 ${install_block}
 
+# Make the baked renv library discoverable to R sessions started OUTSIDE the
+# project root. 'quarto render analysis/book' (archetype: book) spawns R with
+# the working directory inside analysis/book/, which has no project .Rprofile to
+# source renv/activate.R, so renv never puts /opt/renv/library on .libPaths().
+# Rprofile.site is sourced regardless of cwd, so add the baked library here.
+# Guarded by dir.exists, so non-renv (e.g. minimal) images are unaffected. Does
+# not touch 'Rscript --vanilla' sessions (they skip the site file); the render
+# CI heredoc keeps its own .libPaths() shim for that reason.
+RUN echo 'local({ lib <- Sys.glob(file.path(Sys.getenv("RENV_PATHS_LIBRARY", "/opt/renv/library"), "*", "*", "*"))[1]; if (length(lib) == 1L && !is.na(lib) && nzchar(lib) && dir.exists(lib)) .libPaths(unique(c(lib, .libPaths()))) })' \\
+        >> /usr/local/lib/R/etc/Rprofile.site
+
 # Install zzrenvcheck as a validation tool (system library, outside project renv).
 # Installed post-build via make install-zzrenvcheck to avoid GitHub/network
 # issues during docker build on cloud-mounted filesystems.
