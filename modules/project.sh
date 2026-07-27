@@ -126,6 +126,45 @@ create_test_infrastructure() {
 }
 
 #=============================================================================
+# ARCHETYPE SYMLINK TOPOLOGY
+#=============================================================================
+
+# create_relative_symlink <linkpath> <relative-target>
+# Idempotent (ln -sfn), tolerant of filesystems without symlink support so a
+# scaffold on such a platform warns rather than aborting.
+create_relative_symlink() {
+    local link="$1" target="$2"
+    mkdir -p "$(dirname "$link")"
+    if ln -sfn "$target" "$link" 2>/dev/null; then
+        log_debug "symlink: $link -> $target"
+    else
+        log_warn "Could not create symlink $link -> $target (filesystem may not support symlinks)"
+        return 1
+    fi
+}
+
+# create_archetype_symlinks <archetype>
+# Create the symlink topology a publishing archetype needs. A blog post's
+# source lives in analysis/report/index.qmd but must appear as index.qmd at the
+# compendium root so a parent Quarto site renders posts/<slug>/index.qmd; assets
+# are symlinked at both the root and the report level so they resolve whether
+# the post renders from the site or in place.
+create_archetype_symlinks() {
+    local archetype="$1"
+    case "$archetype" in
+        blog)
+            create_relative_symlink "index.qmd" "analysis/report/index.qmd"
+            create_relative_symlink "data"      "analysis/data"
+            create_relative_symlink "figures"   "analysis/figures"
+            create_relative_symlink "media"     "analysis/media"
+            create_relative_symlink "analysis/report/data"    "../data"
+            create_relative_symlink "analysis/report/figures" "../figures"
+            create_relative_symlink "analysis/report/media"   "../media"
+            ;;
+    esac
+}
+
+#=============================================================================
 # ANALYSIS TEMPLATES
 #=============================================================================
 
@@ -138,13 +177,14 @@ create_analysis_files() {
     fi
 
     # Archetype-driven scaffolding (plan §9.4). The archetype decides whether a
-    # report exists - manuscript/analysis/blog render a document (and so carry
-    # the render gate); package/simulation do not. WITH_EXAMPLES forces the
-    # report regardless, for the example-laden quickstart.
+    # report.Rmd exists - manuscript/analysis carry the bookdown report and its
+    # render gate; blog uses a Quarto index.qmd instead (below), and
+    # book/package/simulation carry neither. WITH_EXAMPLES forces the report
+    # regardless, for the example-laden quickstart.
     local _arch="${ARCHETYPE:-analysis}"
     local _want_report=false
     case "$_arch" in
-        manuscript|analysis|blog) _want_report=true ;;
+        manuscript|analysis) _want_report=true ;;
     esac
     if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then _want_report=true; fi
 
@@ -179,20 +219,31 @@ if (sys.nframe() == 0L) {
         create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"
     fi
 
-    # Blog archetype: a posts/ layout with a starter post, distinguishing it
-    # from the single-report analysis/manuscript layouts. (Rendering every post,
-    # rather than only report.Rmd, is a render-workflow generalisation left as
-    # follow-up; the scaffolded report.Rmd remains the render-gate entry point.)
+    # Blog archetype: a single-post compendium. The post is a Quarto index.qmd
+    # in analysis/report/, surfaced at the compendium root by an index.qmd
+    # symlink so a parent Quarto site renders posts/<slug>/index.qmd; data,
+    # figures, and media are symlinked at both the root and report level so
+    # assets resolve in either render context (see create_archetype_symlinks).
     if [[ "$_arch" == "blog" ]]; then
+        mkdir -p analysis/media/images
         local post='---
 title: "First post"
 author: "'"${AUTHOR_NAME:-Your Name}"'"
 date: "'"$(date +%Y-%m-%d 2>/dev/null || echo 2026-01-01)"'"
-output: html_document
+categories: [r]
+description: >
+  One-sentence summary of the post.
+image: media/images/hero.png
+format:
+  html:
+    code-fold: false
+draft: true
 ---
 
-Write the post here. Add further posts as `analysis/posts/<slug>.Rmd`.'
-        create_file_if_missing "analysis/posts/first-post.Rmd" "$post" "blog starter post"
+Write the post here. Reference images as `media/images/<file>` and data
+as `data/<file>`.'
+        create_file_if_missing "analysis/report/index.qmd" "$post" "blog post (index.qmd)"
+        create_archetype_symlinks "blog"
     fi
 
     # Book archetype: a multi-chapter Quarto book under analysis/book/, driven by
