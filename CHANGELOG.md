@@ -10,6 +10,18 @@ is archived in `CHANGELOG-2.x.md`.
 
 ### Added
 
+- `book` research archetype for multi-chapter Quarto books.
+  `zzc init --archetype book` scaffolds `analysis/book/` with a
+  book-type `_quarto.yml`, a preface (`index.qmd`), a first chapter, and
+  `references.bib`; the book is excluded from the single-`report.Rmd`
+  scaffold since it renders as a Quarto project. Adds a
+  `docker-render-book` Makefile target and a container-backend step in
+  `render-report.yml` that runs a project-level `quarto render`. The
+  generated image now bakes a cwd-independent
+  [`.libPaths()`](https://rdrr.io/r/base/libPaths.html) shim into
+  `Rprofile.site` so the renv library is visible to the R sessions
+  `quarto render` spawns inside `analysis/book/` (which has no project
+  `.Rprofile`).
 - `zzc init` now back-fills an existing `~/.zzcollab/config.yaml` to the
   current schema. Older or hand-trimmed configs that lack whole sections
   (`author`, `license`, `r_package`, `style`, `github`) gain those
