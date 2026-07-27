@@ -26,7 +26,7 @@ Creates R package projects with Docker, renv, and CI/CD.
 Commands:
   init [--force] [--archetype A]
                         Create compendium structure (archetype: manuscript|
-                        analysis|package|simulation|blog; default analysis)
+                        analysis|book|package|simulation|blog; default analysis)
   tidyverse | minimal | rstudio | publishing
                         Quickstart: init + renv + docker (new project),
                         or switch profile (existing project)

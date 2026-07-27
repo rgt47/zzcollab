@@ -317,6 +317,9 @@ docker-script:
 docker-render-qmd: ## Render the Quarto report (analysis/report/index.qmd)
 	$(DOCKER_RUN) quarto render analysis/report/index.qmd
 
+docker-render-book: ## Render the Quarto book (archetype: book -> analysis/book/)
+	$(DOCKER_RUN) quarto render analysis/book
+
 # Back-compat aliases. docker-check-renv is invoked by zzcollab::run_script;
 # both are identical to check-renv-no-fix and check-renv respectively, so they
 # delegate rather than duplicate the docker run command.
@@ -420,4 +423,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-book docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

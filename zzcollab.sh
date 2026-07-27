@@ -296,12 +296,12 @@ cmd_init() {
         local _arch
         if has_gum && [[ -t 0 ]]; then
             _arch=$(gum_choose "Research archetype (scaffolding + render gate)" \
-                analysis manuscript package simulation blog) || _arch="analysis"
+                analysis manuscript book package simulation blog) || _arch="analysis"
         else
             # || true: read returns non-zero on EOF (closed stdin), which would
             # otherwise abort init under set -e; fall back to the default.
             _arch=""
-            zzc_read -r -p "Archetype [analysis/manuscript/package/simulation/blog] (default analysis): " _arch || true
+            zzc_read -r -p "Archetype [analysis/manuscript/book/package/simulation/blog] (default analysis): " _arch || true
             _arch="${_arch:-analysis}"
         fi
         ZZCOLLAB_ARCHETYPE="$_arch"
@@ -365,7 +365,7 @@ init_export_config_vars() {
     # Research archetype (init-time scaffolding axis): flag > config > analysis.
     export ARCHETYPE="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-analysis}}"
     case "$ARCHETYPE" in
-        manuscript|analysis|package|simulation|blog) ;;
+        manuscript|analysis|book|package|simulation|blog) ;;
         *) log_warn "Unknown archetype '$ARCHETYPE'; using 'analysis'."
            export ARCHETYPE="analysis" ;;
     esac

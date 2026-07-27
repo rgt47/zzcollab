@@ -41,7 +41,7 @@ CONFIG_WITH_EXAMPLES="false"
 # Default true; set false for REPL-only workflows (no editor LSP).
 CONFIG_LANGUAGESERVER="true"
 # Research archetype (init-time scaffolding axis): manuscript | analysis |
-# package | simulation | blog. Empty -> analysis.
+# book | package | simulation | blog. Empty -> analysis.
 CONFIG_ARCHETYPE=""
 # Dependency-validation (zzrenvcheck) defaults read by 'zzc validate'. strict
 # also scans tests/ and vignettes/; fix auto-repairs DESCRIPTION. Empty ->
@@ -561,8 +561,8 @@ EOF
                 esac ;;
             archetype)
                 case "$value" in
-                    manuscript|analysis|package|simulation|blog) ;;
-                    *) log_error "Unknown archetype: $value (valid: manuscript, analysis, package, simulation, blog)"
+                    manuscript|analysis|book|package|simulation|blog) ;;
+                    *) log_error "Unknown archetype: $value (valid: manuscript, analysis, book, package, simulation, blog)"
                        return 1 ;;
                 esac ;;
             docker_runtime)
