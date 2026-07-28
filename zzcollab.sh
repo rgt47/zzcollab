@@ -245,6 +245,7 @@ cmd_init() {
         case "$1" in
             --force|-f) force=true; shift ;;
             --archetype) ZZCOLLAB_ARCHETYPE="$2"; shift 2 ;;
+            --bare) export ZZCOLLAB_BARE=true; shift ;;
             *) break ;;
         esac
     done
