@@ -10,6 +10,16 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Added
 
+- Declarative archetype scaffolding. Per-archetype scaffolding is now driven
+  by an `archetype_spec` table and a single engine (`apply_archetype_scaffold`)
+  with `_scaffold_*` entry functions, replacing ad-hoc conditionals. Adds the
+  missing symlink primitive (`create_archetype_symlinks`): `blog` is now a
+  single-post compendium with `analysis/report/index.qmd` surfaced at the root
+  via an `index.qmd` symlink plus `data`/`figures`/`media` symlinks (matching
+  real usage); `analysis` scaffolds a Quarto `index.qmd` (report.Rmd is now
+  manuscript-only); `book` is standalone with its own `media/images`. New
+  `--bare` flag (env `ZZCOLLAB_BARE`) omits the R-package skeleton and its CI
+  workflow for prose-only compendia.
 - `book` research archetype for multi-chapter Quarto books. `zzc init
   --archetype book` scaffolds `analysis/book/` with a book-type `_quarto.yml`,
   a preface (`index.qmd`), a first chapter, and `references.bib`; the book is
