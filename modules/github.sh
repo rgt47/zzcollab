@@ -52,7 +52,11 @@ create_github_workflows() {
     local workflows_dir=".github/workflows"
     safe_mkdir "$workflows_dir" "GitHub workflows directory" || return 1
 
-    if install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" \
+    # R9: a bare/prose compendium has no package to check, so skip the
+    # R-package validation workflow (it would fail with no DESCRIPTION).
+    if [[ "${ZZCOLLAB_BARE:-false}" == "true" ]]; then
+        log_info "  - Bare compendium: skipping R package validation workflow"
+    elif install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" \
         "R package validation workflow" "Created R package workflow"; then
         log_info "  - Triggers: push/PR to main"
         log_info "  - Actions: R CMD check, tests"

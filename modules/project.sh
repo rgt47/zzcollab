@@ -21,13 +21,8 @@ set -euo pipefail
 create_directory_structure() {
     log_debug "Creating directory structure..."
 
-    local dirs=(
-        "R"
-        "man"
-        "tests"
-        "inst"
-        "inst/tinytest"
-        "vignettes"
+    # Base directories, always present: analysis workspace, docs, CI.
+    local base_dirs=(
         "analysis"
         "analysis/data"
         "analysis/data/raw_data"
@@ -40,6 +35,20 @@ create_directory_structure() {
         ".github"
         ".github/workflows"
     )
+    # R-package directories, skipped for a bare/prose compendium (R9).
+    local pkg_dirs=(
+        "R"
+        "man"
+        "tests"
+        "inst"
+        "inst/tinytest"
+        "vignettes"
+    )
+
+    local dirs=( "${base_dirs[@]}" )
+    if [[ "${ZZCOLLAB_BARE:-false}" != "true" ]]; then
+        dirs=( "${pkg_dirs[@]}" "${base_dirs[@]}" )
+    fi
 
     for dir in "${dirs[@]}"; do
         if ! mkdir -p "$dir"; then
@@ -126,85 +135,140 @@ create_test_infrastructure() {
 }
 
 #=============================================================================
-# ANALYSIS TEMPLATES
+# ARCHETYPE SYMLINK TOPOLOGY
 #=============================================================================
 
-create_analysis_files() {
-    log_debug "Creating analysis structure..."
-
-    # Data README
-    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/data_README.md" ]]; then
-        install_template "data_README.md" "analysis/data/README.md" "data README"
+# create_relative_symlink <linkpath> <relative-target>
+# Idempotent (ln -sfn), tolerant of filesystems without symlink support so a
+# scaffold on such a platform warns rather than aborting.
+create_relative_symlink() {
+    local link="$1" target="$2"
+    mkdir -p "$(dirname "$link")"
+    if ln -sfn "$target" "$link" 2>/dev/null; then
+        log_debug "symlink: $link -> $target"
+    else
+        log_warn "Could not create symlink $link -> $target (filesystem may not support symlinks)"
+        return 1
     fi
-
-    # Archetype-driven scaffolding (plan §9.4). The archetype decides whether a
-    # report exists - manuscript/analysis/blog render a document (and so carry
-    # the render gate); package/simulation do not. WITH_EXAMPLES forces the
-    # report regardless, for the example-laden quickstart.
-    local _arch="${ARCHETYPE:-analysis}"
-    local _want_report=false
-    case "$_arch" in
-        manuscript|analysis|blog) _want_report=true ;;
-    esac
-    if [[ "${WITH_EXAMPLES:-false}" == "true" ]]; then _want_report=true; fi
-
-    if [[ "$_want_report" == true ]]; then
-        install_template "report.Rmd" "analysis/report/report.Rmd" "report template" 2>/dev/null || true
-        install_template "references.bib" "analysis/report/references.bib" "bibliography" 2>/dev/null || true
-        # The report's YAML header references ../templates/<csl> for citation
-        # formatting; ship it so the default report renders without a missing
-        # resource error.
-        install_template "statistics-in-medicine.csl" "analysis/templates/statistics-in-medicine.csl" "citation style (CSL)" 2>/dev/null || true
-        log_success "Report scaffolded (archetype: $_arch)"
-    fi
-
-    # Simulation archetype: a seeded, parallel-ready starter script instead of a
-    # report, reflecting the archetype's emphasis on reproducible stochastics.
-    if [[ "$_arch" == "simulation" ]]; then
-        local sim='# Simulation entry point (archetype: simulation).
-# Reproducible stochastics: set the RNG seed explicitly. RNGkind is pinned in
-# .Rprofile. For parallel runs use parallel::clusterSetRNGStream() or
-# future + furrr with a single global seed.
-set.seed(1)
-
-run_simulation <- function(n = 1000L) {
-  # Replace with the study design.
-  mean(rnorm(n))
 }
 
-if (sys.nframe() == 0L) {
-  result <- run_simulation()
-  cat("simulation result:", result, "\n")
-}'
-        create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"
-    fi
+# create_archetype_symlinks <archetype>
+# Create the symlink topology a publishing archetype needs. A blog post's
+# source lives in analysis/report/index.qmd but must appear as index.qmd at the
+# compendium root so a parent Quarto site renders posts/<slug>/index.qmd; assets
+# are symlinked at both the root and the report level so they resolve whether
+# the post renders from the site or in place.
+create_archetype_symlinks() {
+    local archetype="$1"
+    case "$archetype" in
+        blog)
+            create_relative_symlink "index.qmd" "analysis/report/index.qmd"
+            create_relative_symlink "data"      "analysis/data"
+            create_relative_symlink "figures"   "analysis/figures"
+            create_relative_symlink "media"     "analysis/media"
+            create_relative_symlink "analysis/report/data"    "../data"
+            create_relative_symlink "analysis/report/figures" "../figures"
+            create_relative_symlink "analysis/report/media"   "../media"
+            ;;
+    esac
+}
 
-    # Blog archetype: a posts/ layout with a starter post, distinguishing it
-    # from the single-report analysis/manuscript layouts. (Rendering every post,
-    # rather than only report.Rmd, is a render-workflow generalisation left as
-    # follow-up; the scaffolded report.Rmd remains the render-gate entry point.)
-    if [[ "$_arch" == "blog" ]]; then
-        local post='---
+#=============================================================================
+# ARCHETYPE SPEC + ENTRY SCAFFOLDS
+#=============================================================================
+
+# Declarative archetype spec. archetype_spec <archetype> <field> echoes the
+# value; one engine (apply_archetype_scaffold) consumes it. Fields:
+#   render_entry   which entry scaffold to run (dispatch key)
+#   symlinks       symlink set name (see create_archetype_symlinks) or 'none'
+#   render_target  the render-gate entry path (used by tooling / docs)
+# The R-package skeleton is orthogonal to the archetype (ZZCOLLAB_BARE, R9),
+# so it is not a spec field.
+archetype_spec() {
+    local a="$1" field="$2"
+    case "${a}.${field}" in
+        manuscript.render_entry) echo "report_rmd" ;;
+        analysis.render_entry)   echo "analysis_index" ;;
+        blog.render_entry)       echo "blog_index" ;;
+        book.render_entry)       echo "book" ;;
+        simulation.render_entry) echo "simulation" ;;
+        package.render_entry)    echo "none" ;;
+        *.render_entry)          echo "analysis_index" ;;
+
+        blog.symlinks)           echo "blog" ;;
+        *.symlinks)              echo "none" ;;
+
+        manuscript.render_target) echo "analysis/report/report.Rmd" ;;
+        analysis.render_target)   echo "analysis/report/index.qmd" ;;
+        blog.render_target)       echo "analysis/report/index.qmd" ;;
+        book.render_target)       echo "analysis/book" ;;
+        *.render_target)          echo "" ;;
+    esac
+}
+
+# manuscript: bookdown PDF report.Rmd + bibliography + CSL.
+_scaffold_report_rmd() {
+    install_template "report.Rmd" "analysis/report/report.Rmd" "report template" 2>/dev/null || true
+    install_template "references.bib" "analysis/report/references.bib" "bibliography" 2>/dev/null || true
+    # The report YAML references ../templates/<csl>; ship it so the default
+    # report renders without a missing-resource error.
+    install_template "statistics-in-medicine.csl" "analysis/templates/statistics-in-medicine.csl" "citation style (CSL)" 2>/dev/null || true
+    log_success "Report scaffolded (report.Rmd)"
+}
+
+# analysis (R4): a Quarto index.qmd (HTML-first, PDF too) instead of bookdown.
+_scaffold_analysis_index() {
+    local doc='---
+title: "Analysis"
+author: "'"${AUTHOR_NAME:-Your Name}"'"
+date: "'"$(date +%Y-%m-%d 2>/dev/null || echo 2026-01-01)"'"
+format:
+  html:
+    toc: true
+    code-fold: false
+  pdf:
+    documentclass: scrartcl
+bibliography: references.bib
+---
+
+# Introduction
+
+Write the analysis here. Reference figures in `../figures` and data in
+`../data`.'
+    create_file_if_missing "analysis/report/index.qmd" "$doc" "analysis document (index.qmd)"
+    create_file_if_missing "analysis/report/references.bib" \
+        "% Add BibTeX entries here; cite them with [@key]." "bibliography"
+    log_success "Analysis document scaffolded (index.qmd)"
+}
+
+# blog: single-post compendium (index.qmd in analysis/report/ + symlinks are
+# applied by the engine via create_archetype_symlinks).
+_scaffold_blog_index() {
+    mkdir -p analysis/media/images
+    local post='---
 title: "First post"
 author: "'"${AUTHOR_NAME:-Your Name}"'"
 date: "'"$(date +%Y-%m-%d 2>/dev/null || echo 2026-01-01)"'"
-output: html_document
+categories: [r]
+description: >
+  One-sentence summary of the post.
+image: media/images/hero.png
+format:
+  html:
+    code-fold: false
+draft: true
 ---
 
-Write the post here. Add further posts as `analysis/posts/<slug>.Rmd`.'
-        create_file_if_missing "analysis/posts/first-post.Rmd" "$post" "blog starter post"
-    fi
+Write the post here. Reference images as `media/images/<file>` and data
+as `data/<file>`.'
+    create_file_if_missing "analysis/report/index.qmd" "$post" "blog post (index.qmd)"
+}
 
-    # Book archetype: a multi-chapter Quarto book under analysis/book/, driven by
-    # its own _quarto.yml (project type: book) rather than a single report.Rmd.
-    # It is therefore excluded from the report scaffold above; the render gate
-    # detects analysis/book/_quarto.yml and runs `quarto render` on the project
-    # (see workflows/render-report.yml and the docker-render-book Makefile
-    # target). A book carries the compendium skeleton (R/, tests/) so chapters
-    # can call tested helper functions; a bare-book variant that omits the
-    # package apparatus is a follow-up (plan §9.4).
-    if [[ "$_arch" == "book" ]]; then
-        local book_yml='project:
+# book (R7): multi-chapter Quarto book under analysis/book/, self-contained
+# (no root symlink); carries its own media/images.
+_scaffold_book_project() {
+    mkdir -p analysis/book/media/images
+    local book_yml='project:
   type: book
 
 book:
@@ -221,23 +285,82 @@ format:
     theme: cosmo
   pdf:
     documentclass: scrbook'
-        create_file_if_missing "analysis/book/_quarto.yml" "$book_yml" "book Quarto config"
+    create_file_if_missing "analysis/book/_quarto.yml" "$book_yml" "book Quarto config"
 
-        local book_index='# Preface {.unnumbered}
+    local book_index='# Preface {.unnumbered}
 
 Describe the book here. This preface is unnumbered front matter.'
-        create_file_if_missing "analysis/book/index.qmd" "$book_index" "book preface"
+    create_file_if_missing "analysis/book/index.qmd" "$book_index" "book preface"
 
-        local book_ch1='# Introduction
+    local book_ch1='# Introduction
 
 Write the first chapter here. Add chapters as `analysis/book/NN-name.qmd`
 and list them under `book.chapters` in `_quarto.yml`.'
-        create_file_if_missing "analysis/book/01-intro.qmd" "$book_ch1" "book chapter 1"
+    create_file_if_missing "analysis/book/01-intro.qmd" "$book_ch1" "book chapter 1"
 
-        create_file_if_missing "analysis/book/references.bib" \
-            "% Add BibTeX entries here; cite them in chapters with [@key]." \
-            "book bibliography"
+    create_file_if_missing "analysis/book/references.bib" \
+        "% Add BibTeX entries here; cite them in chapters with [@key]." \
+        "book bibliography"
+}
+
+# simulation: a seeded, parallel-ready starter script.
+_scaffold_simulation_script() {
+    local sim='# Simulation entry point (archetype: simulation).
+# Reproducible stochastics: set the RNG seed explicitly. RNGkind is pinned in
+# .Rprofile. For parallel runs use parallel::clusterSetRNGStream() or
+# future + furrr with a single global seed.
+set.seed(1)
+
+run_simulation <- function(n = 1000L) {
+  # Replace with the study design.
+  mean(rnorm(n))
+}
+
+if (sys.nframe() == 0L) {
+  result <- run_simulation()
+  cat("simulation result:", result, "\n")
+}'
+    create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"
+}
+
+# The one engine: read the spec for ARCHETYPE and dispatch the entry scaffold
+# plus any symlink topology. WITH_EXAMPLES gives an otherwise entry-less
+# archetype (package) an example document.
+apply_archetype_scaffold() {
+    local a="${ARCHETYPE:-analysis}"
+    local entry
+    entry="$(archetype_spec "$a" render_entry)"
+    if [[ "${WITH_EXAMPLES:-false}" == "true" && "$entry" == "none" ]]; then
+        entry="analysis_index"
     fi
+    case "$entry" in
+        report_rmd)     _scaffold_report_rmd ;;
+        analysis_index) _scaffold_analysis_index ;;
+        blog_index)     _scaffold_blog_index ;;
+        book)           _scaffold_book_project ;;
+        simulation)     _scaffold_simulation_script ;;
+        none)           : ;;
+    esac
+    if [[ "$(archetype_spec "$a" symlinks)" == "blog" ]]; then
+        create_archetype_symlinks "blog"
+    fi
+    return 0
+}
+
+#=============================================================================
+# ANALYSIS TEMPLATES
+#=============================================================================
+
+create_analysis_files() {
+    log_debug "Creating analysis structure..."
+
+    # Data README
+    if [[ -f "${ZZCOLLAB_TEMPLATES_DIR:-}/data_README.md" ]]; then
+        install_template "data_README.md" "analysis/data/README.md" "data README"
+    fi
+
+    # Archetype-driven scaffolding, dispatched from the declarative spec.
+    apply_archetype_scaffold
 }
 
 #=============================================================================
@@ -371,8 +494,14 @@ setup_project() {
     log_info "Setting up project structure..."
 
     create_directory_structure || return 1
-    create_r_package_files || return 1
-    create_test_infrastructure || return 1
+    # R9: a bare/prose compendium omits the R-package skeleton (R/, tests/,
+    # DESCRIPTION, NAMESPACE); the analysis workspace and docs still scaffold.
+    if [[ "${ZZCOLLAB_BARE:-false}" != "true" ]]; then
+        create_r_package_files || return 1
+        create_test_infrastructure || return 1
+    else
+        log_info "Bare compendium: skipping R-package skeleton (R/, tests/, DESCRIPTION, NAMESPACE)"
+    fi
     create_analysis_files || return 1
     create_devtools || return 1
     create_renv_setup || return 1
