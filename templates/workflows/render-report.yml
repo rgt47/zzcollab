@@ -192,10 +192,15 @@ jobs:
       - name: Render Quarto book (container)
         if: steps.mode.outputs.backend == 'docker' && hashFiles('analysis/book/_quarto.yml') != ''
         run: |
+          # Render HTML only. A book often declares an html+pdf format, but the
+          # PDF path pulls in LaTeX (luatex), which fails in CI on missing figure
+          # PDFs, fonts, or unbaked packages. The deploy serves HTML, so the
+          # render gate only needs HTML here. Build the PDF locally with
+          # `make docker-render-book`, which renders every declared format.
           docker run --rm --user root -e CI=true \
             -v ${{ github.workspace }}:/project \
             -w /project compendium-env \
-            quarto render analysis/book
+            quarto render analysis/book --to html
 
       # Blog archetype (and any Quarto index.qmd report): render the single-post
       # Quarto document. Runs only when analysis/report/index.qmd exists, so
@@ -206,7 +211,7 @@ jobs:
           docker run --rm --user root -e CI=true \
             -v ${{ github.workspace }}:/project \
             -w /project compendium-env \
-            quarto render analysis/report/index.qmd
+            quarto render analysis/report/index.qmd --to html
 
       # --- Host render: no Dockerfile; renv pins packages when present ---
       - name: Set up pandoc
