@@ -52,10 +52,14 @@ create_github_workflows() {
     local workflows_dir=".github/workflows"
     safe_mkdir "$workflows_dir" "GitHub workflows directory" || return 1
 
+    local archetype="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-analysis}}"
+
     # R9: a bare/prose compendium has no package to check, so skip the
-    # R-package validation workflow (it would fail with no DESCRIPTION).
-    if [[ "${ZZCOLLAB_BARE:-false}" == "true" ]]; then
-        log_info "  - Bare compendium: skipping R package validation workflow"
+    # R-package validation workflow (it would fail with no DESCRIPTION). A book
+    # is prose by default and is rendered by render-book.yml, so skip it too; a
+    # book that ships R helpers can add r-package.yml back.
+    if [[ "${ZZCOLLAB_BARE:-false}" == "true" || "$archetype" == "book" ]]; then
+        log_info "  - Skipping R package validation workflow (bare or book archetype)"
     elif install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" \
         "R package validation workflow" "Created R package workflow"; then
         log_info "  - Triggers: push/PR to main"
@@ -65,15 +69,28 @@ create_github_workflows() {
         return 1
     fi
 
-    local paper_workflow_template
-    paper_workflow_template=$(get_workflow_template 2>/dev/null || echo "workflows/render-report.yml")
-    if install_template "$paper_workflow_template" ".github/workflows/render-report.yml" \
-        "Report rendering workflow" "Created report rendering workflow"; then
-        log_info "  - Triggers: changes to analysis/, R/"
-        log_info "  - Output: PDF artifacts"
+    if [[ "$archetype" == "book" ]]; then
+        # Book archetype: a project-level `quarto render analysis/book`, so it
+        # gets a dedicated render+deploy workflow rather than render-report.yml
+        # (which is shaped for report/manuscript/blog projects).
+        if install_template "workflows/render-book.yml" ".github/workflows/render-book.yml" \
+            "Book render/deploy workflow" "Created book render/deploy workflow"; then
+            log_info "  - Renders analysis/book --to html; deploys to Netlify on main"
+        else
+            log_error "Failed to create book workflow"
+            return 1
+        fi
     else
-        log_error "Failed to create report workflow"
-        return 1
+        local paper_workflow_template
+        paper_workflow_template=$(get_workflow_template 2>/dev/null || echo "workflows/render-report.yml")
+        if install_template "$paper_workflow_template" ".github/workflows/render-report.yml" \
+            "Report rendering workflow" "Created report rendering workflow"; then
+            log_info "  - Triggers: changes to analysis/, R/"
+            log_info "  - Output: PDF artifacts"
+        else
+            log_error "Failed to create report workflow"
+            return 1
+        fi
     fi
 
     log_success "GitHub Actions workflows created"

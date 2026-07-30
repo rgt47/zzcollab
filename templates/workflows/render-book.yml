@@ -1,0 +1,105 @@
+# zzcollab render-book.yml v0.1.0
+#
+# Render gate and deploy for the 'book' archetype. A book is a project-level
+# `quarto render analysis/book`, unlike the report/manuscript/blog archetypes
+# (which render-report.yml handles), so books get their own workflow.
+#
+# Self-adapting backend, by artifact presence:
+#   Dockerfile present -> build the project image and render inside it, so
+#                         heavy R books get pinned packages and system libs.
+#   otherwise          -> render on the host with quarto; restore renv.lock
+#                         when present, else render bare (prose books need
+#                         only quarto and pandoc).
+#
+# Renders on every push and pull request (the gate, catching a broken render
+# before it reaches main) and uploads the _book artifact. Deploys to Netlify
+# only on a push to main, so one render serves both the gate and the deploy.
+# Netlify deploy needs the NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID secrets; the
+# deploy step is a no-op safe skip on forks/PRs where they are absent.
+name: Render book and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  render-book:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Detect backend
+        id: mode
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "backend=docker" >> "$GITHUB_OUTPUT"
+            echo "Backend: Docker (Dockerfile present)"
+          else
+            echo "backend=host" >> "$GITHUB_OUTPUT"
+            echo "Backend: host runner"
+          fi
+
+      # --- Host backend: quarto plus an optional renv restore ---
+      - name: Set up R (host, renv.lock present)
+        if: steps.mode.outputs.backend == 'host' && hashFiles('renv.lock') != ''
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Restore renv (host)
+        if: steps.mode.outputs.backend == 'host' && hashFiles('renv.lock') != ''
+        run: |
+          Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+          Rscript -e "renv::restore(prompt = FALSE)"
+
+      - name: Render book (host)
+        if: steps.mode.outputs.backend == 'host'
+        run: quarto render analysis/book --to html
+
+      # --- Container backend: build the project image and render inside it ---
+      - name: Set up Buildx
+        if: steps.mode.outputs.backend == 'docker'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build project image
+        if: steps.mode.outputs.backend == 'docker'
+        run: docker build -t compendium-env .
+
+      - name: Render book (container)
+        if: steps.mode.outputs.backend == 'docker'
+        run: |
+          docker run --rm --user root -e CI=true \
+            -v ${{ github.workspace }}:/project -w /project compendium-env \
+            quarto render analysis/book --to html
+
+      - name: Upload rendered book
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: book
+          path: analysis/book/_book
+          if-no-files-found: warn
+          retention-days: 30
+
+      # --- Deploy: only on a push to main ---
+      - name: Deploy to Netlify
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: ./analysis/book/_book
+          production-branch: main
+          production-deploy: true
+          deploy-message: 'GHA: ${{ github.event.head_commit.message }}'
+          enable-pull-request-comment: false
+          overwrites-pull-request-comment: false
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        timeout-minutes: 5
