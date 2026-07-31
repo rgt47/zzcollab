@@ -1,4 +1,4 @@
-# zzcollab render-book.yml v0.1.0
+# zzcollab render-book.yml v0.2.0
 #
 # Render gate and deploy for the 'book' archetype. A book is a project-level
 # `quarto render analysis/book`, unlike the report/manuscript/blog archetypes
@@ -35,7 +35,7 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Detect backend
+      - name: Detect backend and engine
         id: mode
         run: |
           if [ -f Dockerfile ]; then
@@ -44,20 +44,46 @@ jobs:
           else
             echo "backend=host" >> "$GITHUB_OUTPUT"
             echo "Backend: host runner"
+            # Provision R when the book uses the knitr engine ({r} cells) or
+            # ships a renv.lock; provision Python when it uses the Jupyter
+            # engine ({python} cells). A pure-prose book needs neither, even
+            # when cells are eval: false, since the engine still processes them.
+            if grep -rqF '```{r}' analysis/book 2>/dev/null || [ -f renv.lock ]; then
+              echo "r=true" >> "$GITHUB_OUTPUT"
+              echo "Engine: knitr (R)"
+            fi
+            if grep -rqF '```{python}' analysis/book 2>/dev/null; then
+              echo "python=true" >> "$GITHUB_OUTPUT"
+              echo "Engine: Jupyter (Python)"
+            fi
           fi
 
-      # --- Host backend: quarto plus an optional renv restore ---
-      - name: Set up R (host, renv.lock present)
-        if: steps.mode.outputs.backend == 'host' && hashFiles('renv.lock') != ''
+      # --- Host backend: quarto, plus the engine the book actually uses ---
+      - name: Set up R (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
         uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
-      - name: Restore renv (host)
-        if: steps.mode.outputs.backend == 'host' && hashFiles('renv.lock') != ''
+      - name: Provide R packages (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
         run: |
-          Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
-          Rscript -e "renv::restore(prompt = FALSE)"
+          if [ -f renv.lock ]; then
+            Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
+            Rscript -e "renv::restore(prompt = FALSE)"
+          else
+            Rscript -e "install.packages(c('knitr', 'rmarkdown'), repos = 'https://cloud.r-project.org')"
+          fi
+
+      - name: Set up Python (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.python == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Provide Jupyter (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.python == 'true'
+        run: pip install jupyter
 
       - name: Render book (host)
         if: steps.mode.outputs.backend == 'host'
