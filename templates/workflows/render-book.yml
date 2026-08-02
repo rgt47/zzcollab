@@ -1,4 +1,4 @@
-# zzcollab render-book.yml v0.2.0
+# zzcollab render-book.yml v$ZZCOLLAB_TEMPLATE_VERSION
 #
 # Render gate and deploy for the 'book' archetype. A book is a project-level
 # `quarto render analysis/book`, unlike the report/manuscript/blog archetypes
