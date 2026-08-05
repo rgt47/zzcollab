@@ -317,8 +317,8 @@ docker-script:
 docker-render-qmd: ## Render the Quarto report (analysis/report/index.qmd)
 	$(DOCKER_RUN) quarto render analysis/report/index.qmd
 
-docker-render-book: ## Render the Quarto book (archetype: book -> analysis/book/)
-	$(DOCKER_RUN) quarto render analysis/book
+docker-render-book: ## Render the Quarto book (archetype: book -> analysis/report/)
+	$(DOCKER_RUN) quarto render analysis/report
 
 # Back-compat aliases. docker-check-renv is invoked by zzcollab::run_script;
 # both are identical to check-renv-no-fix and check-renv respectively, so they

@@ -70,12 +70,12 @@ create_github_workflows() {
     fi
 
     if [[ "$archetype" == "book" ]]; then
-        # Book archetype: a project-level `quarto render analysis/book`, so it
+        # Book archetype: a project-level `quarto render analysis/report`, so it
         # gets a dedicated render+deploy workflow rather than render-report.yml
         # (which is shaped for report/manuscript/blog projects).
         if install_template "workflows/render-book.yml" ".github/workflows/render-book.yml" \
             "Book render/deploy workflow" "Created book render/deploy workflow"; then
-            log_info "  - Renders analysis/book --to html; deploys to Netlify on main"
+            log_info "  - Renders analysis/report --to html; deploys to Netlify on main"
         else
             log_error "Failed to create book workflow"
             return 1

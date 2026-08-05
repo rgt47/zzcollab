@@ -201,7 +201,7 @@ archetype_spec() {
         manuscript.render_target) echo "analysis/report/report.Rmd" ;;
         analysis.render_target)   echo "analysis/report/index.qmd" ;;
         blog.render_target)       echo "analysis/report/index.qmd" ;;
-        book.render_target)       echo "analysis/book" ;;
+        book.render_target)       echo "analysis/report" ;;
         *.render_target)          echo "" ;;
     esac
 }
@@ -264,10 +264,10 @@ as `data/<file>`.'
     create_file_if_missing "analysis/report/index.qmd" "$post" "blog post (index.qmd)"
 }
 
-# book (R7): multi-chapter Quarto book under analysis/book/, self-contained
+# book (R7): multi-chapter Quarto book under analysis/report/, self-contained
 # (no root symlink); carries its own media/images.
 _scaffold_book_project() {
-    mkdir -p analysis/book/media/images
+    mkdir -p analysis/report/media/images
     local book_yml='project:
   type: book
 
@@ -285,20 +285,20 @@ format:
     theme: cosmo
   pdf:
     documentclass: scrbook'
-    create_file_if_missing "analysis/book/_quarto.yml" "$book_yml" "book Quarto config"
+    create_file_if_missing "analysis/report/_quarto.yml" "$book_yml" "book Quarto config"
 
     local book_index='# Preface {.unnumbered}
 
 Describe the book here. This preface is unnumbered front matter.'
-    create_file_if_missing "analysis/book/index.qmd" "$book_index" "book preface"
+    create_file_if_missing "analysis/report/index.qmd" "$book_index" "book preface"
 
     local book_ch1='# Introduction
 
-Write the first chapter here. Add chapters as `analysis/book/NN-name.qmd`
+Write the first chapter here. Add chapters as `analysis/report/NN-name.qmd`
 and list them under `book.chapters` in `_quarto.yml`.'
-    create_file_if_missing "analysis/book/01-intro.qmd" "$book_ch1" "book chapter 1"
+    create_file_if_missing "analysis/report/01-intro.qmd" "$book_ch1" "book chapter 1"
 
-    create_file_if_missing "analysis/book/references.bib" \
+    create_file_if_missing "analysis/report/references.bib" \
         "% Add BibTeX entries here; cite them in chapters with [@key]." \
         "book bibliography"
 }
@@ -341,8 +341,10 @@ apply_archetype_scaffold() {
         simulation)     _scaffold_simulation_script ;;
         none)           : ;;
     esac
-    if [[ "$(archetype_spec "$a" symlinks)" == "blog" ]]; then
-        create_archetype_symlinks "blog"
+    local symlink_set
+    symlink_set="$(archetype_spec "$a" symlinks)"
+    if [[ "$symlink_set" != "none" ]]; then
+        create_archetype_symlinks "$symlink_set"
     fi
     return 0
 }

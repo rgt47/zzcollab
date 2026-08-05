@@ -1,7 +1,7 @@
 # zzcollab render-book.yml v$ZZCOLLAB_TEMPLATE_VERSION
 #
 # Render gate and deploy for the 'book' archetype. A book is a project-level
-# `quarto render analysis/book`, unlike the report/manuscript/blog archetypes
+# `quarto render analysis/report`, unlike the report/manuscript/blog archetypes
 # (which render-report.yml handles), so books get their own workflow.
 #
 # Self-adapting backend, by artifact presence:
@@ -48,11 +48,11 @@ jobs:
             # ships a renv.lock; provision Python when it uses the Jupyter
             # engine ({python} cells). A pure-prose book needs neither, even
             # when cells are eval: false, since the engine still processes them.
-            if grep -rqF '```{r}' analysis/book 2>/dev/null || [ -f renv.lock ]; then
+            if grep -rqF '```{r}' analysis/report 2>/dev/null || [ -f renv.lock ]; then
               echo "r=true" >> "$GITHUB_OUTPUT"
               echo "Engine: knitr (R)"
             fi
-            if grep -rqF '```{python}' analysis/book 2>/dev/null; then
+            if grep -rqF '```{python}' analysis/report 2>/dev/null; then
               echo "python=true" >> "$GITHUB_OUTPUT"
               echo "Engine: Jupyter (Python)"
             fi
@@ -87,7 +87,7 @@ jobs:
 
       - name: Render book (host)
         if: steps.mode.outputs.backend == 'host'
-        run: quarto render analysis/book --to html
+        run: quarto render analysis/report --to html
 
       # --- Container backend: build the project image and render inside it ---
       - name: Set up Buildx
@@ -103,14 +103,14 @@ jobs:
         run: |
           docker run --rm --user root -e CI=true \
             -v ${{ github.workspace }}:/project -w /project compendium-env \
-            quarto render analysis/book --to html
+            quarto render analysis/report --to html
 
       - name: Upload rendered book
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: book
-          path: analysis/book/_book
+          path: analysis/report/_book
           if-no-files-found: warn
           retention-days: 30
 
@@ -119,7 +119,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: nwtgck/actions-netlify@v3
         with:
-          publish-dir: ./analysis/book/_book
+          publish-dir: ./analysis/report/_book
           production-branch: main
           production-deploy: true
           deploy-message: 'GHA: ${{ github.event.head_commit.message }}'
