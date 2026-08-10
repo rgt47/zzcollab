@@ -468,23 +468,148 @@ create_docs_files() {
 # Purpose: Install the vendored render-stamp helpers into tools/.
 #          Invoked by cmd_quickstart for document-rendering profiles
 #          and by `zzc tools` for retrofitting an existing project.
-#          copy_template_file skips files that already exist, so a
-#          project carrying its own tools/ is left untouched.
+# ARGS:    $1 - "force" to overwrite existing copies with the current
+#               templates. Omitted, existing files are left untouched,
+#               so a project carrying its own tools/ is preserved.
+#               Force is what upgrades a project pinned to an older
+#               generation of the helpers.
 create_tools_directory() {
-    log_debug "Installing render-stamp tools..."
+    local force="${1:-}"
+    local install=install_template
+    if [[ "$force" == "force" ]]; then
+        install=regenerate_template_file
+        log_debug "Reinstalling render-stamp tools (force)..."
+    else
+        log_debug "Installing render-stamp tools..."
+    fi
 
-    install_template "tools/stamp.tex" "tools/stamp.tex" \
+    "$install" "tools/stamp.tex" "tools/stamp.tex" \
         "stamp preamble"
-    install_template "tools/stamp-render.R" "tools/stamp-render.R" \
+    "$install" "tools/stamp-render.R" "tools/stamp-render.R" \
         "render-stamp helper"
-    install_template "tools/render.sh" "tools/render.sh" \
+    "$install" "tools/render.sh" "tools/render.sh" \
         "render wrapper"
-    install_template "tools/README.md" "tools/README.md" \
+    "$install" "tools/README.md" "tools/README.md" \
         "tools README"
 
     [[ -f tools/render.sh ]] && chmod +x tools/render.sh
 
     log_success "Render-stamp tools installed in tools/"
+    return 0
+}
+
+# The YAML hook that makes a document stamp itself on every render.
+# It walks up from the document to find tools/stamp-render.R, so it
+# needs no package and works from any depth.
+readonly ZZ_KNIT_HOOK=$(cat <<'ZZKNITEOF'
+knit: (function(input, ...) { d <- dirname(input); while (!file.exists(file.path(d, 'tools', 'stamp-render.R')) && d != dirname(d)) d <- dirname(d); source(file.path(d, 'tools', 'stamp-render.R'))$value(input) })
+ZZKNITEOF
+)
+
+# Function: install_knit_hook
+# Purpose: Set the canonical knit: hook in one .Rmd's YAML header,
+#          replacing any hook already there (including an older
+#          generation pointing at a different helper). Idempotent.
+# ARGS:    $1 - path to the .Rmd
+# RETURNS: 0 changed, 1 unchanged, 2 skipped (no YAML front matter)
+install_knit_hook() {
+    local rmd="$1"
+    local tmp
+
+    # A document with no YAML front matter has nowhere to put the
+    # hook. Scratch analysis notebooks are often in this state.
+    [[ "$(head -n 1 "$rmd")" == "---" ]] || return 2
+
+    tmp="$(mktemp "${TMPDIR:-/tmp}/zzknit.XXXXXX")" || return 2
+
+    awk -v knit="$ZZ_KNIT_HOOK" '
+        BEGIN { yaml = 0; done = 0; skip = 0 }
+        NR == 1 && $0 == "---" { yaml = 1; print; next }
+        # Inside the header: drop an existing knit: entry and any of
+        # its indented continuation lines, then emit ours in place.
+        yaml == 1 {
+            if (skip == 1) {
+                if ($0 ~ /^[[:space:]]+[^[:space:]]/) next
+                skip = 0
+            }
+            if ($0 ~ /^knit[[:space:]]*:/) {
+                print knit; done = 1; skip = 1; next
+            }
+            if ($0 == "---" || $0 == "...") {
+                if (done == 0) print knit
+                yaml = 2; print; next
+            }
+        }
+        { print }
+    ' "$rmd" > "$tmp" || { rm -f "$tmp"; return 2; }
+
+    if cmp -s "$rmd" "$tmp"; then
+        rm -f "$tmp"
+        return 1
+    fi
+
+    # Truncate-and-write rather than rename: a rename can race with a
+    # cloud file-provider sync and leave the file empty.
+    cat "$tmp" > "$rmd"
+    rm -f "$tmp"
+    return 0
+}
+
+# Function: create_share_directory
+# Purpose: Create the staging directory that stamp-render.R deposits
+#          dated PDF copies into, with a .gitignore that tracks the
+#          PDFs and the manifest but ignores render litter.
+# OUTPUT:  Echoes the directory path.
+create_share_directory() {
+    local share
+    if [[ -d analysis/report ]]; then
+        share="analysis/report/share"
+    else
+        share="share"
+    fi
+
+    mkdir -p "$share"
+    if [[ ! -f "$share/.gitignore" ]]; then
+        printf '*\n!.gitignore\n!MANIFEST.md\n!*.pdf\n' \
+            > "$share/.gitignore"
+    fi
+    printf '%s\n' "$share"
+}
+
+# Function: install_knit_hooks_all
+# Purpose: Install the knit hook in every .Rmd the project actually
+#          authors.
+# NOTES:   Two classes of file are deliberately excluded.
+#          Vignettes: rendered by R CMD check and shipped inside the
+#          built package, so a Sys.time() stamp would make the build
+#          non-reproducible.
+#          Vendored third-party sources: an renv or packrat library,
+#          a package cache, or an R site-library holds thousands of
+#          .Rmd files belonging to other people's packages. These are
+#          pruned by directory name at any depth, not just at the
+#          project root, because a cache commonly sits at a path such
+#          as .cache/R/renv/v5/.../pkg/doc/. Editing them corrupts
+#          installed packages.
+install_knit_hooks_all() {
+    local changed=0 same=0 skipped=0 rmd
+
+    while IFS= read -r rmd; do
+        install_knit_hook "$rmd"
+        case $? in
+            0) changed=$((changed + 1)); log_debug "hooked $rmd" ;;
+            1) same=$((same + 1)) ;;
+            2) skipped=$((skipped + 1))
+               log_warn "no YAML header, skipped: $rmd" ;;
+        esac
+    done < <(find . \
+        \( -type d \( -name vignettes -o -name renv -o -name packrat \
+                   -o -name .cache -o -name .git -o -name .Rproj.user \
+                   -o -name node_modules -o -name archive \
+                   -o -name site-library -o -name library \
+                   -o -name '*_files' \) -prune \) -o \
+        -type f -name '*.Rmd' -print | sort)
+
+    log_success "knit hook: $changed set, $same already current, $skipped skipped"
     return 0
 }
 

@@ -2211,11 +2211,33 @@ cmd_quickstart() {
 #=============================================================================
 
 # Function: cmd_tools
-# Purpose: Retrofit the render-stamp helpers into an existing
-#          project: tools/stamp.tex, stamp-render.R, render.sh,
-#          and a README. Existing files are left untouched, so the
-#          command is safe to run repeatedly.
+# Purpose: Retrofit the render-stamp machinery into an existing
+#          project: tools/stamp.tex, stamp-render.R, render.sh and a
+#          README; the share/ staging directory; and the knit: hook
+#          in every .Rmd, so that rendering any document stamps it
+#          and stages a dated copy.
+# ARGS:    --force  overwrite existing tools/ copies, upgrading a
+#                   project pinned to an older generation
+#          --no-hooks  install tools/ and share/ only, leaving the
+#                   documents' YAML headers alone
+# NOTES:   Idempotent; safe to run repeatedly.
 cmd_tools() {
+    local force="" hooks="yes"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force)    force="force"; shift ;;
+            --no-hooks) hooks="no"; shift ;;
+            -h|--help)
+                echo "Usage: zzcollab tools [--force] [--no-hooks]"
+                return 0
+                ;;
+            *)
+                log_error "Unknown option for tools: $1"
+                return 1
+                ;;
+        esac
+    done
 
     if ! is_workspace_initialized; then
         log_error "Not in a zzcollab project"
@@ -2223,11 +2245,22 @@ cmd_tools() {
         return 1
     fi
 
-    create_tools_directory || return 1
+    create_tools_directory "$force" || return 1
+
+    local share
+    share="$(create_share_directory)" || return 1
+    log_success "Staging directory ready at $share/"
+
+    if [[ "$hooks" == "yes" ]]; then
+        install_knit_hooks_all || return 1
+    fi
 
     echo "" >&2
     log_info "Render a stamped PDF with:"
     echo "    bash tools/render.sh <document.Rmd|.qmd|.md>" >&2
+    if [[ "$hooks" == "yes" ]]; then
+        log_info "...or just knit the document; the hook does the rest."
+    fi
     return 0
 }
 
@@ -2244,6 +2277,7 @@ cmd_add() {
     shift || true
     case "$feature" in
         docker)        cmd_docker "$@" ;;
+        tools)         cmd_tools "$@" ;;
         renv)          cmd_renv "$@" ;;
         nix)           cmd_nix "$@" ;;
         data)          cmd_data "$@" ;;
@@ -2865,9 +2899,19 @@ main() {
                 exit $?
                 ;;
             tools)
-                cmd_tools
-                commands_run=$((commands_run + 1))
                 shift
+                local tools_args=()
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --force|--no-hooks)
+                            tools_args+=("$1")
+                            shift
+                            ;;
+                        *) break ;;
+                    esac
+                done
+                cmd_tools "${tools_args[@]}"
+                commands_run=$((commands_run + 1))
                 ;;
             docker)
                 # Collect docker-specific flags
