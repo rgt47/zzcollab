@@ -2910,7 +2910,12 @@ main() {
                         *) break ;;
                     esac
                 done
-                cmd_tools "${tools_args[@]}"
+                # ${a[@]+"${a[@]}"} rather than "${a[@]}": under
+                # `set -u`, bash 3.2 (the /bin/bash this script's
+                # shebang resolves to on macOS) treats expanding an
+                # empty array as an unbound variable. Plain
+                # `zzc tools`, with no flags, would otherwise abort.
+                cmd_tools ${tools_args[@]+"${tools_args[@]}"}
                 commands_run=$((commands_run + 1))
                 ;;
             docker)
