@@ -144,7 +144,7 @@ jobs:
 
       - name: Run Hadolint
         if: steps.detect.outputs.present == 'true'
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: Dockerfile
           ignore: DL3008,DL3009,DL3007,DL3003,DL3016,DL3059,DL3001
