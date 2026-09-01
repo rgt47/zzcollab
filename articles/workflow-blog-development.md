@@ -68,9 +68,17 @@ workflow, and renders in place with `make docker-render-qmd`:
     ├── Makefile                                  # Build commands
     ├── README.md                                 # Reader instructions
     │
+    ├── index.qmd -> analysis/report/index.qmd    # Root symlink (site discovery)
+    ├── data -> analysis/data                     # Root symlink
+    ├── figures -> analysis/figures               # Root symlink
+    ├── media -> analysis/media                   # Root symlink
+    │
     ├── analysis/
     │   ├── report/
-    │   │   └── index.qmd                         # Blog post content (Quarto)
+    │   │   ├── index.qmd                         # Blog post content (Quarto)
+    │   │   ├── data -> ../data                   # Inner symlink
+    │   │   ├── figures -> ../figures             # Inner symlink
+    │   │   └── media -> ../media                 # Inner symlink
     │   │
     │   ├── scripts/                              # Numbered analysis pipeline
     │   │   ├── 01_prepare_data.R
@@ -100,22 +108,49 @@ workflow, and renders in place with `make docker-render-qmd`:
     └── R/                                        # Reusable functions (optional)
         └── utils.R
 
-### Paths Are Relative to the Post
+### Paths Are Relative to the Post Root, via Symlinks
 
-The post and its assets live together under `analysis/`, so figures,
-media, and data are referenced with paths relative to
-`analysis/report/index.qmd`. Quarto renders the document in place;
+The post’s real content lives under `analysis/`, following the rrtools
+compendium convention. But a multi-post Quarto blog discovers and
+renders each post through a site-wide `_quarto.yml` project (see
+[Integration with Parent Blog](#integration-with-parent-blog)) whose
+render glob is `posts/*/index.qmd` – a path at the post’s root, not
+inside `analysis/report/`. To satisfy both the compendium convention and
+the site’s discovery path, each post carries four root-level symlinks
+back into `analysis/`: `index.qmd`, `data`, `figures`, and `media`. This
+is *not* a stray convenience – a post missing these symlinks (a plain
+file at `index.qmd` instead of a symlink, for example) silently desyncs
+from `analysis/report/index.qmd` the moment either copy is edited, and
+the parent site’s project build will not find it at all.
+
+A second, inner layer of symlinks makes this work regardless of which
+`index.qmd` you consider the “real” one: `analysis/report/data`,
+`analysis/report/figures`, and `analysis/report/media` are themselves
+symlinks to `../data`, `../figures`, `../media`. Because both the post
+root and `analysis/report/` each have their own local `data`/`figures`/
+`media` entry point resolving to the same underlying directories, asset
+paths and R-chunk file reads are written the same way everywhere, with
+no `../`: `media/images/hero.png`, not `../media/images/hero.png`;
+`read_csv("data/derived_data/penguins_clean.csv")`, not
+`read_csv("../data/derived_data/penguins_clean.csv")`.
 `make docker-render-qmd` runs `quarto render analysis/report/index.qmd`
-inside the container.
+inside the container – the knit working directory is `analysis/report/`,
+and the inner symlinks there resolve the same bare paths correctly.
 
 **Benefits**:
 
-1.  **No symlinks to maintain**: One canonical location for the post and
-    assets
-2.  **Intuitive paths**: Reference assets relative to `analysis/report/`
-3.  **Reproducible render**: `make docker-render-qmd` builds in the
+1.  **One canonical file**: the root `index.qmd` symlink and
+    `analysis/report/index.qmd` are the same file on disk; editing
+    either edits both
+2.  **Site-discoverable**: the parent site’s `posts/*/index.qmd` glob
+    finds every post without per-post configuration
+3.  **Intuitive paths**: assets are referenced the same way whether you
+    are thinking of the post as living at the repo root or in
+    `analysis/report/`
+4.  **Reproducible render**: `make docker-render-qmd` builds in the
     container
-4.  **rrtools consistency**: Content lives in `analysis/report/`
+5.  **rrtools consistency**: real content still lives in
+    `analysis/report/`
 
 ### Directory Purposes
 
@@ -152,15 +187,30 @@ compendium:
 ``` bash
 # Media directories for static assets
 mkdir -p analysis/media/images analysis/media/audio analysis/media/video
+mkdir -p analysis/data/raw_data analysis/data/derived_data
+mkdir -p analysis/figures
 
 # The Quarto post lives alongside the manuscript
 touch analysis/report/index.qmd
+
+# Root-level symlinks so the parent site's posts/*/index.qmd glob finds
+# this post, and so asset paths read the same from either location
+ln -s analysis/report/index.qmd index.qmd
+ln -s analysis/data data
+ln -s analysis/figures figures
+ln -s analysis/media media
+
+# Inner symlinks so paths resolve the same way from analysis/report/,
+# which is the knit working directory during make docker-render-qmd
+ln -s ../data analysis/report/data
+ln -s ../figures analysis/report/figures
+ln -s ../media analysis/report/media
 ```
 
-The post is authored at `analysis/report/index.qmd` and rendered with
+The post is authored at `analysis/report/index.qmd` (equivalently, at
+the root `index.qmd` symlink – they are the same file) and rendered with
 `make docker-render-qmd`, which runs
-`quarto render analysis/report/index.qmd` inside the container. No
-symlinks are required.
+`quarto render analysis/report/index.qmd` inside the container.
 
 ### Step 3: Add Static Media Assets
 
@@ -189,9 +239,9 @@ EOF
 
 ### Step 4: Edit Blog Post
 
-Author the post at `analysis/report/index.qmd`. Asset paths are relative
-to that file, so they begin with `../` to reach `analysis/figures/`,
-`analysis/media/`, and `analysis/data/`:
+Author the post at `analysis/report/index.qmd`. Asset paths are written
+relative to the post root (resolved through the `figures`, `media`, and
+`data` symlinks), not with a leading `../`:
 
 ```` markdown
 ---
@@ -201,7 +251,7 @@ author: "Your Name"
 date: "2025-01-15"
 categories: [R Programming, Data Science, Palmer Penguins]
 description: "Exploratory data analysis and simple regression modeling"
-image: "../media/images/penguin-hero.jpg"
+image: "media/images/penguin-hero.jpg"
 execute:
   echo: true
   warning: false
@@ -211,7 +261,7 @@ format:
     code-fold: false
 ---
 
-![Palmer Station, Antarctica](../media/images/palmer-station.jpg){.img-fluid}
+![Palmer Station, Antarctica](media/images/palmer-station.jpg){.img-fluid}
 
 # Introduction
 
@@ -222,31 +272,31 @@ Welcome to our exploration of the Palmer penguins dataset!
 library(tidyverse)
 
 # Load pre-computed results (generated by analysis/scripts/)
-penguins_clean <- read_csv("../data/derived_data/penguins_clean.csv")
-model_results <- read_csv("../data/derived_data/model_coefficients.csv")
+penguins_clean <- read_csv("data/derived_data/penguins_clean.csv")
+model_results <- read_csv("data/derived_data/model_coefficients.csv")
 ```
 
 # Exploratory Data Analysis
 
 Our analysis reveals distinct patterns across species:
 
-![Species distribution and morphometric relationships](../figures/eda-overview.png)
+![Species distribution and morphometric relationships](figures/eda-overview.png)
 
 # Model Results
 
 
 ``` r
-simple_model <- readRDS("../data/derived_data/simple_model.rds")
+simple_model <- readRDS("data/derived_data/simple_model.rds")
 summary(simple_model)
 ```
 
-![Model diagnostic plots](../figures/model-diagnostics.png)
+![Model diagnostic plots](figures/model-diagnostics.png)
 
 # Video Walkthrough
 
 ```{=html}
 <video width="100%" controls>
-  <source src="../media/video/analysis-walkthrough.mp4" type="video/mp4">
+  <source src="media/video/analysis-walkthrough.mp4" type="video/mp4">
 </video>
 ```
 
@@ -265,8 +315,9 @@ sessionInfo()
 ```
 ````
 
-**Note**: Asset paths use `../` because they are resolved relative to
-`analysis/report/index.qmd`.
+**Note**: Asset paths do not use `../` here – they resolve from the post
+root via the `media`/`figures`/`data` symlinks, matching how the render
+glob in the parent site discovers `index.qmd`.
 
 ### Step 5: Create Analysis Scripts
 
@@ -427,14 +478,17 @@ post-render: post-analysis
 
 ### Parent Blog \_quarto.yml
 
-Your existing Quarto blog configuration works unchanged:
+Point the parent site’s render glob at the root `index.qmd` symlink, not
+the deep `analysis/report/` path – the site’s project renderer resolves
+each post through the symlink, so the glob only needs to match the
+symlink itself:
 
 ``` yaml
 project:
   type: website
   render:
     - "*.qmd"
-    - "posts/*/analysis/report/index.qmd"   # Post lives in the compendium
+    - "posts/*/index.qmd"                   # Root symlink into the compendium
     - "!posts/*/analysis/scripts/"
     - "!posts/*/R/"
 ```
@@ -600,18 +654,21 @@ pipeline, then render with `make docker-render-qmd`.
 
     ## Structure
 
-    - **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools
-    - **Assets under `analysis/`** - Referenced with `../` relative paths
+    - **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools,
+      reachable at the root via the `index.qmd` symlink
+    - **Assets under `analysis/`** - Referenced via root-level `figures`/`media`/
+      `data` symlinks, not `../` relative paths
     - **Numbered scripts** - Clear execution order
     - **Separate figures from media** - Generated vs static
 
     ## Paths in index.qmd
 
-    Reference assets relative to `analysis/report/index.qmd`:
+    Reference assets relative to the post root (the symlinks resolve into
+    `analysis/`):
 
     ```markdown
-    ![Plot](../figures/plot.png)           # analysis/figures/
-    ![Hero](../media/images/hero.jpg)      # analysis/media/images/
+    ![Plot](figures/plot.png)              # analysis/figures/
+    ![Hero](media/images/hero.jpg)         # analysis/media/images/
 
 ### Reproducibility
 
@@ -640,6 +697,12 @@ project. This means:
 3.  **Can be cloned independently** and rendered without the parent blog
 4.  **Images live in `analysis/media/`** not referenced from elsewhere
 
+The four root-level symlinks (`index.qmd`, `data`, `figures`, `media`)
+do not break self-containment: each is a *relative* symlink pointing to
+a path inside the same post directory, not to anything in the parent
+blog. Cloning just the post (Step below) carries the symlinks with it
+and they resolve correctly with no parent project present.
+
 ### Image Placement: The Critical Detail
 
 **DO ✅**: Copy/store images inside the post’s `analysis/media/images/`
@@ -649,8 +712,8 @@ directory
 # Copy hero image INTO the post
 cp ~/assets/penguin-hero.jpg posts/my_post/analysis/media/images/
 
-# Reference it relative to analysis/report/index.qmd
-![Hero image](../media/images/penguin-hero.jpg){.img-fluid}
+# Reference it via the root-level media/ symlink
+![Hero image](media/images/penguin-hero.jpg){.img-fluid}
 ```
 
 **DON’T**: Reference images from parent project paths
@@ -685,7 +748,12 @@ Before publishing your blog post, verify:
 
 - All images are in `analysis/media/images/`
 - `analysis/media/images/README.md` documents all image sources
-- All image paths use `../media/images/filename` (relative to the post)
+- All image paths use `media/images/filename` (via the root-level
+  symlink)
+- The four root symlinks (`index.qmd`, `data`, `figures`, `media`) exist
+  and resolve into `analysis/` – a plain file at any of these paths
+  instead of a symlink means the compendium and site-discoverable copies
+  have already desynced
 - Large media files (video, audio) use Git LFS tracking
 - Post renders successfully: `make docker-render-qmd`
 - Post is self-contained: can clone just this directory and render
@@ -693,8 +761,16 @@ Before publishing your blog post, verify:
 ### Example: Complete Self-Contained Post
 
     posts/my_analysis/
+    ├── index.qmd -> analysis/report/index.qmd      # Root symlink
+    ├── data -> analysis/data                       # Root symlink
+    ├── figures -> analysis/figures                 # Root symlink
+    ├── media -> analysis/media                     # Root symlink
+    │
     ├── analysis/report/
-    │   └── index.qmd                               # Blog post (Quarto)
+    │   ├── index.qmd                               # Blog post (Quarto)
+    │   ├── data -> ../data                         # Inner symlink
+    │   ├── figures -> ../figures                   # Inner symlink
+    │   └── media -> ../media                       # Inner symlink
     │
     ├── analysis/media/
     │   └── images/
@@ -719,10 +795,10 @@ In `analysis/report/index.qmd`:
 ``` markdown
 ---
 title: "My Analysis"
-image: "../media/images/hero-image.jpg"  # Relative to the post
+image: "media/images/hero-image.jpg"  # Via the media/ symlink
 ---
 
-![Hero](../media/images/hero-image.jpg){.img-fluid}  # Relative reference
+![Hero](media/images/hero-image.jpg){.img-fluid}  # Via the media/ symlink
 ```
 
 ## References

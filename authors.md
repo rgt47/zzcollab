@@ -8,14 +8,14 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/rgt47/zzcollab/blob/main/DESCRIPTION)
+[`inst/CITATION`](https://github.com/rgt47/zzcollab/blob/main/inst/CITATION)
 
-Thomas R (2026). *zzcollab: Docker-based Research Collaboration
-Framework*. R package version 0.1.0,
+Thomas R (2026). *zzcollab: Docker-Based Reproducible Research
+Collaboration Framework*. R package version 0.1.0,
 <https://github.com/rgt47/zzcollab>.
 
     @Manual{,
-      title = {zzcollab: Docker-based Research Collaboration Framework},
+      title = {zzcollab: Docker-Based Reproducible Research Collaboration Framework},
       author = {Ronald G. Thomas},
       year = {2026},
       note = {R package version 0.1.0},

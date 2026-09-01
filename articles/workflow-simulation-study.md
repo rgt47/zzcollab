@@ -98,7 +98,7 @@ title: "Comparing Methods for Longitudinal Binary Outcomes: A Simulation Study"
 author:
   - name: Your Name
     affiliation: Department of Biostatistics
-date: "August 05, 2026"
+date: "September 01, 2026"
 output:
   pdf_document:
     number_sections: true

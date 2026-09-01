@@ -466,7 +466,7 @@ Edit `analysis/report/report.Rmd`:
     ---
     title: "Fuel Efficiency Analysis: mtcars Subset"
     author: "Developer 1"
-    date: "2026-08-05"
+    date: "2026-09-01"
     output:
       html_document:
         toc: true

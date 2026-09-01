@@ -70,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-08-05</h4>
+            <h4 data-toc-skip class="date">2026-09-01</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-blog-development.Rmd" class="external-link"><code>vignettes/workflow-blog-development.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-blog-development.Rmd</code></div>
@@ -170,9 +170,17 @@ the manuscript workflow, and renders in place with
 ├── Makefile                                  # Build commands
 ├── README.md                                 # Reader instructions
 │
+├── index.qmd -&gt; analysis/report/index.qmd    # Root symlink (site discovery)
+├── data -&gt; analysis/data                     # Root symlink
+├── figures -&gt; analysis/figures               # Root symlink
+├── media -&gt; analysis/media                   # Root symlink
+│
 ├── analysis/
 │   ├── report/
-│   │   └── index.qmd                         # Blog post content (Quarto)
+│   │   ├── index.qmd                         # Blog post content (Quarto)
+│   │   ├── data -&gt; ../data                   # Inner symlink
+│   │   ├── figures -&gt; ../figures             # Inner symlink
+│   │   └── media -&gt; ../media                 # Inner symlink
 │   │
 │   ├── scripts/                              # Numbered analysis pipeline
 │   │   ├── 01_prepare_data.R
@@ -203,28 +211,60 @@ the manuscript workflow, and renders in place with
     └── utils.R</code></pre>
 </div>
 <div class="section level3">
-<h3 id="paths-are-relative-to-the-post">Paths Are Relative to the Post<a class="anchor" aria-label="anchor" href="#paths-are-relative-to-the-post"></a>
+<h3 id="paths-are-relative-to-the-post-root-via-symlinks">Paths Are Relative to the Post Root, via Symlinks<a class="anchor" aria-label="anchor" href="#paths-are-relative-to-the-post-root-via-symlinks"></a>
 </h3>
-<p>The post and its assets live together under <code>analysis/</code>,
-so figures, media, and data are referenced with paths relative to
-<code>analysis/report/index.qmd</code>. Quarto renders the document in
-place; <code>make docker-render-qmd</code> runs
+<p>The post’s real content lives under <code>analysis/</code>, following
+the rrtools compendium convention. But a multi-post Quarto blog
+discovers and renders each post through a site-wide
+<code>_quarto.yml</code> project (see <a href="#integration-with-parent-blog">Integration with Parent Blog</a>)
+whose render glob is <code>posts/*/index.qmd</code> – a path at the
+post’s root, not inside <code>analysis/report/</code>. To satisfy both
+the compendium convention and the site’s discovery path, each post
+carries four root-level symlinks back into <code>analysis/</code>:
+<code>index.qmd</code>, <code>data</code>, <code>figures</code>, and
+<code>media</code>. This is <em>not</em> a stray convenience – a post
+missing these symlinks (a plain file at <code>index.qmd</code> instead
+of a symlink, for example) silently desyncs from
+<code>analysis/report/index.qmd</code> the moment either copy is edited,
+and the parent site’s project build will not find it at all.</p>
+<p>A second, inner layer of symlinks makes this work regardless of which
+<code>index.qmd</code> you consider the “real” one:
+<code>analysis/report/data</code>, <code>analysis/report/figures</code>,
+and <code>analysis/report/media</code> are themselves symlinks to
+<code>../data</code>, <code>../figures</code>, <code>../media</code>.
+Because both the post root and <code>analysis/report/</code> each have
+their own local <code>data</code>/<code>figures</code>/
+<code>media</code> entry point resolving to the same underlying
+directories, asset paths and R-chunk file reads are written the same way
+everywhere, with no <code>../</code>:
+<code>media/images/hero.png</code>, not
+<code>../media/images/hero.png</code>;
+<code>read_csv("data/derived_data/penguins_clean.csv")</code>, not
+<code>read_csv("../data/derived_data/penguins_clean.csv")</code>.
+<code>make docker-render-qmd</code> runs
 <code>quarto render analysis/report/index.qmd</code> inside the
-container.</p>
+container – the knit working directory is <code>analysis/report/</code>,
+and the inner symlinks there resolve the same bare paths correctly.</p>
 <p><strong>Benefits</strong>:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>No symlinks to maintain</strong>: One canonical location for
-the post and assets</li>
+<strong>One canonical file</strong>: the root <code>index.qmd</code>
+symlink and <code>analysis/report/index.qmd</code> are the same file on
+disk; editing either edits both</li>
 <li>
-<strong>Intuitive paths</strong>: Reference assets relative to
+<strong>Site-discoverable</strong>: the parent site’s
+<code>posts/*/index.qmd</code> glob finds every post without per-post
+configuration</li>
+<li>
+<strong>Intuitive paths</strong>: assets are referenced the same way
+whether you are thinking of the post as living at the repo root or in
 <code>analysis/report/</code>
 </li>
 <li>
 <strong>Reproducible render</strong>:
 <code>make docker-render-qmd</code> builds in the container</li>
 <li>
-<strong>rrtools consistency</strong>: Content lives in
+<strong>rrtools consistency</strong>: real content still lives in
 <code>analysis/report/</code>
 </li>
 </ol>
@@ -301,13 +341,29 @@ the post and assets</li>
 compendium:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Media directories for static assets</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> analysis/media/images analysis/media/audio analysis/media/video</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># The Quarto post lives alongside the manuscript</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">touch</span> analysis/report/index.qmd</span></code></pre></div>
-<p>The post is authored at <code>analysis/report/index.qmd</code> and
-rendered with <code>make docker-render-qmd</code>, which runs
-<code>quarto render analysis/report/index.qmd</code> inside the
-container. No symlinks are required.</p>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> analysis/data/raw_data analysis/data/derived_data</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> analysis/figures</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co"># The Quarto post lives alongside the manuscript</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">touch</span> analysis/report/index.qmd</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co"># Root-level symlinks so the parent site's posts/*/index.qmd glob finds</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co"># this post, and so asset paths read the same from either location</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> analysis/report/index.qmd index.qmd</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> analysis/data data</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> analysis/figures figures</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> analysis/media media</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co"># Inner symlinks so paths resolve the same way from analysis/report/,</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co"># which is the knit working directory during make docker-render-qmd</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> ../data analysis/report/data</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> ../figures analysis/report/figures</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> ../media analysis/report/media</span></code></pre></div>
+<p>The post is authored at <code>analysis/report/index.qmd</code>
+(equivalently, at the root <code>index.qmd</code> symlink – they are the
+same file) and rendered with <code>make docker-render-qmd</code>, which
+runs <code>quarto render analysis/report/index.qmd</code> inside the
+container.</p>
 </div>
 <div class="section level3">
 <h3 id="step-3-add-static-media-assets">Step 3: Add Static Media Assets<a class="anchor" aria-label="anchor" href="#step-3-add-static-media-assets"></a>
@@ -337,9 +393,9 @@ container. No symlinks are required.</p>
 <h3 id="step-4-edit-blog-post">Step 4: Edit Blog Post<a class="anchor" aria-label="anchor" href="#step-4-edit-blog-post"></a>
 </h3>
 <p>Author the post at <code>analysis/report/index.qmd</code>. Asset
-paths are relative to that file, so they begin with <code>../</code> to
-reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
-<code>analysis/data/</code>:</p>
+paths are written relative to the post root (resolved through the
+<code>figures</code>, <code>media</code>, and <code>data</code>
+symlinks), not with a leading <code>../</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "Palmer Penguins Analysis (Part 1): EDA and Simple Regression"</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="an">subtitle:</span><span class="co"> "Getting acquainted with our Antarctic friends"</span></span>
@@ -347,7 +403,7 @@ reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="an">date:</span><span class="co"> "2025-01-15"</span></span>
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="an">categories:</span><span class="co"> [R Programming, Data Science, Palmer Penguins]</span></span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="an">description:</span><span class="co"> "Exploratory data analysis and simple regression modeling"</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="an">image:</span><span class="co"> "../media/images/penguin-hero.jpg"</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="an">image:</span><span class="co"> "media/images/penguin-hero.jpg"</span></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="an">execute:</span></span>
 <span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">  echo: true</span></span>
 <span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">  warning: false</span></span>
@@ -357,7 +413,7 @@ reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
 <span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a><span class="co">    code-fold: false</span></span>
 <span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="al">![Palmer Station, Antarctica](../media/images/palmer-station.jpg)</span>{.img-fluid}</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="al">![Palmer Station, Antarctica](media/images/palmer-station.jpg)</span>{.img-fluid}</span>
 <span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
 <span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="fu"># Introduction</span></span>
 <span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
@@ -368,31 +424,31 @@ reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
 <span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a></span>
 <span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a><span class="co"># Load pre-computed results (generated by analysis/scripts/)</span></span>
-<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>penguins_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../data/derived_data/penguins_clean.csv"</span>)</span>
-<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>model_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"../data/derived_data/model_coefficients.csv"</span>)</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>penguins_clean <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/derived_data/penguins_clean.csv"</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>model_results <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/derived_data/model_coefficients.csv"</span>)</span>
 <span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a></span>
 <span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a><span class="fu"># Exploratory Data Analysis</span></span>
 <span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a></span>
 <span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>Our analysis reveals distinct patterns across species:</span>
 <span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a></span>
-<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="al">![Species distribution and morphometric relationships](../figures/eda-overview.png)</span></span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a><span class="al">![Species distribution and morphometric relationships](figures/eda-overview.png)</span></span>
 <span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a></span>
 <span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="fu"># Model Results</span></span>
 <span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a></span>
 <span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a></span>
 <span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="in">``` r</span></span>
-<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>simple_model <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"../data/derived_data/simple_model.rds"</span>)</span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>simple_model <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/derived_data/simple_model.rds"</span>)</span>
 <span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a><span class="fu">summary</span>(simple_model)</span>
 <span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a></span>
-<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="al">![Model diagnostic plots](../figures/model-diagnostics.png)</span></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="al">![Model diagnostic plots](figures/model-diagnostics.png)</span></span>
 <span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a></span>
 <span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a><span class="fu"># Video Walkthrough</span></span>
 <span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a></span>
 <span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a><span class="in">```{=html}</span></span>
 <span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a><span class="in">&lt;video width="100%" controls&gt;</span></span>
-<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="in">  &lt;source src="../media/video/analysis-walkthrough.mp4" type="video/mp4"&gt;</span></span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a><span class="in">  &lt;source src="media/video/analysis-walkthrough.mp4" type="video/mp4"&gt;</span></span>
 <span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a><span class="in">&lt;/video&gt;</span></span>
 <span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a></span>
@@ -409,8 +465,11 @@ reach <code>analysis/figures/</code>, <code>analysis/media/</code>, and
 <span id="cb5-67"><a href="#cb5-67" tabindex="-1"></a><span class="in">``` r</span></span>
 <span id="cb5-68"><a href="#cb5-68" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
 <span id="cb5-69"><a href="#cb5-69" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
-<p><strong>Note</strong>: Asset paths use <code>../</code> because they
-are resolved relative to <code>analysis/report/index.qmd</code>.</p>
+<p><strong>Note</strong>: Asset paths do not use <code>../</code> here –
+they resolve from the post root via the
+<code>media</code>/<code>figures</code>/<code>data</code> symlinks,
+matching how the render glob in the parent site discovers
+<code>index.qmd</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="step-5-create-analysis-scripts">Step 5: Create Analysis Scripts<a class="anchor" aria-label="anchor" href="#step-5-create-analysis-scripts"></a>
@@ -559,12 +618,16 @@ user-added targets, not framework provided:</p>
 <div class="section level3">
 <h3 id="parent-blog-_quarto-yml">Parent Blog _quarto.yml<a class="anchor" aria-label="anchor" href="#parent-blog-_quarto-yml"></a>
 </h3>
-<p>Your existing Quarto blog configuration works unchanged:</p>
+<p>Point the parent site’s render glob at the root
+<code>index.qmd</code> symlink, not the deep
+<code>analysis/report/</code> path – the site’s project renderer
+resolves each post through the symlink, so the glob only needs to match
+the symlink itself:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">project</span><span class="kw">:</span></span>
 <span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> website</span></span>
 <span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="at">  </span><span class="fu">render</span><span class="kw">:</span></span>
 <span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"*.qmd"</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"posts/*/analysis/report/index.qmd"</span><span class="co">   # Post lives in the compendium</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"posts/*/index.qmd"</span><span class="co">                   # Root symlink into the compendium</span></span>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/analysis/scripts/"</span></span>
 <span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"!posts/*/R/"</span></span></code></pre></div>
 </div>
@@ -746,18 +809,21 @@ user-added targets, not framework provided:</p>
 
 ## Structure
 
-- **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools
-- **Assets under `analysis/`** - Referenced with `../` relative paths
+- **Blog post in `analysis/report/index.qmd`** - Consistent with rrtools,
+  reachable at the root via the `index.qmd` symlink
+- **Assets under `analysis/`** - Referenced via root-level `figures`/`media`/
+  `data` symlinks, not `../` relative paths
 - **Numbered scripts** - Clear execution order
 - **Separate figures from media** - Generated vs static
 
 ## Paths in index.qmd
 
-Reference assets relative to `analysis/report/index.qmd`:
+Reference assets relative to the post root (the symlinks resolve into
+`analysis/`):
 
 ```markdown
-![Plot](../figures/plot.png)           # analysis/figures/
-![Hero](../media/images/hero.jpg)      # analysis/media/images/</code></pre>
+![Plot](figures/plot.png)              # analysis/figures/
+![Hero](media/images/hero.jpg)         # analysis/media/images/</code></pre>
 </div>
 <div class="section level3">
 <h3 id="reproducibility-1">Reproducibility<a class="anchor" aria-label="anchor" href="#reproducibility-1"></a>
@@ -804,6 +870,12 @@ the parent blog</li>
 <strong>Images live in <code>analysis/media/</code></strong> not
 referenced from elsewhere</li>
 </ol>
+<p>The four root-level symlinks (<code>index.qmd</code>,
+<code>data</code>, <code>figures</code>, <code>media</code>) do not
+break self-containment: each is a <em>relative</em> symlink pointing to
+a path inside the same post directory, not to anything in the parent
+blog. Cloning just the post (Step below) carries the symlinks with it
+and they resolve correctly with no parent project present.</p>
 </div>
 <div class="section level3">
 <h3 id="image-placement-the-critical-detail">Image Placement: The Critical Detail<a class="anchor" aria-label="anchor" href="#image-placement-the-critical-detail"></a>
@@ -813,8 +885,8 @@ referenced from elsewhere</li>
 <div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Copy hero image INTO the post</span></span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">cp</span> ~/assets/penguin-hero.jpg posts/my_post/analysis/media/images/</span>
 <span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co"># Reference it relative to analysis/report/index.qmd</span></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">../media/images/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co"># Reference it via the root-level media/ symlink</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="ex">![Hero</span> image]<span class="er">(</span><span class="ex">media/images/penguin-hero.jpg</span><span class="kw">)</span><span class="ex">{.img-fluid}</span></span></code></pre></div>
 <p><strong>DON’T</strong>: Reference images from parent project
 paths</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># AVOID: This breaks if post is cloned independently</span></span>
@@ -847,8 +919,13 @@ paths</p>
 <li>
 <code>analysis/media/images/README.md</code> documents all image
 sources</li>
-<li>All image paths use <code>../media/images/filename</code> (relative
-to the post)</li>
+<li>All image paths use <code>media/images/filename</code> (via the
+root-level symlink)</li>
+<li>The four root symlinks (<code>index.qmd</code>, <code>data</code>,
+<code>figures</code>, <code>media</code>) exist and resolve into
+<code>analysis/</code> – a plain file at any of these paths instead of a
+symlink means the compendium and site-discoverable copies have already
+desynced</li>
 <li>Large media files (video, audio) use Git LFS tracking</li>
 <li>Post renders successfully: <code>make docker-render-qmd</code>
 </li>
@@ -860,8 +937,16 @@ render</li>
 <h3 id="example-complete-self-contained-post">Example: Complete Self-Contained Post<a class="anchor" aria-label="anchor" href="#example-complete-self-contained-post"></a>
 </h3>
 <pre><code>posts/my_analysis/
+├── index.qmd -&gt; analysis/report/index.qmd      # Root symlink
+├── data -&gt; analysis/data                       # Root symlink
+├── figures -&gt; analysis/figures                 # Root symlink
+├── media -&gt; analysis/media                     # Root symlink
+│
 ├── analysis/report/
-│   └── index.qmd                               # Blog post (Quarto)
+│   ├── index.qmd                               # Blog post (Quarto)
+│   ├── data -&gt; ../data                         # Inner symlink
+│   ├── figures -&gt; ../figures                   # Inner symlink
+│   └── media -&gt; ../media                       # Inner symlink
 │
 ├── analysis/media/
 │   └── images/
@@ -883,10 +968,10 @@ render</li>
 <p>In <code>analysis/report/index.qmd</code>:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="an">title:</span><span class="co"> "My Analysis"</span></span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="an">image:</span><span class="co"> "../media/images/hero-image.jpg"  # Relative to the post</span></span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="an">image:</span><span class="co"> "media/images/hero-image.jpg"  # Via the media/ symlink</span></span>
 <span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="al">![Hero](../media/images/hero-image.jpg)</span>{.img-fluid}  # Relative reference</span></code></pre></div>
+<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="al">![Hero](media/images/hero-image.jpg)</span>{.img-fluid}  # Via the media/ symlink</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
