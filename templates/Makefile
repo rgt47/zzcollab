@@ -53,11 +53,18 @@ CONTAINER_USER := $(shell grep '^ARG USERNAME=' Dockerfile 2>/dev/null | head -1
 CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
 # Apptainer execs a SIF (auto-binds the CWD; no --platform); docker/podman run
 # the OCI image with explicit mounts. Both expose the project at the CWD.
+# ZZ_HOST_ROOT carries the host path of the project into the container, so a
+# render stamp names the document by the path you would open, not by the
+# container's mount point. HOST_TZ carries the host time zone, without which
+# the container's UTC clock would date a late-afternoon render to the
+# following day in both the stamp and the staged filename.
+HOST_TZ := $(shell readlink /etc/localtime 2>/dev/null | sed -e 's|.*zoneinfo/||')
 ifeq ($(CONTAINER_RUNTIME),apptainer)
-  DOCKER_RUN = apptainer exec $(SIF)
+  DOCKER_RUN = ZZ_HOST_ROOT="$(CURDIR)" TZ="$(HOST_TZ)" apptainer exec $(SIF)
 else
   DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
     -v "$(CURDIR)":$(CONTAINER_HOME)/project \
+    -e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
     -w $(CONTAINER_HOME)/project $(PACKAGE_NAME)
 endif
 
@@ -307,8 +314,12 @@ test-container: .make/tests-passed ## Run tinytest in the container (cached by m
 docker-vignettes: docker-document ## Build vignettes in the container
 	$(DOCKER_RUN) R --quiet -e "devtools::build_vignettes()"
 
+# Rendering goes through tools/render.sh, not rmarkdown::render directly.
+# rmarkdown::render ignores the document's knit: field, so calling it here
+# would silently skip the provenance stamp and the staged copy in share/.
+# render.sh calls rmarkdown::render internally, so the output is unchanged.
 docker-render: ## Render REPORT (default analysis/report/report.Rmd)
-	$(DOCKER_RUN) R --quiet -e "rmarkdown::render('$(REPORT)')"
+	$(DOCKER_RUN) bash tools/render.sh "$(REPORT)"
 
 # Run an arbitrary R script in the container (used by zzcollab::run_script)
 docker-script:

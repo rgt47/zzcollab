@@ -130,8 +130,12 @@ docker-test:
 docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
 
+# Rendering goes through tools/render.sh, not rmarkdown::render directly.
+# rmarkdown::render ignores the document's knit: field, so calling it here
+# would silently skip the provenance stamp and the staged copy in share/.
+# render.sh calls rmarkdown::render internally, so the output is unchanged.
 docker-render:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "rmarkdown::render('analysis/report/report.Rmd')"
+	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project -e ZZ_HOST_ROOT="$$(pwd)" -e TZ="$$(readlink /etc/localtime | sed -e 's|.*zoneinfo/||')" $(PACKAGE_NAME) bash tools/render.sh analysis/report/report.Rmd
 
 docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
