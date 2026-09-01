@@ -44,15 +44,30 @@ expect_error(init_project(), "project_name is required")
 # join_project requires project_name
 expect_error(join_project(), "project_name is required")
 
+# Gate live-Docker tests on a reachable daemon, not on binary presence:
+# with a binary but no daemon, `docker ps` blocks and stalls R CMD check
+docker_daemon_available <- function() {
+  if (!nzchar(Sys.which("docker"))) {
+    return(FALSE)
+  }
+  status_code <- tryCatch(
+    suppressWarnings(
+      system2("docker", "info", stdout = FALSE, stderr = FALSE, timeout = 5)
+    ),
+    error = function(e) 1L
+  )
+  identical(status_code, 0L)
+}
+
 # Docker status function works
-if (nzchar(Sys.which("docker"))) {
+if (docker_daemon_available()) {
   result <- status()
   expect_true(is.character(result))
   expect_true(length(result) >= 0)
 }
 
 # team_images function works
-if (nzchar(Sys.which("docker"))) {
+if (docker_daemon_available()) {
   result <- team_images()
   expect_true(is.data.frame(result))
   expect_true(nrow(result) >= 0)

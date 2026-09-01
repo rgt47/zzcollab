@@ -1,0 +1,12 @@
+citHeader("To cite zzcollab in publications use:")
+
+bibentry(
+  bibtype  = "Manual",
+  title    = "zzcollab: Docker-Based Reproducible Research Collaboration Framework",
+  author   = person("Ronald G.", "Thomas",
+                    email = "rgthomas@ucsd.edu",
+                    comment = c(ORCID = "0000-0003-1686-4965")),
+  year     = "2026",
+  note     = sprintf("R package version %s", meta$Version),
+  url      = "https://github.com/rgt47/zzcollab"
+)

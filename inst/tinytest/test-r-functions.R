@@ -57,18 +57,10 @@ expect_equal(result, "default")
 # SECTION 3: Status and Build Functions (3 tests)
 ################################################################################
 
-# status function can be called
-# This tests the function exists and can be called
-# Actual Docker status would require Docker installation
-result <- tryCatch({
-  zzcollab::status()
-  TRUE
-}, error = function(e) {
-  # Function might error due to Docker not available, that's OK
-  # We're just testing it exists
-  grepl("Docker", as.character(e$message)) || TRUE
-})
-expect_true(result)
+# status function exists and is exported
+# Calling it live requires a reachable Docker daemon; with a docker
+# binary but no daemon the call blocks, so existence is all we assert
+expect_true(is.function(zzcollab::status))
 
 # rebuild function accepts valid targets
 # Test that rebuild function has correct parameters

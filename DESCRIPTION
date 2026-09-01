@@ -1,5 +1,5 @@
 Package: zzcollab
-Title: Docker-based Research Collaboration Framework
+Title: Docker-Based Research Collaboration Framework
 Version: 0.1.0
 Authors@R:
     person("Ronald G.", "Thomas", , "rgthomas@ucsd.edu", role = c("aut", "cre"),
