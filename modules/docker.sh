@@ -33,6 +33,28 @@ get_base_image_tools() {
     echo "$has_pandoc"
 }
 
+# Whether the base image already bakes in the Quarto CLI. Verified by running
+# `quarto --version` in each rocker/* base: tidyverse, verse, and rstudio all
+# ship it (1.9.37 as of writing); rocker/r-ver (the minimal profile) does not.
+# Mirrors get_base_image_tools's grouping today, but is kept separate since
+# pandoc and Quarto presence are unrelated facts about the upstream image and
+# could diverge in a future rocker release.
+get_base_image_has_quarto() {
+    local base_image="$1"
+    local has_quarto="false"
+
+    case "$base_image" in
+        *tidyverse*|*verse*|*rstudio*|*shiny*)
+            has_quarto="true"
+            ;;
+    esac
+
+    echo "$has_quarto"
+}
+
+# Pinned Quarto CLI version for the install fallback below.
+ZZCOLLAB_QUARTO_VERSION="${ZZCOLLAB_QUARTO_VERSION:-1.6.43}"
+
 # Generate install commands for missing tools
 # TinyTeX is excluded by default. The project directory is bind-mounted
 # from the host, so LaTeX rendering typically runs on the host.
@@ -59,6 +81,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
     # DESCRIPTION and restored from renv.lock. Ncpus parallelises the binary
     # install (white paper F-8).
     load_config 2>/dev/null || true
+
+    # The 'blog' and 'book' archetypes render via 'quarto render' (see
+    # render-report.yml), regardless of which profile backs the Dockerfile.
+    # Most rocker/* bases bake Quarto in already (get_base_image_has_quarto),
+    # but the minimal profile's rocker/r-ver does not, so that combination
+    # left 'quarto' missing from $PATH and failed the render step at
+    # container-run time with no build-time signal. Install it explicitly
+    # whenever the base lacks it and the archetype needs it.
+    local has_quarto
+    has_quarto=$(get_base_image_has_quarto "$base_image")
+    case "${CONFIG_ARCHETYPE:-}" in
+        blog|book)
+            if [[ "$has_quarto" == "false" ]]; then
+                cmds+="# Install Quarto CLI (base image lacks it; the '${CONFIG_ARCHETYPE}'
+# archetype's render step shells out to 'quarto render').
+RUN apt-get update && apt-get install -y --no-install-recommends wget gdebi-core && rm -rf /var/lib/apt/lists/* && \\
+    wget -q \"https://github.com/quarto-dev/quarto-cli/releases/download/v${ZZCOLLAB_QUARTO_VERSION}/quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\" && \\
+    gdebi -n \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\" && \\
+    rm \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\"
+
+"
+            fi
+            ;;
+    esac
+
     local pkgs=""
     [[ "${CONFIG_LANGUAGESERVER:-true}" == "true" ]] && pkgs="'languageserver'"
     if [[ -f .pre-commit-config.yaml || "${CONFIG_FEAT_CODE_QUALITY:-off}" == "on" ]]; then
