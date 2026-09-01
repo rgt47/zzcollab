@@ -2211,25 +2211,39 @@ cmd_quickstart() {
 #=============================================================================
 
 # Function: cmd_tools
-# Purpose: Retrofit the render-stamp machinery into an existing
-#          project: tools/stamp.tex, stamp-render.R, render.sh and a
-#          README; the share/ staging directory; and the knit: hook
-#          in every .Rmd, so that rendering any document stamps it
-#          and stages a dated copy.
+# Purpose: Retrofit machinery into an existing project that a fresh
+#          `zzc <profile>` init would have set up, for projects created
+#          before that machinery existed:
+#          - render-stamp tooling (tools/stamp.tex, stamp-render.R,
+#            render.sh, README; the share/ staging directory; the knit:
+#            hook in every .Rmd)
+#          - the archetype symlink topology (--fix-symlinks), for
+#            projects created before create_archetype_symlinks (added
+#            2026-07-28) or where a symlink was later replaced by a
+#            plain file/directory (e.g. by an editor or sync client)
 # ARGS:    --force  overwrite existing tools/ copies, upgrading a
 #                   project pinned to an older generation
 #          --no-hooks  install tools/ and share/ only, leaving the
 #                   documents' YAML headers alone
+#          --fix-symlinks  repair the archetype's symlink topology
+#                   instead of the render-stamp retrofit above; does
+#                   not touch tools/, share/, or knit hooks
+#          --archetype NAME  archetype to use with --fix-symlinks
+#                   (default: the project's recorded archetype in
+#                   zzcollab.yaml, falling back to 'blog')
 # NOTES:   Idempotent; safe to run repeatedly.
 cmd_tools() {
-    local force="" hooks="yes"
+    local force="" hooks="yes" fix_symlinks="" archetype=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --force)    force="force"; shift ;;
-            --no-hooks) hooks="no"; shift ;;
+            --force)         force="force"; shift ;;
+            --no-hooks)      hooks="no"; shift ;;
+            --fix-symlinks)  fix_symlinks="yes"; shift ;;
+            --archetype)     archetype="$2"; shift 2 ;;
             -h|--help)
                 echo "Usage: zzcollab tools [--force] [--no-hooks]"
+                echo "       zzcollab tools --fix-symlinks [--archetype NAME]"
                 return 0
                 ;;
             *)
@@ -2243,6 +2257,23 @@ cmd_tools() {
         log_error "Not in a zzcollab project"
         log_info "Run a profile command first, e.g. 'zzc tidyverse'"
         return 1
+    fi
+
+    if [[ "$fix_symlinks" == "yes" ]]; then
+        if [[ -z "$archetype" ]]; then
+            archetype="$(config_get archetype true 2>/dev/null || true)"
+            archetype="${archetype:-blog}"
+        fi
+        local symlink_set
+        symlink_set="$(archetype_spec "$archetype" symlinks)"
+        if [[ -z "$symlink_set" || "$symlink_set" == "none" ]]; then
+            log_error "Archetype '$archetype' has no symlink topology to fix"
+            log_info "Pass --archetype blog (or another symlinked archetype) explicitly"
+            return 1
+        fi
+        create_archetype_symlinks "$symlink_set"
+        log_success "Symlink topology repaired for archetype '$archetype'"
+        return 0
     fi
 
     create_tools_directory "$force" || return 1
@@ -2903,9 +2934,13 @@ main() {
                 local tools_args=()
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
-                        --force|--no-hooks)
+                        --force|--no-hooks|--fix-symlinks)
                             tools_args+=("$1")
                             shift
+                            ;;
+                        --archetype)
+                            tools_args+=("--archetype" "$2")
+                            shift 2
                             ;;
                         *) break ;;
                     esac
