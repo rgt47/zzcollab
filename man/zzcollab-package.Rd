@@ -4,7 +4,7 @@
 \name{zzcollab-package}
 \alias{zzcollab}
 \alias{zzcollab-package}
-\title{zzcollab: Docker-based Research Collaboration Framework}
+\title{zzcollab: Docker-Based Research Collaboration Framework}
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
@@ -20,6 +20,11 @@ Useful links:
 }
 \author{
 \strong{Maintainer}: Ronald G. Thomas \email{rgthomas@ucsd.edu} (\href{https://orcid.org/0000-0003-1686-4965}{ORCID})
+
+Authors:
+\itemize{
+  \item Ronald G. Thomas \email{rgthomas@ucsd.edu} (\href{https://orcid.org/0000-0003-1686-4965}{ORCID})
+}
 
 }
 \keyword{internal}

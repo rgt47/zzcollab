@@ -23,13 +23,15 @@ report_status <- function(result, ok_msg, fail_msg) {
 #' @export
 git_commit <- function(message, add_all = TRUE) {
   if (add_all) {
-    result1 <- safe_system2('git', 'add .' , error_msg = 'Failed to add files to git')
+    result1 <- safe_system2('git', c('add', '.'),
+                             error_msg = 'Failed to add files to git')
     if (!identical(result1, 0L) && !identical(result1, 0)) {
       stop('Failed to add files to git', call. = FALSE)
     }
   }
 
-  # P-3: pass message as a separate argument so no shell quoting is needed.
+  # Passed as a separate element; safe_system2() quotes it. system2()
+  # itself does not, which is what broke multi-word messages.
   result2 <- safe_system2('git', c('commit', '-m', message),
                            error_msg = 'Failed to create git commit')
 
@@ -66,7 +68,8 @@ create_pr <- function(title, body = NULL, base = 'main') {
          call. = FALSE)
   }
 
-  # P-3: pass title, body, and base as separate args (no shell quoting needed).
+  # Separate elements; safe_system2() quotes each one. Titles and
+  # bodies routinely contain spaces and punctuation.
   args <- c('pr', 'create', '--title', title, '--base', base)
   if (!is.null(body)) {
     args <- c(args, '--body', body)
@@ -102,13 +105,34 @@ git_status <- function() {
 #' @return Logical indicating success
 #' @export
 create_branch <- function(branch_name) {
-  # Ensure we're on main and up to date (literal args, no user data)
-  safe_system2('git', c('checkout', 'main'), ignore.stdout = TRUE,
-               error_msg = 'Failed to checkout main branch')
-  safe_system2('git', 'pull', ignore.stdout = TRUE,
-               error_msg = 'Failed to pull latest changes')
+  # Ensure we're on main and up to date (literal args, no user data).
+  #
+  # The exit status of the checkout has to be honoured. It was
+  # previously discarded, so with a dirty working tree the checkout
+  # failed, the pull failed, and the branch was still created -- off
+  # whatever branch the caller happened to be on, while the function
+  # returned TRUE. In a collaboration framework that quietly stacks a
+  # feature branch on another feature branch, and the eventual pull
+  # request carries the other branch's commits.
+  co <- safe_system2('git', c('checkout', 'main'), ignore.stdout = TRUE,
+                     error_msg = 'Failed to checkout main branch')
+  if (!identical(as.integer(co), 0L)) {
+    stop('Could not switch to main, so the new branch would be cut ',
+         'from the current branch rather than from main. Commit or ',
+         'stash your changes and try again.', call. = FALSE)
+  }
+  # A failed pull is tolerable: it happens offline, or when the branch
+  # has no upstream. The base commit is still main, so the branch is
+  # cut from the right place, only possibly not the newest one.
+  pl <- safe_system2('git', 'pull', ignore.stdout = TRUE,
+                     error_msg = 'Failed to pull latest changes')
+  if (!identical(as.integer(pl), 0L)) {
+    warning('Could not pull main before branching; the new branch is ',
+            'cut from the local main, which may be behind the remote.',
+            call. = FALSE)
+  }
 
-  # Create and checkout new branch (P-3: pass branch_name as a separate arg)
+  # Create and checkout the new branch; safe_system2() quotes the name.
   result <- safe_system2('git', c('checkout', '-b', branch_name),
                          error_msg = paste('Failed to create branch:', branch_name))
 

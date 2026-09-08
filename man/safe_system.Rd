@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{safe_system}
 \alias{safe_system}
-\title{Safe system call with error handling}
+\title{Safe system call (string form, internal)}
 \usage{
 safe_system(
   command,
@@ -28,7 +28,8 @@ For intern=FALSE: exit status (0 for success)
 For intern=TRUE: character vector of output
 }
 \description{
-Wrapper around system() with comprehensive error handling via tryCatch.
-Provides consistent error messages and behavior across all zzcollab functions.
+Legacy wrapper around \code{system()} retained for literal-string callers
+that do not pass user-controlled data. New code should use
+\code{safe_system2(cmd, args)} instead.
 }
 \keyword{internal}

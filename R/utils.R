@@ -76,6 +76,16 @@ validate_docker_name <- function(name, param_name) {
 safe_system2 <- function(cmd, args = character(), intern = FALSE,
                          ignore.stdout = FALSE, ignore.stderr = FALSE,
                          error_msg = NULL) {
+  # system2() does not quote: it pastes `args` together and hands the
+  # result to a shell. Any argument holding a space was therefore split
+  # into several, so git_commit('add feature x') ran
+  # `git commit -m add feature x` and git rejected 'feature' and 'x' as
+  # pathspecs -- every multi-word commit message failed. Worse, a shell
+  # metacharacter in user text reached the shell: a commit message of
+  # "msg; touch FILE" created FILE. Commit messages, PR titles and
+  # bodies, and branch names are all user data, so every argument is
+  # quoted here, at the single point they all pass through.
+  args <- if (length(args)) shQuote(args) else args
   tryCatch({
     stdout_val <- if (intern) TRUE else if (ignore.stdout) FALSE else ''
     stderr_val <- if (ignore.stderr) FALSE else ''
