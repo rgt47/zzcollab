@@ -235,7 +235,7 @@ as a deprecated alias. The `publishing` profile renders PDF by default when a
 LaTeX toolchain is present and falls back to HTML otherwise; its LaTeX package
 closure is pre-baked into the image, so PDF rendering needs no runtime install.
 
-For other specialised needs (Shiny, machine learning), start from one of
+For other specialized needs (Shiny, machine learning), start from one of
 these profiles and add packages inside the container with
 `install.packages()`, then commit the updated `renv.lock`.
 

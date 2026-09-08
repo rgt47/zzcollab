@@ -102,7 +102,7 @@ can be added dynamically via `install.packages()` inside containers (Layer 2).
   otherwise (capability-adaptive); the LaTeX closure is baked into the
   image at build time, so PDF rendering needs no runtime install
 
-For specialised needs (Shiny, machine learning), start with one of these
+For specialized needs (Shiny, machine learning), start with one of these
 profiles and add packages inside the container with `install.packages()`,
 then commit the updated `renv.lock`.
 

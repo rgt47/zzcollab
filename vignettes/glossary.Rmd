@@ -56,7 +56,7 @@ engineering that zzcollab builds on.
   `tidyverse` (tidyverse, ~1.2GB), `rstudio` (RStudio Server, ~980MB),
   and `publishing` (manuscript rendering on `rocker/verse`, ~4.2GB).
   `tidyverse` was formerly named `analysis`; the `analysis` alias is still
-  accepted. For other specialised needs (modeling, Shiny), extend the
+  accepted. For other specialized needs (modeling, Shiny), extend the
   closest profile. Distinct from the archetype: the profile is the image,
   the archetype is the layout.
 - **Render gate**: a CI check tied to the archetypes that scaffold a
