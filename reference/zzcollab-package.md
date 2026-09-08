@@ -1,4 +1,4 @@
-# zzcollab: Docker-based Research Collaboration Framework
+# zzcollab: Docker-Based Research Collaboration Framework
 
 A comprehensive framework for reproducible research collaboration using
 Docker containers. Provides R interfaces to create, manage, and
@@ -17,3 +17,8 @@ Useful links:
 
 **Maintainer**: Ronald G. Thomas <rgthomas@ucsd.edu>
 ([ORCID](https://orcid.org/0000-0003-1686-4965))
+
+Authors:
+
+- Ronald G. Thomas <rgthomas@ucsd.edu>
+  ([ORCID](https://orcid.org/0000-0003-1686-4965))

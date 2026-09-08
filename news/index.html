@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,24 @@
       <small>Source: <a href="https://github.com/rgt47/zzcollab/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="zzcollab-020">zzcollab 0.2.0<a class="anchor" aria-label="anchor" href="#zzcollab-020"></a></h2>
+<div class="section level3">
+<h3 id="correctness-and-security-fixes-0-2-0">Correctness and security fixes<a class="anchor" aria-label="anchor" href="#correctness-and-security-fixes-0-2-0"></a></h3>
+<ul><li>
+<p><strong>Arguments passed to external commands are now quoted.</strong> <code><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2()</a></code> does not quote: it pastes <code>args</code> together and hands the result to a shell. <code><a href="../reference/safe_system2.html">safe_system2()</a></code> relied on it doing so, with a comment at each call site saying no quoting was needed.</p>
+<p>Every multi-word commit message failed. <code>git_commit("add feature x")</code> ran <code>git commit -m add feature x</code>; git rejected <code>feature</code> and <code>x</code> as pathspecs and no commit was made. The function reported failure, so the effect was a git wrapper that could not commit with an ordinary message.</p>
+<p>Shell metacharacters in user text also reached the shell. A commit message of <code>"msg; touch FILE"</code> created FILE. Commit messages, pull request titles and bodies, and branch names are all user-supplied, so this was a command injection. <code><a href="../reference/safe_system2.html">safe_system2()</a></code> now applies <code><a href="https://rdrr.io/r/base/shQuote.html" class="external-link">shQuote()</a></code> to every argument, at the one point they all pass through, and <code>git add .</code> is passed as two tokens rather than one string.</p>
+</li>
+<li><p><strong><code><a href="../reference/create_branch.html">create_branch()</a></code> no longer branches from the wrong base while reporting success.</strong> It ran <code>git checkout main</code> and <code>git pull</code> and discarded both exit statuses. With a dirty working tree the checkout failed, the pull failed, and the branch was cut from whatever branch the caller was on while the function returned <code>TRUE</code>; in a collaboration framework that silently stacks a feature branch on another feature branch and the eventual pull request carries the other branch’s commits. A failed checkout is now an error. A failed pull, which happens offline or with no upstream, warns: the base is still main, only possibly not the newest main.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="tests-0-2-0">Tests<a class="anchor" aria-label="anchor" href="#tests-0-2-0"></a></h3>
+<ul><li>
+<code>test-git.R</code> called <code><a href="../reference/git_commit.html">git_commit()</a></code>, <code><a href="../reference/git_push.html">git_push()</a></code> and <code><a href="../reference/create_branch.html">create_branch()</a></code> against the working directory, and asserted <code>expect_true(TRUE)</code> from inside an error handler, so each test passed whether the call worked or threw. They were dormant only because <code>.git</code> is not visible from the test directory; a run started from the package root would have staged everything, committed, and pushed. The file now builds a throwaway repository under the temp directory and makes assertions that can fail.</li>
+<li>New <code>test-arg-quoting.R</code> covers the quoting and injection fixes.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="zzcollab-010">zzcollab 0.1.0<a class="anchor" aria-label="anchor" href="#zzcollab-010"></a></h2>
 <p>Re-baseline release. The R package version is reset to 0.1.0 to align with the unified <code>ZZCOLLAB_VERSION</code> (CLI and template framework); release notes prior to this reset are archived in <code>NEWS-pre-0.1.0.md</code>.</p>

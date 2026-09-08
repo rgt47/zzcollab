@@ -1,8 +1,8 @@
-# Safe system call with error handling
+# Safe system call (string form, internal)
 
-Wrapper around system() with comprehensive error handling via tryCatch.
-Provides consistent error messages and behavior across all zzcollab
-functions.
+Legacy wrapper around [`system()`](https://rdrr.io/r/base/system.html)
+retained for literal-string callers that do not pass user-controlled
+data. New code should use `safe_system2(cmd, args)` instead.
 
 ## Usage
 
