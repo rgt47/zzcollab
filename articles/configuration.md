@@ -180,7 +180,7 @@ workflows.
 
 **`auto_github`** (default `false`), when true, pre-selects the ‘create
 remote now’ checkbox in the init feature wizard so the compendium’s
-GitHub remote is created during initialisation.
+GitHub remote is created during initialization.
 
 #### Get Configuration Values
 

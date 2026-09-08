@@ -117,7 +117,7 @@ start.
 - **Create remote now** (`auto_github`, default off): when the
   `auto_github` config is on, the init feature wizard pre-ticks a
   ‘create remote now’ checkbox that creates the GitHub remote during
-  initialisation.
+  initialization.
 
 ## Add and remove features
 

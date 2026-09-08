@@ -123,7 +123,7 @@ the package backend (renv), Docker, CI, data-integrity hashing,
 code-quality hooks, unit tests, the R language server in the Docker
 image (`languageserver`, default on), and cloud launch. When the
 `auto_github` config is on, the wizard also pre-ticks a ‘create remote
-now’ checkbox that creates the GitHub remote during initialisation. You
+now’ checkbox that creates the GitHub remote during initialization. You
 do not have to decide everything now; features can be added or removed
 at any time (see
 [`vignette("quickstart3")`](https://rgt47.github.io/zzcollab/articles/quickstart3.md)
@@ -904,8 +904,8 @@ options(
 
 **Important**: zzcollab’s `.Rprofile` template pins the RNG kind and
 critical session options. These settings are version-controlled and
-copied into Docker, ensuring consistent behaviour across team members
-and CI/CD runs.
+copied into Docker, ensuring consistent behavior across team members and
+CI/CD runs.
 
 #### 4. Analysis Source Code - Computational Logic
 

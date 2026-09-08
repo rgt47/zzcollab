@@ -84,7 +84,7 @@ toolchain - Renders PDF when a LaTeX toolchain is present and falls back
 to HTML otherwise (capability-adaptive); the LaTeX closure is baked into
 the image at build time, so PDF rendering needs no runtime install
 
-For specialised needs (Shiny, machine learning), start with one of these
+For specialized needs (Shiny, machine learning), start with one of these
 profiles and add packages inside the container with
 [`install.packages()`](https://rdrr.io/r/utils/install.packages.html),
 then commit the updated `renv.lock`.
