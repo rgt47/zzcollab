@@ -163,7 +163,7 @@ title: "Allometric Scaling in Palmer Penguins"
 author:
   - name: Your Name
     affiliation: Department of Biology
-date: "September 01, 2026"
+date: "September 08, 2026"
 output:
   pdf_document:
     number_sections: true

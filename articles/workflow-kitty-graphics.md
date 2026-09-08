@@ -509,4 +509,4 @@ hgd(host = "0.0.0.0", port = 8888)
   Auto-display plots with vim integration
 - [Kitty Graphics
   Protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
-- [httpgd Package](https://nx10.github.io/httpgd/)
+- [httpgd Package](https://nx10.dev/httpgd/)

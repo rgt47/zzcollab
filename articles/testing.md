@@ -1371,7 +1371,7 @@ for R. Journal of Statistical Software, 97(10), 1-31.
 
 Wickham, H. (2011). testthat: Get started with testing. The R Journal,
 3(1), 5-10.
-<https://journal.r-project.org/archive/2011-1/RJournal_2011-1_Wickham.pdf>
+<https://journal.r-project.org/articles/RJ-2011-002/RJ-2011-002.pdf>
 
 Wickham, H. (2015). R packages: organize, test, document, and share your
 code. O’Reilly Media.

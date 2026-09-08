@@ -70,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-09-01</h4>
+            <h4 data-toc-skip class="date">2026-09-08</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/quickstart-rstudio.Rmd" class="external-link"><code>vignettes/quickstart-rstudio.Rmd</code></a></small>
       <div class="d-none name"><code>quickstart-rstudio.Rmd</code></div>
@@ -197,7 +197,8 @@ etc.)</li>
 Username: rstudio, Password: rstudio</code></pre>
 <p><strong>Access RStudio:</strong></p>
 <ol style="list-style-type: decimal">
-<li>Open browser to <strong><a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a></strong>
+<li>Open browser to
+<strong><code>http://localhost:8787</code></strong>
 </li>
 <li>Login with:
 <ul>
@@ -249,7 +250,7 @@ Username: rstudio, Password: rstudio</code></pre>
 <pre><code>---
 title: "Palmer Penguins Bill Dimensions Analysis"
 author: "Reproducible Research Team"
-date: "2026-09-01"
+date: "2026-09-08"
 output:
   html_document:
     toc: true
@@ -488,7 +489,7 @@ snapshot needed)</li>
 </h3>
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># From project directory:</span></span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">make</span> docker-rstudio</span></code></pre></div>
-<p>Opens on: <strong><a href="http://localhost:8787" class="external-link uri">http://localhost:8787</a></strong></p>
+<p>Opens on: <strong><code>http://localhost:8787</code></strong></p>
 </div>
 <div class="section level3">
 <h3 id="default-credentials">Default Credentials<a class="anchor" aria-label="anchor" href="#default-credentials"></a>
@@ -636,7 +637,7 @@ installs packages)</li>
 <span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="co"># Start RStudio Server</span></span>
 <span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="fu">make</span> docker-rstudio</span>
 <span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a></span>
-<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co"># Access http://localhost:8787</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co"># Access `http://localhost:8787`</span></span>
 <span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="co"># Work in identical RStudio environment as team</span></span></code></pre></div>
 <p><strong>Note</strong>: DockerHub is optional but efficient. Building
 from Dockerfile produces an identical environment if team image is not
@@ -667,7 +668,7 @@ available.</p>
 <span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>  <span class="at">-e</span> USER=analyst <span class="at">-e</span> PASSWORD=analyst <span class="dt">\</span></span>
 <span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  <span class="va">$(</span><span class="ex">PACKAGE_NAME</span><span class="va">)</span> /init</span>
 <span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a></span>
-<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="co"># Then access: http://localhost:8888</span></span></code></pre></div>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="co"># Then access: `http://localhost:8888`</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="cant-install-packages">Can’t Install Packages<a class="anchor" aria-label="anchor" href="#cant-install-packages"></a>

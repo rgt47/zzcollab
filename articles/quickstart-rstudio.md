@@ -115,7 +115,7 @@ make docker-rstudio
 
 **Access RStudio:**
 
-1.  Open browser to **<http://localhost:8787>**
+1.  Open browser to **`http://localhost:8787`**
 2.  Login with:
     - Username: `rstudio`
     - Password: `rstudio`
@@ -165,7 +165,7 @@ In RStudio, create file `analysis/report/report.Rmd`:
     ---
     title: "Palmer Penguins Bill Dimensions Analysis"
     author: "Reproducible Research Team"
-    date: "2026-09-01"
+    date: "2026-09-08"
     output:
       html_document:
         toc: true
@@ -413,7 +413,7 @@ ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
 make docker-rstudio
 ```
 
-Opens on: **<http://localhost:8787>**
+Opens on: **`http://localhost:8787`**
 
 ### Default Credentials
 
@@ -531,7 +531,7 @@ make docker-build
 # Start RStudio Server
 make docker-rstudio
 
-# Access http://localhost:8787
+# Access `http://localhost:8787`
 # Work in identical RStudio environment as team
 ```
 
@@ -561,7 +561,7 @@ docker run --rm -p 8888:8787 -v $(pwd):/project \
   -e USER=analyst -e PASSWORD=analyst \
   $(PACKAGE_NAME) /init
 
-# Then access: http://localhost:8888
+# Then access: `http://localhost:8888`
 ```
 
 ### Can’t Install Packages

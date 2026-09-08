@@ -515,8 +515,8 @@ support automatically:
 - **X11 profiles** (e.g., `x11_minimal`): Automatically enables DISPLAY
   for interactive graphics
 - **RStudio profiles** (e.g., `analysis`, `rstudio`): Launches RStudio
-  Server at <http://localhost:8787>
-- **Shiny profiles**: Launches Shiny Server at <http://localhost:3838>
+  Server at `http://localhost:8787`
+- **Shiny profiles**: Launches Shiny Server at `http://localhost:3838`
 - **Standard profiles**: Opens interactive shell
 
 **For X11 GUI support** (if using an X11 profile):
@@ -545,7 +545,7 @@ Create `analysis/report/report.Rmd`:
     ---
     title: "Palmer Penguins Bill Dimensions Analysis"
     author: "Reproducible Research Team"
-    date: "2026-09-01"
+    date: "2026-09-08"
     output:
       html_document:
         toc: true
