@@ -109,3 +109,4 @@
 ^CONTRIBUTING\.md$
 ^_pkgdown\.yml$
 ^pkgdown_site$
+^cran-comments\.md$
