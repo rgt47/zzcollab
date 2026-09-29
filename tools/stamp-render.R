@@ -119,6 +119,47 @@
   candidates[[which.min(nchar(candidates))]]
 }
 
+## The Quarto project (nearest _quarto.yml, searched no higher than the
+## project root) that a .qmd belongs to, or NULL if it is standalone.
+## Inside a project, Quarto writes output under the project's
+## output-dir rather than next to the source, and a book renders every
+## chapter into one PDF whichever chapter was named.
+.stamp_quarto_project <- function(input, root) {
+  d <- dirname(input)
+  repeat {
+    yml <- file.path(d, '_quarto.yml')
+    if (file.exists(yml)) {
+      cfg <- if (requireNamespace('yaml', quietly = TRUE)) {
+        tryCatch(yaml::read_yaml(yml), error = function(e) list())
+      } else {
+        list()
+      }
+      proj <- if (is.list(cfg$project)) cfg$project else list()
+      type <- if (is.null(proj$type)) 'default' else proj$type
+      out_dir <- proj[['output-dir']]
+      if (is.null(out_dir)) {
+        out_dir <- switch(type, book = '_book', website = '_site', '.')
+      }
+      return(list(dir = d, type = type,
+                  output_dir = normalizePath(file.path(d, out_dir),
+                                             mustWork = FALSE)))
+    }
+    if (identical(d, root) || identical(dirname(d), d)) return(NULL)
+    d <- dirname(d)
+  }
+}
+
+## The newest PDF under `dir` written at or after `since`, or NULL.
+.stamp_newest_pdf <- function(dir, since) {
+  pdfs <- list.files(dir, pattern = '\\.pdf$', full.names = TRUE,
+                     recursive = TRUE, ignore.case = TRUE)
+  if (!length(pdfs)) return(NULL)
+  mt <- file.mtime(pdfs)
+  fresh <- pdfs[!is.na(mt) & mt >= since - 1]
+  if (!length(fresh)) return(NULL)
+  fresh[[which.max(file.mtime(fresh))]]
+}
+
 ## Resolve the real rmarkdown::render before any namespace shim can
 ## replace it. A project that patches rmarkdown::render (for example
 ## from .Rprofile.local, to add project-wide render defaults) should
@@ -144,9 +185,14 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
   root      <- dirname(tools_dir)
   stamp_tex <- file.path(tools_dir, 'stamp.tex')
 
+  ## A book renders as a whole, so the book (its project directory) is
+  ## the source the stamp should name, not the chapter passed in.
+  qproj <- if (ext == 'qmd') .stamp_quarto_project(input, root) else NULL
+  is_book <- !is.null(qproj) && identical(qproj$type, 'book')
+
   ## Provenance triple: source, time, version.
   now         <- Sys.time()
-  src_display <- .stamp_display(input, root)
+  src_display <- .stamp_display(if (is_book) qproj$dir else input, root)
   stamp_time  <- format(now, '%Y-%m-%d %H:%M %Z')
   version     <- .stamp_git_version(root)
 
@@ -178,11 +224,22 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
       on.exit(unlink(meta), add = TRUE)
       writeLines(c('include-in-header:',
                    paste0('  - ', headers)), meta)
-      out <- sub('\\.qmd$', '.pdf', input, ignore.case = TRUE)
+      sibling <- sub('\\.qmd$', '.pdf', input, ignore.case = TRUE)
+      started <- Sys.time()
       st  <- system2('quarto', c('render', input, '--to', 'pdf',
                                  '--metadata-file', meta))
-      if (!isTRUE(st == 0) || !file.exists(out)) {
+      ## Standalone documents render beside the source; project
+      ## documents (books, websites) render under the output-dir.
+      out <- if (!is_book && file.exists(sibling) &&
+                 file.mtime(sibling) >= started - 1) {
+        sibling
+      } else if (!is.null(qproj)) {
+        .stamp_newest_pdf(qproj$output_dir, started)
+      }
+      if (!isTRUE(st == 0) || is.null(out) || !file.exists(out)) {
         stop('stamp-render: quarto render failed for ', input,
+             ' (no new PDF found', if (!is.null(qproj))
+               paste0(' beside it or under ', qproj$output_dir), ')',
              call. = FALSE)
       }
       out
@@ -218,15 +275,17 @@ stamp_render <- function(input, encoding = 'UTF-8', ...) {
   ## which case the parent directory name is used so that several
   ## report.Rmd files do not collide. A suffix on the stub, as in
   ## report_short, is carried over: report_short in directory
-  ## 04-foo yields the prefix 04-foo-short.
-  base    <- tools::file_path_sans_ext(basename(input))
+  ## 04-foo yields the prefix 04-foo-short. A book is named after
+  ## its rendered PDF (the book's title), not the chapter passed in.
+  label   <- if (is_book) pdf else input
+  base    <- tools::file_path_sans_ext(basename(label))
   generic <- c('report', 'index', 'paper', 'manuscript', 'main')
   parts   <- regmatches(base,
                         regexec('^([^_-]+)[_-]?(.*)$', base))[[1]]
   stem    <- tolower(parts[2])
   suffix  <- parts[3]
   prefix  <- if (stem %in% generic) {
-    dir_name <- basename(dirname(input))
+    dir_name <- basename(dirname(label))
     if (nzchar(suffix)) paste0(dir_name, '-', suffix) else dir_name
   } else {
     base
