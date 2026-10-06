@@ -68,6 +68,10 @@ readonly ZZCOLLAB_DEFAULT_R_VERSION="4.6.0"
 # source-only on PPM and compiles from scratch.
 readonly ZZCOLLAB_DEFAULT_RENV_VERSION="1.2.3"
 readonly ZZCOLLAB_DEFAULT_TINYTEST_VERSION="1.4.3"
+# here (and its only dependency, rprojroot) so scripts can build paths from
+# the project root, here::here(...), wherever R was started; both are pure R.
+readonly ZZCOLLAB_DEFAULT_HERE_VERSION="1.0.2"
+readonly ZZCOLLAB_DEFAULT_RPROJROOT_VERSION="2.1.1"
 # Pinned tag for the zzrenvcheck validation tool installed into the image.
 # Bump this constant when upgrading zzrenvcheck.
 readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.1}"

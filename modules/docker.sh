@@ -230,9 +230,21 @@ create_renv_lock_minimal() {
     ]
   },
   "Packages": {
+    "here": {
+      "Package": "here",
+      "Version": "${ZZCOLLAB_DEFAULT_HERE_VERSION}",
+      "Source": "Repository",
+      "Repository": "RSPM"
+    },
     "renv": {
       "Package": "renv",
       "Version": "${ZZCOLLAB_DEFAULT_RENV_VERSION}",
+      "Source": "Repository",
+      "Repository": "RSPM"
+    },
+    "rprojroot": {
+      "Package": "rprojroot",
+      "Version": "${ZZCOLLAB_DEFAULT_RPROJROOT_VERSION}",
       "Source": "Repository",
       "Repository": "RSPM"
     },

@@ -309,6 +309,8 @@ _scaffold_simulation_script() {
 # Reproducible stochastics: set the RNG seed explicitly. RNGkind is pinned in
 # .Rprofile. For parallel runs use parallel::clusterSetRNGStream() or
 # future + furrr with a single global seed.
+# Run from the project root: Rscript analysis/scripts/simulation.R
+# (sourcing the file defines run_simulation() without running it).
 set.seed(1)
 
 run_simulation <- function(n = 1000L) {
@@ -318,6 +320,12 @@ run_simulation <- function(n = 1000L) {
 
 if (sys.nframe() == 0L) {
   result <- run_simulation()
+  # here::here() builds the path from the project root, so the output lands
+  # in derived_data/ whichever folder R was started in. git does not keep
+  # empty folders, so create it.
+  out_dir <- here::here("analysis", "data", "derived_data")
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+  saveRDS(result, file.path(out_dir, "simulation.rds"))
   cat("simulation result:", result, "\n")
 }'
     create_file_if_missing "analysis/scripts/simulation.R" "$sim" "simulation starter"

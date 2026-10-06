@@ -55,6 +55,7 @@ package_bundles:
       - usethis
       - tinytest
       - roxygen2
+      - here
     requires_libs: ["minimal"]
 
   tidyverse:

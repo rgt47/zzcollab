@@ -546,8 +546,8 @@ USAGE:
 
 OPTIONS:
     --r-version VERSION    Specify R version (default: query CRAN)
-    --newlock              Reset renv.lock to the minimal seed (renv +
-                           tinytest), backing up the old lock first; then
+    --newlock              Reset renv.lock to the minimal seed (renv,
+                           tinytest, here), backing up the old lock first; then
                            regrow the closure with 'make snapshot'
     --help, -h             Show this help
 
@@ -569,8 +569,8 @@ EOF
         esac
     done
 
-    # --newlock: overwrite renv.lock with the minimal two-package seed (renv +
-    # tinytest) and return, without the full interactive renv setup. Resets the
+    # --newlock: overwrite renv.lock with the minimal seed (renv, tinytest,
+    # here and its dependency rprojroot) and return, without the full interactive renv setup. Resets the
     # lock to a clean base so the closure can be regrown from code with
     # 'make snapshot'. The R version is taken from the current lock (falling
     # back to config, then the default), and the existing lock is backed up to
@@ -592,7 +592,7 @@ EOF
             log_info "Backed up existing renv.lock to renv.lock.bak"
         fi
         create_renv_lock_minimal "$r_version"
-        log_info "Reset renv.lock to the base seed (renv + tinytest)."
+        log_info "Reset renv.lock to the base seed (renv, tinytest, here)."
         log_info "Regrow the closure from code with 'make snapshot'."
         return 0
     fi
