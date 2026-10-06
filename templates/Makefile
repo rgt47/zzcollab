@@ -88,10 +88,31 @@ help: ## Show this help
 # when no Dockerfile is present.
 PPM_REPO := $(shell sed -n 's/.*RENV_CONFIG_REPOS_OVERRIDE="\([^"]*\)".*/\1/p' Dockerfile 2>/dev/null | head -1)
 PPM_REPO := $(if $(PPM_REPO),$(PPM_REPO),https://cloud.r-project.org)
-HOST_CHECK := Rscript -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
+#
+# Without R on the host, the same checks run in the project image instead.
+# zzrenvcheck is not part of the image (it is a tool, not a project
+# dependency), so it lives in a per-user library on the host, mounted into
+# the container and keyed by platform and R version: installed on first use,
+# reused afterwards, never written into renv.lock. --vanilla keeps the
+# project's .Rprofile (renv activation) from replacing that library path.
+HOST_RSCRIPT := $(shell command -v Rscript 2>/dev/null)
+IMAGE_R_VERSION := $(shell sed -n 's/^FROM [^:]*:\([0-9][0-9.]*\).*/\1/p' Dockerfile 2>/dev/null | head -1)
+ZZ_TOOLS_LIB ?= $(HOME)/.cache/zzcollab/tools-lib/$(PLATFORM)/R-$(IMAGE_R_VERSION)
+ifeq ($(HOST_RSCRIPT),)
+  TOOL_RSCRIPT = { $(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1 || \
+      { echo "No R on the host and no image '$(PACKAGE_NAME)': run 'make docker-build' first." >&2; exit 1; }; } && \
+    mkdir -p "$(ZZ_TOOLS_LIB)" && \
+    $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
+      -v "$(CURDIR)":$(CONTAINER_HOME)/project -v "$(ZZ_TOOLS_LIB)":/opt/zztools \
+      -e R_LIBS=/opt/zztools -e ZZCOLLAB_AUTO_SNAPSHOT=false \
+      -w $(CONTAINER_HOME)/project $(PACKAGE_NAME) Rscript --vanilla
+else
+  TOOL_RSCRIPT = Rscript
+endif
+HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 
-ensure-zzrenvcheck: ## Install zzrenvcheck on the host if missing (validation tool)
-	@Rscript -e "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
+ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
+	@$(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
 
 check-renv: ensure-zzrenvcheck ## Validate deps on host: strict + auto-fix (run before commit)
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
@@ -117,7 +138,7 @@ lint: ## Lint R code with lintr (in container; needs code-quality enabled)
 
 ##@ Main workflow (recommended)
 
-# Terminal: Interactive bash for vim editing.
+# Interactive R in the project container (make sh for a bash shell).
 # No check-renv prerequisite: that spins up a full container validation before
 # you get a shell, and a second validation already runs after the session.
 r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if no container)
@@ -182,11 +203,9 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	HOME_DIR="/home/$$USERNAME"; \
 	echo "🐳 Starting R ($$PROFILE)..."; \
 	echo ""; \
-	mkdir -p $$HOME/.cache/R/renv 2>/dev/null || true; \
 	$(CONTAINER_RUNTIME) run --rm -it \
 		--platform $(PLATFORM) \
 		-v $$(pwd):$$HOME_DIR/project \
-		-v $$HOME/.cache/R/renv:/opt/renv/cache \
 		-w $$HOME_DIR/project \
 		-e KITTY_WINDOW_ID="$${KITTY_WINDOW_ID:-}" \
 		-e ITERM_SESSION_ID="$${ITERM_SESSION_ID:-}" \
@@ -196,7 +215,10 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		$(PACKAGE_NAME) R || true; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
-	if Rscript -e "quit(status = if(requireNamespace('zzrenvcheck', quietly=TRUE)) 0L else 1L)" 2>/dev/null; then \
+	if [ -z "$(HOST_RSCRIPT)" ]; then \
+		echo "No R on the host: validating in the project container."; \
+		$(MAKE) --no-print-directory check-renv || echo "⚠️  Package validation failed"; \
+	elif Rscript -e "quit(status = if(requireNamespace('zzrenvcheck', quietly=TRUE)) 0L else 1L)" 2>/dev/null; then \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)" \
 		|| echo "⚠️  Package validation failed"; \
 	else \
@@ -213,6 +235,21 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	@if [ -f Dockerfile ] && $(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1; then \
 		$(MAKE) test-container; \
 	fi
+
+# A bash shell in the same container as `make r`: run scripts with Rscript,
+# inspect files, or start R from the shell.
+sh: ## Interactive bash shell in the project container
+	@if [ "$(CONTAINER_RUNTIME)" = apptainer ]; then \
+		[ -f $(SIF) ] || { echo "No $(SIF) found - build it first: make sif"; exit 1; }; \
+		exec apptainer shell $(SIF); \
+	fi; \
+	$(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1 || \
+		{ echo "Container image '$(PACKAGE_NAME)' not built: run 'make docker-build' first."; exit 1; }; \
+	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) \
+		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
+		-w $(CONTAINER_HOME)/project \
+		-e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
+		$(PACKAGE_NAME) bash
 
 docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
@@ -260,14 +297,23 @@ check-binaries: ## Audit renv.lock for missing system deps (pre-build)
 		echo "  tools/check-binaries.py not found, skipping audit"; \
 	fi
 
+# The CLI is installed as `zzcollab`, `zzc`, or both. Shell aliases are not
+# visible to make, so look for either on PATH; override with ZZCOLLAB=path.
+ZZCOLLAB ?= $(shell command -v zzcollab 2>/dev/null || command -v zzc 2>/dev/null)
+ZZCOLLAB_CHECK = @[ -n "$(ZZCOLLAB)" ] || \
+	{ echo "zzcollab CLI not found on PATH (tried 'zzcollab' and 'zzc'); set ZZCOLLAB=/path/to/zzcollab.sh" >&2; exit 1; }
+
 docker-build: check-binaries ## Pre-build audit then build image from renv.lock
-	zzcollab rebuild
+	$(ZZCOLLAB_CHECK)
+	"$(ZZCOLLAB)" rebuild
 
 docker-rebuild: ## Rebuild image without cache (force fresh build)
-	zzcollab rebuild --no-cache
+	$(ZZCOLLAB_CHECK)
+	"$(ZZCOLLAB)" rebuild --no-cache
 
 docker-build-log: ## Build image with detailed logs (for debugging)
-	zzcollab rebuild --log
+	$(ZZCOLLAB_CHECK)
+	"$(ZZCOLLAB)" rebuild --log
 
 ##@ Apptainer (HPC)
 
@@ -434,4 +480,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-book docker-rstudio rstudio r test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
