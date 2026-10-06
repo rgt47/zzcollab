@@ -123,3 +123,6 @@ pkgdown_site/
 # Plot device default output
 Rplots.pdf
 **/Rplots.pdf
+
+# Machine-local Claude Code settings (backup jobs must not track it)
+.claude/settings.local.json
