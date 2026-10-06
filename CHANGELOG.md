@@ -94,6 +94,15 @@ is archived in `CHANGELOG-2.x.md`.
   real key is written immediately after — but persisted as a meaningless
   override. The creation template now matches the one used by the
   interactive project prompt (header only).
+- `tools/render.sh` (via `stamp-render.R`) no longer fails on `.qmd`
+  files inside a Quarto project. It looked only for `<file>.pdf` beside
+  the source, but Quarto writes project output under the project’s
+  `output-dir`, and a book renders every chapter into one PDF whichever
+  chapter is named. The stamp now finds the new PDF under the output
+  directory when it is not beside the source, and for a book it names
+  the book (its project directory in the footer, its PDF title in the
+  staged filename) rather than the chapter. Tested on a book chapter, a
+  standalone document, and a website page.
 
 ### Performance
 

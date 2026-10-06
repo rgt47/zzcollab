@@ -80,6 +80,8 @@
 <h3 id="fixed">Fixed<a class="anchor" aria-label="anchor" href="#fixed"></a></h3>
 <ul><li>
 <code>config_set KEY VALUE --local</code> (and <code>zzc init</code>, which uses it to record the archetype) no longer seeds a freshly created project <code>zzcollab.yaml</code> with an empty <code>docker.default_profile: ""</code> stub. The placeholder served no purpose — the loader skips empty values and the real key is written immediately after — but persisted as a meaningless override. The creation template now matches the one used by the interactive project prompt (header only).</li>
+<li>
+<code>tools/render.sh</code> (via <code>stamp-render.R</code>) no longer fails on <code>.qmd</code> files inside a Quarto project. It looked only for <code>&lt;file&gt;.pdf</code> beside the source, but Quarto writes project output under the project’s <code>output-dir</code>, and a book renders every chapter into one PDF whichever chapter is named. The stamp now finds the new PDF under the output directory when it is not beside the source, and for a book it names the book (its project directory in the footer, its PDF title in the staged filename) rather than the chapter. Tested on a book chapter, a standalone document, and a website page.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a></h3>
