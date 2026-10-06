@@ -237,17 +237,19 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	fi
 
 # A bash shell in the same container as `make r`: run scripts with Rscript,
-# inspect files, or start R from the shell.
+# inspect files, or start R from the shell. SUBDIR (a path relative to the
+# project root, set by the `mr` helper) opens the shell in that folder; R
+# started there skips the root .Rprofile, so `make r` stays at the root.
 sh: ## Interactive bash shell in the project container
 	@if [ "$(CONTAINER_RUNTIME)" = apptainer ]; then \
 		[ -f $(SIF) ] || { echo "No $(SIF) found - build it first: make sif"; exit 1; }; \
-		exec apptainer shell $(SIF); \
+		exec apptainer shell --pwd "$(CURDIR)$(if $(SUBDIR),/$(SUBDIR))" $(SIF); \
 	fi; \
 	$(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1 || \
 		{ echo "Container image '$(PACKAGE_NAME)' not built: run 'make docker-build' first."; exit 1; }; \
 	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) \
 		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
-		-w $(CONTAINER_HOME)/project \
+		-w "$(CONTAINER_HOME)/project$(if $(SUBDIR),/$(SUBDIR))" \
 		-e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
 		$(PACKAGE_NAME) bash
 
