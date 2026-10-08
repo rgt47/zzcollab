@@ -108,6 +108,7 @@ Encoding: ${CONFIG_RPACKAGE_ENCODING:-UTF-8}
 Roxygen: list(markdown = TRUE)
 RoxygenNote: ${CONFIG_RPACKAGE_ROXYGEN_VERSION:-7.3.2}
 Suggests:
+    here,
     tinytest (>= 1.4.0)"
     create_file_if_missing "DESCRIPTION" "$content" "DESCRIPTION file"
 }
