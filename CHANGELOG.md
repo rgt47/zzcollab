@@ -8,6 +8,33 @@ archived in `CHANGELOG-2.x.md`.
 
 ## Unreleased
 
+### Fixed
+
+- Test targets are gates. `make test`, `make docker-test`, and the cached
+  `.make/tests-passed` target now exit nonzero when any tinytest assertion
+  fails; `tinytest::run_test_dir()` returns results rather than signalling,
+  so these targets previously exited 0 (and the cached target stamped a
+  pass) on failing tests. The CI template no longer marks the test steps
+  `continue-on-error`.
+- `zzc verify --full` stamps L3 only when the image rebuilds, the suite
+  passes, and a baseline test (`inst/tinytest/test-baseline*.R`) exists and
+  ran. Otherwise it reports "rebuilt and tested (L2); no baseline
+  comparison, so not L3". A `--full` run that does not reach L3 removes any
+  earlier `verified=` stamp, and the stamp is written to the target
+  directory's `.zzcollab-state` rather than the current directory's.
+- `get_ubuntu_codename()` (and `templates/tools/check-binaries.py`) now
+  follow rocker/r-ver's actual bases: focal to 4.2.1, jammy 4.2.2 to
+  4.4.1, noble from 4.4.2. R 4.4.0 and 4.4.1 were mapped to noble, so the
+  generated Dockerfile pointed PPM at binaries built for a different
+  Ubuntu release than the image.
+- The generated Dockerfile sets `OMP_NUM_THREADS=1`.
+- Dependency gates pass `error_on_fail = TRUE` to
+  `zzrenvcheck::check_packages()` (`check-renv-no-fix`, `zzc verify`'s
+  advisory check, which previously always reported a pass), and
+  `ensure-zzrenvcheck` upgrades installs older than zzrenvcheck 0.9.0.
+  The pre-session check in the repository Makefile's `r` target only
+  reports.
+
 ### Added
 
 - Declarative archetype scaffolding. Per-archetype scaffolding is now driven

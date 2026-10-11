@@ -12,7 +12,9 @@
 #     renv.lock presence, mismatched R versions, a backend conflict.
 #
 #   Reproduction tier (--full): rebuild the image and run the test suite inside
-#     it. This is the only check that earns L3. On success it stamps
+#     it. This is the only check that earns L3, and only when a baseline test
+#     (inst/tinytest/test-baseline*.R) exists and ran; otherwise the result is
+#     reported as L2 and any earlier stamp is removed. On success it stamps
 #     `verified=<ISO8601>` into .zzcollab-state; any later regeneration rewrites
 #     the record without that key, so a changed environment reverts to
 #     unverified automatically.
@@ -74,6 +76,17 @@ _vrf_stamp_verified() {
     mv "$tmp" .zzcollab-state
 }
 
+# Remove any verified=<value> line from .zzcollab-state (temp file then mv,
+# for the same cloud-sync reason as _vrf_stamp_verified).
+_vrf_clear_verified() {
+    local tmp
+    [[ -f .zzcollab-state ]] || return 0
+    grep -q '^verified=' .zzcollab-state 2>/dev/null || return 0
+    tmp=$(mktemp)
+    grep -v '^verified=' .zzcollab-state > "$tmp" 2>/dev/null || true
+    mv "$tmp" .zzcollab-state
+}
+
 # cmd_verify [dir] [--full]
 cmd_verify() {
     local d="." full=false
@@ -92,9 +105,12 @@ Coherence tier (default, no build):
     with .zzcollab-state. Fast; requires no Docker.
 
 Reproduction tier (--full):
-    Rebuilds the image and runs the test suite inside it. Only this earns
-    the L3 (verified) level and stamps .zzcollab-state. Requires Docker and
-    may take several minutes.
+    Rebuilds the image and runs the test suite inside it. L3 (verified) is
+    stamped into .zzcollab-state only when the image rebuilds, the suite
+    passes, and at least one baseline test (inst/tinytest/test-baseline*.R,
+    comparing current outputs with committed recorded values) exists and
+    ran. Without a baseline the result is L2 (rebuilt and tested), and any
+    earlier L3 stamp is removed. Requires Docker; may take several minutes.
 
 EXIT STATUS:
     0  all checks passed (warnings allowed)
@@ -216,7 +232,7 @@ EOF
     # Delegated to zzrenvcheck; reported but not gating (advisory layer).
     if command -v Rscript >/dev/null 2>&1 \
        && Rscript -e "quit(status = !requireNamespace('zzrenvcheck', quietly = TRUE))" >/dev/null 2>&1; then
-        if Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)" >/dev/null 2>&1; then
+        if Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" >/dev/null 2>&1; then
             _vrf_pass "dependency triad consistent (zzrenvcheck)"
         else
             _vrf_warn "zzrenvcheck reported dependency issues; run 'zzc validate'"
@@ -226,7 +242,19 @@ EOF
     fi
 
     # --- Reproduction tier ---------------------------------------------------
-    local reproduced=false
+    # L3 needs three things: the image rebuilds, the test suite passes inside
+    # it, and at least one baseline test (inst/tinytest/test-baseline*.R,
+    # comparing current outputs with committed recorded values) exists and
+    # ran. A passing suite without a baseline shows the code runs, not that
+    # it reproduces earlier results, so it stays at L2.
+    local reproduced=false tested=false
+    local baselines=()
+    if [[ "$full" == true ]]; then
+        local f
+        for f in "$d"/inst/tinytest/test-baseline*.R; do
+            [[ -f "$f" ]] && baselines+=("$(basename "$f")")
+        done
+    fi
     if [[ "$full" == true ]]; then
         echo ""
         echo "Reproduction (--full)"
@@ -239,12 +267,34 @@ EOF
             if ( cd "$d" && make docker-build ) >/dev/null 2>&1; then
                 _vrf_pass "image rebuilt from the pinned definition"
                 echo "  running tests inside the image..."
-                if ( cd "$d" && make docker-test ) >/dev/null 2>&1; then
+                local test_log
+                test_log=$(mktemp)
+                if ( cd "$d" && make docker-test ) >"$test_log" 2>&1; then
                     _vrf_pass "test suite passed inside the rebuilt image"
-                    reproduced=true
+                    tested=true
+                    if [[ ${#baselines[@]} -eq 0 ]]; then
+                        _vrf_warn "no baseline test (inst/tinytest/test-baseline*.R); outputs not compared with recorded values"
+                    else
+                        # The suite runs every file in inst/tinytest, so a
+                        # baseline file present and a passing suite means it
+                        # ran; confirm from the log where tinytest names it.
+                        local b ran=true
+                        for b in "${baselines[@]}"; do
+                            if ! grep -q "$b" "$test_log"; then
+                                ran=false
+                            fi
+                        done
+                        if [[ "$ran" == true ]]; then
+                            _vrf_pass "baseline comparison passed (${baselines[*]})"
+                            reproduced=true
+                        else
+                            _vrf_warn "baseline test present but not seen in the test log (${baselines[*]})"
+                        fi
+                    fi
                 else
                     _vrf_fail "tests failed inside the rebuilt image"
                 fi
+                rm -f "$test_log"
             else
                 _vrf_fail "image failed to rebuild"
             fi
@@ -253,6 +303,11 @@ EOF
 
     # --- Verdict -------------------------------------------------------------
     echo ""
+    # A --full run that does not reach L3 withdraws any earlier L3 stamp:
+    # the claim was re-tested and no longer holds (or cannot be shown).
+    if [[ "$full" == true && "$reproduced" != true && -f "$d/.zzcollab-state" ]]; then
+        ( cd "$d" && _vrf_clear_verified )
+    fi
     if [[ "$_VRF_FAIL" -gt 0 ]]; then
         log_error "verify: $_VRF_FAIL failed, $_VRF_WARN warnings, $_VRF_SKIP skipped"
         return 1
@@ -261,11 +316,15 @@ EOF
     if [[ "$reproduced" == true ]]; then
         local ts
         ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        if _vrf_stamp_verified "$ts"; then
+        if ( cd "$d" && _vrf_stamp_verified "$ts" ); then
             log_success "verify: reproduced and stamped (level L3, verified $ts)"
         else
             log_success "verify: reproduced (no state record to stamp)"
         fi
+    elif [[ "$tested" == true ]]; then
+        log_success "verify: rebuilt and tested (L2); no baseline comparison, so not L3"
+        echo "  Add inst/tinytest/test-baseline*.R comparing outputs with committed"
+        echo "  recorded values (with a stated tolerance) to reach L3 (verified)."
     elif [[ "$full" == true ]]; then
         log_success "verify: coherence passed; reproduction skipped (host backend)"
     else

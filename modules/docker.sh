@@ -891,17 +891,33 @@ resolve_image_digest() {
     echo "$digest"
 }
 
-# Map an R version string (e.g. "4.4.2") to the Ubuntu codename used by the
-# rocker images and Posit Package Manager for that release.
+# Map an R version string (e.g. "4.4.2") to the Ubuntu codename of the
+# rocker/r-ver image for that release, which selects the matching Posit
+# Package Manager binary repository. The boundaries fall inside minor
+# releases, so the patch level matters. Source: the FROM line of each
+# dockerfiles/r-ver_<version>.Dockerfile in rocker-org/rocker-versioned2
+# (checked 2026-10-11):
+#   4.0.0 - 4.2.1  ubuntu:focal (20.04)
+#   4.2.2 - 4.4.1  ubuntu:jammy (22.04)
+#   4.4.2 - 4.6.1  ubuntu:noble (24.04)
+# Versions after 4.6.1 (and unparseable input) default to noble.
 get_ubuntu_codename() {
     local r_version="$1"
-    local minor
-    minor="$(echo "$r_version" | cut -d. -f1-2)"
-    case "$minor" in
-        4.2|4.3) echo "jammy" ;;
-        4.4|4.5) echo "noble" ;;
-        *)        echo "noble" ;;
-    esac
+    local major minor patch
+    IFS=. read -r major minor patch _ <<< "$r_version"
+    if [[ ! "$major" =~ ^[0-9]+$ || ! "$minor" =~ ^[0-9]+$ ]]; then
+        echo "noble"
+        return 0
+    fi
+    [[ "$patch" =~ ^[0-9]+$ ]] || patch=0
+    local n=$(( major * 10000 + minor * 100 + patch ))
+    if (( n < 40202 )); then
+        echo "focal"
+    elif (( n < 40402 )); then
+        echo "jammy"
+    else
+        echo "noble"
+    fi
 }
 
 generate_dockerfile_inline() {
@@ -991,8 +1007,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 # RENV_PATHS_LIBRARY is outside the project bind-mount so the baked library
 # is not shadowed at runtime. ZZCOLLAB_AUTO_RESTORE=false disables the
-# startup restore so the image library is authoritative.
+# startup restore so the image library is authoritative. OMP_NUM_THREADS=1
+# runs OpenMP-threaded code (including OpenMP builds of OpenBLAS) serially,
+# so reduction order, and hence floating-point results, does not depend on
+# the host's core count. Override per run if speed matters more than
+# bit-level agreement.
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
+    OMP_NUM_THREADS=1 \\
     RENV_PATHS_LIBRARY=/opt/renv/library \\
     RENV_PATHS_CACHE=/opt/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\

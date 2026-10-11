@@ -99,34 +99,45 @@ def installed_system_libs(dockerfile_path: str) -> set[str]:
     return libs
 
 
+def rocker_os_slug(r_version: str) -> tuple[str, str]:
+    """
+    Ubuntu (codename, release) of the rocker/r-ver image for an R version.
+    Boundaries fall inside minor releases, from the FROM line of each
+    dockerfiles/r-ver_<version>.Dockerfile in rocker-org/rocker-versioned2:
+    4.0.0-4.2.1 focal, 4.2.2-4.4.1 jammy, 4.4.2 and later noble.
+    """
+    parts = r_version.split(".")
+    try:
+        nums = [int(x) for x in parts[:3]] + [0] * (3 - len(parts[:3]))
+    except ValueError:
+        return "noble", "24.04"
+    v = tuple(nums)
+    if v < (4, 2, 2):
+        return "focal", "20.04"
+    if v < (4, 4, 2):
+        return "jammy", "22.04"
+    return "noble", "24.04"
+
+
 def base_image_os_slug(dockerfile_path: str) -> tuple[str, str]:
     """
-    Derive (distro_slug, release) from the Dockerfile BASE_IMAGE ARG or
-    FROM line.  Defaults to (noble, 24.04) for rocker images.
+    Derive (distro_slug, release) from the Dockerfile R_VERSION ARG or
+    rocker FROM line.  Defaults to (noble, 24.04).
     """
     p = Path(dockerfile_path)
     if not p.exists():
         return "noble", "24.04"
 
-    # rocker image → distro map (base images ship Ubuntu LTS)
-    rocker_map = {
-        "4.4": ("noble", "24.04"),
-        "4.5": ("noble", "24.04"),
-        "4.3": ("jammy", "22.04"),
-        "4.2": ("jammy", "22.04"),
-    }
     with open(p) as f:
         for line in f:
             line = line.strip()
             if line.startswith("ARG R_VERSION="):
-                rv = line.split("=", 1)[1].split(".")
-                key = f"{rv[0]}.{rv[1]}" if len(rv) >= 2 else "4.4"
-                return rocker_map.get(key, ("noble", "24.04"))
+                return rocker_os_slug(line.split("=", 1)[1])
             if line.startswith("FROM rocker/"):
-                tag = line.split(":")[-1] if ":" in line else "4.4"
-                parts = tag.split(".")
-                key = f"{parts[0]}.{parts[1]}" if len(parts) >= 2 else "4.4"
-                return rocker_map.get(key, ("noble", "24.04"))
+                # Drop any @sha256 digest before reading the tag.
+                ref = line.split()[1].split("@")[0]
+                tag = ref.split(":")[-1] if ":" in ref else ""
+                return rocker_os_slug(tag)
     return "noble", "24.04"
 
 

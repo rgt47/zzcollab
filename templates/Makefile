@@ -112,13 +112,13 @@ endif
 HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 
 ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
-	@$(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
+	@$(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
 
 check-renv: ensure-zzrenvcheck ## Validate deps on host: strict + auto-fix (run before commit)
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
-check-renv-no-fix: ensure-zzrenvcheck ## Validate deps on host: report only, no modifications
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+check-renv-no-fix: ensure-zzrenvcheck ## Validate deps on host: no modifications; nonzero on failure
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
 
 check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host: skip tests/ and vignettes/
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
@@ -279,8 +279,13 @@ install: document ## devtools::install
 vignettes: document ## Build vignettes
 	$(R_RUN) R --quiet -e "devtools::build_vignettes()"
 
-test: ## Run the tinytest suite
-	$(R_RUN) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+# tinytest::run_test_dir() returns its results rather than signalling
+# failure, so R exits 0 even when assertions fail. Exit nonzero on any
+# failed assertion, so test targets (and `zzc verify --full`) are gates.
+TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (!all(as.logical(r))) quit(status = 1)
+
+test: ## Run the tinytest suite (exits nonzero on any failure)
+	$(R_RUN) R --quiet -e "$(TINYTEST_RUN)"
 
 deps: ## Install package dependencies
 	$(R_RUN) R --quiet -e "devtools::install_deps(dependencies = TRUE)"
@@ -337,8 +342,8 @@ docker-build-pkg: docker-document ## R CMD build in the container
 docker-check: docker-build-pkg ## R CMD check in the container
 	$(DOCKER_RUN) R CMD check --as-cran *.tar.gz
 
-docker-test: ## Run tinytest in the container (uncached)
-	$(DOCKER_RUN) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+docker-test: ## Run tinytest in the container (uncached; nonzero on failure)
+	$(DOCKER_RUN) R --quiet -e "$(TINYTEST_RUN)"
 
 # Cached tinytest target. Re-runs only when R sources, test files, or
 # renv.lock change since the last passing run. Add .make/ to .gitignore.
@@ -352,9 +357,9 @@ TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
 		-w $(CONTAINER_HOME)/project \
 		-e ZZCOLLAB_CONTAINER=true \
 		$(PACKAGE_NAME) \
-		Rscript -e "if (dir.exists('inst/tinytest')) \
-		  tinytest::run_test_dir('inst/tinytest') \
-		  else message('No inst/tinytest -- skipping')"
+		Rscript -e "if (dir.exists('inst/tinytest')) { \
+		  $(TINYTEST_RUN) \
+		  } else message('No inst/tinytest -- skipping')"
 	@touch $@
 
 test-container: .make/tests-passed ## Run tinytest in the container (cached by make)

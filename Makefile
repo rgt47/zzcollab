@@ -56,8 +56,12 @@ install: document
 vignettes: document
 	R --quiet -e "devtools::build_vignettes()"
 
+# tinytest::run_test_dir() returns its results rather than signalling
+# failure; exit nonzero on any failed assertion so test targets gate.
+TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (!all(as.logical(r))) quit(status = 1)
+
 test:
-	R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+	R --quiet -e "$(TINYTEST_RUN)"
 
 deps:
 	R --quiet -e "devtools::install_deps(dependencies = TRUE)"
@@ -81,7 +85,7 @@ check-renv-no-fix:
 		-v $$(pwd):/home/analyst/project \
 		-w /home/analyst/project \
 		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
 
 # Non-strict: skip tests/ and vignettes/ directories
 check-renv-no-strict:
@@ -125,7 +129,7 @@ docker-check: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R CMD check --as-cran *.tar.gz
 
 docker-test:
-	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "tinytest::run_test_dir('inst/tinytest')"
+	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "$(TINYTEST_RUN)"
 
 docker-vignettes: docker-document
 	docker run --rm -v $$(pwd):/home/analyst/project $(PACKAGE_NAME) R --quiet -e "devtools::build_vignettes()"
@@ -145,7 +149,7 @@ docker-check-renv:
 		-v $$(pwd):/home/analyst/project \
 		-w /home/analyst/project \
 		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE)"
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
 
 docker-check-renv-fix:
 	docker run --rm \
@@ -160,8 +164,10 @@ docker-rstudio:
 	@echo "Terminal available for code editing with vim"
 	docker run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
-# Terminal: Interactive bash for vim editing
-r: check-renv
+# Terminal: Interactive bash for vim editing. The pre-session dependency
+# check only reports: a failing check must not block opening a session.
+r:
+	@$(MAKE) --no-print-directory check-renv || echo "⚠️  Package validation reported issues"
 	@if [ ! -f Dockerfile ]; then \
 		echo ""; \
 		echo "❌ No Dockerfile found - workspace not initialized"; \
