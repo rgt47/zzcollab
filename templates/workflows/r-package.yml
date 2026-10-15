@@ -121,8 +121,8 @@ jobs:
             rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-vignettes'), \
               build_args = '--no-build-vignettes', error_on = 'error', libpath = libs)"
 
+      # No continue-on-error: a failing assertion must fail the job.
       - name: Run tests
-        continue-on-error: true
         run: |
           Rscript -e "
             .libPaths(c(Sys.getenv('CI_TOOLS_LIB'), .libPaths()))
@@ -164,7 +164,6 @@ jobs:
             R CMD check --no-manual *.tar.gz'
 
       - name: Run tests (nix develop)
-        continue-on-error: true
         run: |
           nix develop -c Rscript -e '
             if (dir.exists("inst/tinytest")) {
