@@ -7,6 +7,24 @@
 # ==========================================
 
 # ==========================================
+# Root anchor
+# ==========================================
+# Every relative path below (renv/activate.R, renv.lock, DESCRIPTION,
+# .Rprofile.local) assumes the project root, and renv's activate.R takes
+# the project from getwd(). R only reads ./.Rprofile from the folder it
+# starts in, so in a subfolder this file is reached through R_PROFILE_USER
+# (set by 'make sh'). Run from the file's own folder, then restore the
+# starting directory at the end of the profile.
+.zz_start <- getwd()
+.zz_root <- local({
+  p <- Sys.getenv("R_PROFILE_USER")
+  if (nzchar(p) && file.exists(p)) dirname(normalizePath(p)) else .zz_start
+})
+if (!identical(normalizePath(.zz_root), normalizePath(.zz_start))) {
+  setwd(.zz_root)
+}
+
+# ==========================================
 # Part 1: User Personal Settings (always)
 # ==========================================
 q <- function(save="no", ...) quit(save=save, ...)
@@ -254,3 +272,9 @@ if (file.exists(".Rprofile.local")) {
     }
   )
 }
+
+# Restore the starting directory (see "Root anchor" above).
+if (!identical(normalizePath(.zz_root), normalizePath(.zz_start))) {
+  setwd(.zz_start)
+}
+rm(.zz_start, .zz_root)

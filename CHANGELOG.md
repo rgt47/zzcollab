@@ -28,6 +28,23 @@ archived in `CHANGELOG-2.x.md`.
   generated Dockerfile pointed PPM at binaries built for a different
   Ubuntu release than the image.
 - The generated Dockerfile sets `OMP_NUM_THREADS=1`.
+- The generated Dockerfile no longer embeds a build timestamp. The
+  `org.opencontainers.image.created` label was written at generation time,
+  so regenerating the file changed its text, and any hash of it (such as a
+  simrun image tag), even when nothing else had changed. `zzcollab rebuild`
+  now adds that label at build time instead. The default package snapshot
+  ('one day ago') is still computed at generation time; set `PPM_SNAPSHOT`
+  to pin it.
+- `make sh` and `make r` pass `--no-home` to Apptainer, so the host home
+  directory (its `~/.Rprofile`, user library and caches) is no longer
+  mounted into the container. The project folder is still bound through the
+  working directory. Not yet run against a real Apptainer install; renv's
+  cache under `$HOME` may need a writable location in that mode.
+- R started in a project subfolder now loads the project `.Rprofile`.
+  `make sh` sets `R_PROFILE_USER` to the root profile, which runs from the
+  project root while it executes and then restores the starting directory.
+  Previously R read `./.Rprofile` only from the folder it started in, so a
+  session opened in `analysis/scripts` skipped the profile entirely.
 - Dependency gates pass `error_on_fail = TRUE` to
   `zzrenvcheck::check_packages()` (`check-renv-no-fix`, `zzc verify`'s
   advisory check, which previously always reported a pass), and
@@ -37,6 +54,9 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Added
 
+- New projects get a `.gitkeep` in `analysis/` subfolders (and `docs/`)
+  that are still empty when setup ends, so a clone keeps the folders that
+  scripts write into (`derived_data/`, `figures/`, `tables/`).
 - Declarative archetype scaffolding. Per-archetype scaffolding is now driven
   by an `archetype_spec` table and a single engine (`apply_archetype_scaffold`)
   with `_scaffold_*` entry functions, replacing ad-hoc conditionals. Adds the

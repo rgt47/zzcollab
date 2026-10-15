@@ -60,7 +60,7 @@ CONTAINER_HOME := /home/$(if $(CONTAINER_USER),$(CONTAINER_USER),analyst)
 # following day in both the stamp and the staged filename.
 HOST_TZ := $(shell readlink /etc/localtime 2>/dev/null | sed -e 's|.*zoneinfo/||')
 ifeq ($(CONTAINER_RUNTIME),apptainer)
-  DOCKER_RUN = ZZ_HOST_ROOT="$(CURDIR)" TZ="$(HOST_TZ)" apptainer exec $(SIF)
+  DOCKER_RUN = ZZ_HOST_ROOT="$(CURDIR)" TZ="$(HOST_TZ)" apptainer exec --no-home $(SIF)
 else
   DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
     -v "$(CURDIR)":$(CONTAINER_HOME)/project \
@@ -146,8 +146,8 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		if [ ! -f $(SIF) ]; then \
 			echo "No $(SIF) found - build it first: make sif"; exit 1; \
 		fi; \
-		echo "📦 Apptainer: entering 'apptainer shell $(SIF)'..."; \
-		apptainer shell $(SIF); \
+		echo "📦 Apptainer: entering 'apptainer shell --no-home $(SIF)'..."; \
+		apptainer shell --no-home $(SIF); \
 		exit 0; \
 	fi; \
 	if [ -f flake.nix ]; then \
@@ -238,12 +238,13 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 
 # A bash shell in the same container as `make r`: run scripts with Rscript,
 # inspect files, or start R from the shell. SUBDIR (a path relative to the
-# project root, set by the `mr` helper) opens the shell in that folder; R
-# started there skips the root .Rprofile, so `make r` stays at the root.
+# project root, set by the `mr` helper) opens the shell in that folder.
+# R_PROFILE_USER points R at the root .Rprofile, which R otherwise skips
+# when started in a subfolder; the profile anchors itself to that root.
 sh: ## Interactive bash shell in the project container
 	@if [ "$(CONTAINER_RUNTIME)" = apptainer ]; then \
 		[ -f $(SIF) ] || { echo "No $(SIF) found - build it first: make sif"; exit 1; }; \
-		exec apptainer shell --pwd "$(CURDIR)$(if $(SUBDIR),/$(SUBDIR))" $(SIF); \
+		R_PROFILE_USER="$(CURDIR)/.Rprofile" exec apptainer shell --no-home --pwd "$(CURDIR)$(if $(SUBDIR),/$(SUBDIR))" $(SIF); \
 	fi; \
 	$(CONTAINER_RUNTIME) image inspect $(PACKAGE_NAME) >/dev/null 2>&1 || \
 		{ echo "Container image '$(PACKAGE_NAME)' not built: run 'make docker-build' first."; exit 1; }; \
@@ -251,6 +252,7 @@ sh: ## Interactive bash shell in the project container
 		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
 		-w "$(CONTAINER_HOME)/project$(if $(SUBDIR),/$(SUBDIR))" \
 		-e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
+		-e R_PROFILE_USER="$(CONTAINER_HOME)/project/.Rprofile" \
 		$(PACKAGE_NAME) bash
 
 docker-rstudio: ## RStudio Server at http://localhost:8787

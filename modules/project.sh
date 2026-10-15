@@ -624,6 +624,24 @@ install_knit_hooks_all() {
 }
 
 #=============================================================================
+# EMPTY DIRECTORIES
+#=============================================================================
+
+# git does not track empty directories, so a fresh clone would lack these
+# folders and any script that writes into them (derived_data/, figures/)
+# would fail. A .gitkeep goes only into a folder that is still empty when
+# setup ends; .Rbuildignore already excludes analysis/ and docs/.
+keep_empty_directories() {
+    local dir
+    for dir in analysis/data/raw_data analysis/data/derived_data \
+               analysis/figures analysis/tables analysis/scripts docs; do
+        [[ -d "$dir" ]] || continue
+        [[ -z "$(ls -A "$dir" 2>/dev/null)" ]] && touch "$dir/.gitkeep"
+    done
+    return 0
+}
+
+#=============================================================================
 # MAIN SETUP FUNCTION
 #=============================================================================
 
@@ -644,6 +662,7 @@ setup_project() {
     create_renv_setup || return 1
     create_ci_workflows || return 1
     create_docs_files || return 1
+    keep_empty_directories
 
     # Adopt-mode: Dockerfile is written by the docker module, not here.
 
