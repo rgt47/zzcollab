@@ -52,6 +52,16 @@
 <hr><div class="section level2">
 <h2 id="unreleased">Unreleased<a class="anchor" aria-label="anchor" href="#unreleased"></a></h2>
 <div class="section level3">
+<h3 id="fixed">Fixed<a class="anchor" aria-label="anchor" href="#fixed"></a></h3>
+<ul><li>Test targets are gates. <code>make test</code>, <code>make docker-test</code>, and the cached <code>.make/tests-passed</code> target now exit nonzero when any tinytest assertion fails; <code><a href="https://rdrr.io/pkg/tinytest/man/run_test_dir.html" class="external-link">tinytest::run_test_dir()</a></code> returns results rather than signalling, so these targets previously exited 0 (and the cached target stamped a pass) on failing tests. The CI template no longer marks the test steps <code>continue-on-error</code>.</li>
+<li>
+<code>zzc verify --full</code> stamps L3 only when the image rebuilds, the suite passes, and a baseline test (<code>inst/tinytest/test-baseline*.R</code>) exists and ran. Otherwise it reports “rebuilt and tested (L2); no baseline comparison, so not L3”. A <code>--full</code> run that does not reach L3 removes any earlier <code>verified=</code> stamp, and the stamp is written to the target directory’s <code>.zzcollab-state</code> rather than the current directory’s.</li>
+<li>
+<code>get_ubuntu_codename()</code> (and <code>templates/tools/check-binaries.py</code>) now follow rocker/r-ver’s actual bases: focal to 4.2.1, jammy 4.2.2 to 4.4.1, noble from 4.4.2. R 4.4.0 and 4.4.1 were mapped to noble, so the generated Dockerfile pointed PPM at binaries built for a different Ubuntu release than the image.</li>
+<li>The generated Dockerfile sets <code>OMP_NUM_THREADS=1</code>.</li>
+<li>Dependency gates pass <code>error_on_fail = TRUE</code> to <code>zzrenvcheck::check_packages()</code> (<code>check-renv-no-fix</code>, <code>zzc verify</code>’s advisory check, which previously always reported a pass), and <code>ensure-zzrenvcheck</code> upgrades installs older than zzrenvcheck 0.9.0. The pre-session check in the repository Makefile’s <code>r</code> target only reports.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="added">Added<a class="anchor" aria-label="anchor" href="#added"></a></h3>
 <ul><li>Declarative archetype scaffolding. Per-archetype scaffolding is now driven by an <code>archetype_spec</code> table and a single engine (<code>apply_archetype_scaffold</code>) with <code>_scaffold_*</code> entry functions, replacing ad-hoc conditionals. Adds the missing symlink primitive (<code>create_archetype_symlinks</code>): <code>blog</code> is now a single-post compendium with <code>analysis/report/index.qmd</code> surfaced at the root via an <code>index.qmd</code> symlink plus <code>data</code>/<code>figures</code>/<code>media</code> symlinks (matching real usage); <code>analysis</code> scaffolds a Quarto <code>index.qmd</code> (report.Rmd is now manuscript-only); <code>book</code> is standalone with its own <code>media/images</code>. New <code>--bare</code> flag (env <code>ZZCOLLAB_BARE</code>) omits the R-package skeleton and its CI workflow for prose-only compendia.</li>
 <li>
@@ -77,7 +87,7 @@
 <li><p><code>zzc init</code> identity step no longer silently re-prompts only when fields are absent. When name and email are already saved, it displays the stored identity and offers an optional update, pre-filling each prompt with the current value so a bare Enter keeps it. Because <code>zzc init</code> is run for every new repository, the default is to keep existing values (no prompt churn); only an explicit confirmation walks the fields.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="fixed">Fixed<a class="anchor" aria-label="anchor" href="#fixed"></a></h3>
+<h3 id="fixed-1">Fixed<a class="anchor" aria-label="anchor" href="#fixed-1"></a></h3>
 <ul><li>
 <code>config_set KEY VALUE --local</code> (and <code>zzc init</code>, which uses it to record the archetype) no longer seeds a freshly created project <code>zzcollab.yaml</code> with an empty <code>docker.default_profile: ""</code> stub. The placeholder served no purpose — the loader skips empty values and the real key is written immediately after — but persisted as a meaningless override. The creation template now matches the one used by the interactive project prompt (header only).</li>
 <li>
@@ -109,7 +119,7 @@
 <code>zzc doctor</code> is toggle-aware: <code>renv.lock</code> and <code>Dockerfile</code> are reported as on/off features rather than required files, and <code>doctor --fix</code> back-fills a missing <code>.zzcollab-state</code> from artifact presence for repositories created before the record existed.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="fixed-1">Fixed<a class="anchor" aria-label="anchor" href="#fixed-1"></a></h3>
+<h3 id="fixed-2">Fixed<a class="anchor" aria-label="anchor" href="#fixed-2"></a></h3>
 <ul><li>
 <code>zzc renv</code> returned a spurious non-zero exit (an unconditional config prompt under <code>set -e</code>) and left the <code>.Rprofile</code> version stamp unsubstituted.</li>
 <li>The shell test runner aborted silently on the first failing test; it now reports every result.</li>
