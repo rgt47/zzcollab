@@ -1201,12 +1201,11 @@ build_docker_image() {
 
     local _built=false
     local _log=""
-    # Interactive + gum available: show a spinner instead of a flood of build
-    # output, capture the full log to a file, and offer to view it (errors are
-    # surfaced automatically on failure). Otherwise stream the build directly,
-    # so CI and no-TTY runs - where the streamed log is the only feedback - are
-    # unchanged.
-    if has_gum && [[ -t 1 ]]; then
+    # Interactive TTY: run build in the background, capture --progress=plain
+    # output, and poll the log to show the current layer on a single updating
+    # status line. CI / no-TTY: stream the build directly so raw output is
+    # preserved.
+    if [[ -t 1 ]]; then
         if mkdir -p .zzcollab 2>/dev/null; then _log=".zzcollab/docker-build.log"; else _log="docker-build.log"; fi
         local _script
         _script=$(mktemp "${TMPDIR:-/tmp}/zzc-build.XXXXXX")
@@ -1215,13 +1214,38 @@ build_docker_image() {
             [[ "$runtime" == "docker" ]] && printf 'export DOCKER_BUILDKIT=1\n'
             printf '%q build' "$runtime"
             [[ ${#build_args[@]} -gt 0 ]] && printf ' %q' "${build_args[@]}"
-            printf ' -t %q . > %q 2>&1\n' "$project_name" "$_log"
+            # --progress=plain emits one parseable line per step; the default
+            # TTY mode uses ANSI rewrites that are hard to tail-parse.
+            printf ' --progress=plain -t %q . > %q 2>&1\n' "$project_name" "$_log"
         } > "$_script"
-        if gum spin --spinner dot \
-            --title "Building image with $runtime (this can take a few minutes)…" -- \
-            bash "$_script"; then
-            _built=true
-        fi
+        : > "$_log"
+        bash "$_script" &
+        local _build_pid=$!
+        local _t0=$SECONDS
+        local _cur="initializing…"
+        local _spinner_chars='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+        local _si=0
+        while kill -0 "$_build_pid" 2>/dev/null; do
+            # Named steps: "#N [step/total] WHAT" – most informative.
+            local _named
+            _named=$(grep -oE '\[[0-9]+/[0-9]+\] .+' "$_log" 2>/dev/null | tail -1)
+            if [[ -n "$_named" ]]; then
+                _cur="$_named"
+            else
+                # Fall back to any "#N WORD…" line (FROM, COPY, internal, etc.),
+                # stripping the leading "#N " prefix.
+                local _any
+                _any=$(grep -oE '^#[0-9]+ [A-Za-z].+' "$_log" 2>/dev/null \
+                       | sed 's/^#[0-9]* //' | tail -1)
+                [[ -n "$_any" ]] && _cur="$_any"
+            fi
+            local _sp="${_spinner_chars:$(( _si % ${#_spinner_chars} )):1}"
+            (( _si++ ))
+            printf '\r\033[K  %s [%3ds]  %s' "$_sp" "$(( SECONDS - _t0 ))" "${_cur:0:72}"
+            sleep 0.3
+        done
+        printf '\r\033[K'
+        wait "$_build_pid" && _built=true
         rm -f "$_script"
     elif [[ "$runtime" == "docker" ]]; then
         DOCKER_BUILDKIT=1 docker build ${build_args[@]+"${build_args[@]}"} -t "$project_name" . && _built=true
@@ -1233,7 +1257,7 @@ build_docker_image() {
         log_success "Image '$project_name' built successfully ($runtime)"
         if [[ -n "$_log" ]]; then
             log_info "Build log saved: $_log"
-            gum_confirm "View the build log?" no && { less "$_log" 2>/dev/null || cat "$_log"; }
+            has_gum && gum_confirm "View the build log?" no && { less "$_log" 2>/dev/null || cat "$_log"; }
         fi
         log_info "Run: $runtime run -it --rm -v \$(pwd):/home/analyst/project $project_name"
     else
