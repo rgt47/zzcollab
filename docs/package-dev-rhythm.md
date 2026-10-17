@@ -121,6 +121,27 @@ The `.Last` hook remains active in other container contexts (e.g. ad hoc
 `snapshot()` raises "argument is of length zero" under explicit snapshot mode
 is caught silently.
 
+## Container R startup time
+
+Two `.Rprofile` settings must be placed correctly to avoid a 20--30 second
+startup delay.
+
+**`renv.config.synchronized.check = FALSE`** must be set *before*
+`source("renv/activate.R")`. renv performs its library scan during
+`renv::load()` inside `activate.R`; with a `rocker/verse` base image
+carrying ~220 packages, this scan takes 20--30 seconds. Setting the option
+after `activate.R` has no effect on the current session.
+
+**`ZZCOLLAB_AUTO_RESTORE=false`** is passed to `make r` to disable the
+auto-restore block in `.Rprofile`. The baked image library is the source of
+truth for interactive sessions. Any packages added to `renv.lock` but not yet
+in the image should be installed via `make docker-build`, not silently layered
+into the running container. Auto-restore is left enabled in non-`make r`
+container contexts (CI, `docker run` one-shots) where the image may be
+intentionally behind the lock.
+
+With both settings in place, container R startup takes under 3 seconds.
+
 ## zzrenvcheck vs renv::snapshot
 
 `renv::snapshot()` is a write operation: it records whatever is declared in
