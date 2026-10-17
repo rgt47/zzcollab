@@ -1229,15 +1229,18 @@ build_docker_image() {
         local _si=0
         while kill -0 "$_build_pid" 2>/dev/null; do
             # Named steps: "#N [step/total] WHAT" – most informative.
+            # Exclude DONE/CACHED lines: those are completions, not descriptions.
             local _named
-            _named=$(grep -oE '\[[0-9]+/[0-9]+\] .+' "$_log" 2>/dev/null | tail -1)
+            _named=$(grep -oE '\[[0-9]+/[0-9]+\] .+' "$_log" 2>/dev/null \
+                     | grep -v '^\[.*\] \(DONE\|CACHED\)' | tail -1)
             if [[ -n "$_named" ]]; then
                 _cur="$_named"
             else
                 # Fall back to any "#N WORD…" line (FROM, COPY, internal, etc.),
-                # stripping the leading "#N " prefix.
+                # stripping the leading "#N " prefix; skip timing/status words.
                 local _any
                 _any=$(grep -oE '^#[0-9]+ [A-Za-z].+' "$_log" 2>/dev/null \
+                       | grep -vE '^#[0-9]+ (DONE|CACHED|ERROR)' \
                        | sed 's/^#[0-9]* //' | tail -1)
                 [[ -n "$_any" ]] && _cur="$_any"
             fi
