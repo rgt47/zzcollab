@@ -712,7 +712,8 @@ EOF
     if [[ ! -f "renv/settings.json" ]]; then
         cat > renv/settings.json << 'EOF'
 {
-  "external.libraries": ["/usr/local/lib/R/site-library", "/usr/local/lib/R/library"]
+  "external.libraries": ["/usr/local/lib/R/site-library", "/usr/local/lib/R/library"],
+  "sandbox.enabled": false
 }
 EOF
         log_success "Created renv/settings.json"
