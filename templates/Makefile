@@ -123,6 +123,9 @@ check-renv-no-fix: ensure-zzrenvcheck ## Validate deps on host: no modifications
 check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host: skip tests/ and vignettes/
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
+check-renv-slim: ensure-zzrenvcheck ## Validate deps, skipping packages already in the Docker image
+	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
+
 snapshot: ensure-zzrenvcheck ## renv snapshot (container) then validate deps (host); run before commit
 	$(DOCKER_RUN) Rscript -e "renv::hydrate(); renv::snapshot(prompt = FALSE)"
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
@@ -489,4 +492,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-renv-slim check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
