@@ -1029,11 +1029,16 @@ ${system_deps_install}
 RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
         >> /usr/local/lib/R/etc/Rprofile.site && \\
     echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
-        >> /usr/local/lib/R/etc/Rprofile.site && \\
-    echo 'options(renv.config.sandbox.enabled = FALSE)' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
 ${tools_install}
+
+# Disable renv sandbox so rocker's site-library packages (tidyverse, etc.)
+# remain visible alongside the renv project library. Placed after tools_install
+# (which contains the LaTeX WARMUP) to avoid busting its BuildKit cache layer
+# on every config change.
+RUN echo 'options(renv.config.sandbox.enabled = FALSE)' \\
+        >> /usr/local/lib/R/etc/Rprofile.site
 
 # Dependency install (self-adapting, INSTALL_MODE=${install_mode}). The block
 # below is emitted by generation-time branch on renv.lock presence. In renv
