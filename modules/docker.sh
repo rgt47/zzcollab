@@ -1129,6 +1129,7 @@ find_cached_image() {
 build_docker_image() {
     local project_name="${1:-$(basename "$(pwd)")}"
     local no_cache="${2:-false}"
+    local verbose="${3:-false}"
 
     if ! command -v docker >/dev/null 2>&1; then
         log_error "Docker not installed"
@@ -1208,11 +1209,23 @@ build_docker_image() {
 
     local _built=false
     local _log=""
-    # Interactive TTY: run build in the background, capture --progress=plain
-    # output, and poll the log to show the current layer on a single updating
-    # status line. CI / no-TTY: stream the build directly so raw output is
-    # preserved.
-    if [[ -t 1 ]]; then
+    # --verbose: stream --progress=plain directly; no spinner, full output.
+    # Interactive TTY (non-verbose): run build in the background, capture
+    # --progress=plain output, and poll the log to show the current layer on a
+    # single updating status line.
+    # CI / no-TTY: stream the build directly so raw output is preserved.
+    if [[ "$verbose" == "true" ]]; then
+        log_info "Verbose mode: streaming full build output"
+        if [[ "$runtime" == "docker" ]]; then
+            DOCKER_BUILDKIT=1 docker build --progress=plain \
+                ${build_args[@]+"${build_args[@]}"} -t "$project_name" . \
+                && _built=true
+        else
+            "$runtime" build --progress=plain \
+                ${build_args[@]+"${build_args[@]}"} -t "$project_name" . \
+                && _built=true
+        fi
+    elif [[ -t 1 ]]; then
         if mkdir -p .zzcollab 2>/dev/null; then _log=".zzcollab/docker-build.log"; else _log="docker-build.log"; fi
         local _script
         _script=$(mktemp "${TMPDIR:-/tmp}/zzc-build.XXXXXX")

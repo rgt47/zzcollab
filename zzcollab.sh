@@ -382,6 +382,7 @@ cmd_docker() {
     local base_image=""
     local profile=""
     local no_renv=""
+    local verbose="false"
     # Global flags (-v/-q/-y/--no-build) are consumed by the pre-scan in main()
     # before this runs, so they are not handled here.
     while [[ $# -gt 0 ]]; do
@@ -391,6 +392,7 @@ cmd_docker() {
             --base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; shift 2 ;;
             --no-renv) no_renv=true; shift ;;
+            --verbose) verbose="true"; shift ;;
             help|--help|-h) show_help_docker; exit 0 ;;
             *) log_error "Unknown option: $1"; exit 1 ;;
         esac
@@ -465,13 +467,13 @@ cmd_docker() {
     generate_dockerfile || exit 1
 
     if [[ "$build_image" == "true" ]]; then
-        build_docker_image || exit 1
+        build_docker_image "" "false" "$verbose" || exit 1
     elif [[ "${ZZCOLLAB_NO_BUILD:-false}" == "true" ]]; then
         log_info "Build with: make docker-build"
     elif [[ -t 0 ]] || [[ "${ZZCOLLAB_ACCEPT_DEFAULTS:-false}" == "true" ]]; then
         echo ""
         if prompt_build_now; then
-            build_docker_image || exit 1
+            build_docker_image "" "false" "$verbose" || exit 1
         else
             log_info "Build later with: make docker-build"
         fi
