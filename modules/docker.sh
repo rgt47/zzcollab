@@ -1029,6 +1029,8 @@ ${system_deps_install}
 RUN echo 'options(repos = c(CRAN = "${ppm_url}"))' \\
         >> /usr/local/lib/R/etc/Rprofile.site && \\
     echo 'options(HTTPUserAgent = sprintf("R/%s R (%s)", getRversion(), paste(getRversion(), R.version["platform"], R.version["arch"], R.version["os"])))' \\
+        >> /usr/local/lib/R/etc/Rprofile.site && \\
+    echo 'options(renv.config.sandbox.enabled = FALSE)' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
 ${tools_install}
