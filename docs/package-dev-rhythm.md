@@ -107,6 +107,27 @@ docker run --rm pp-eda Rscript -e \
      lib.loc = '/usr/local/lib/R/site-library')), sep = '\n')"
 ```
 
+## zzrenvcheck vs renv::snapshot
+
+`renv::snapshot()` is a write operation: it records whatever is declared in
+`DESCRIPTION` into `renv.lock` (under `snapshot.type = "explicit"`). It has
+no opinion on whether `DESCRIPTION` is complete or whether the code actually
+uses the declared packages.
+
+`zzrenvcheck` is a validation and repair layer that runs upstream of the
+snapshot:
+
+1. Scans source files for `library()` / `require()` calls
+2. Detects packages used in code but missing from `DESCRIPTION`
+3. Adds them to `DESCRIPTION` (auto-repair)
+4. Calls `renv::snapshot()` -- which now reads the corrected `DESCRIPTION`
+5. Skips packages already in the Docker image (`skip_image_pkgs`)
+
+The distinction matters: calling `renv::snapshot()` alone after adding a new
+`library()` call will do nothing useful if `DESCRIPTION` has not been
+updated first. `zzrenvcheck` ensures `DESCRIPTION` is the correct input
+before the snapshot runs.
+
 ## Related Make Targets
 
 | Target | Purpose |
