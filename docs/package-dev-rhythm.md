@@ -33,10 +33,16 @@ zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE,
                              skip_image_pkgs = TRUE)
 ```
 
-This scans the project source files, adds any newly referenced packages to
-`DESCRIPTION` and `renv.lock`, and skips packages already in the Docker
-image (so `tidyverse` and its dependencies are not written to `renv.lock`
-redundantly).
+This scans the project source files and adds any newly referenced packages
+to `DESCRIPTION`. Because the project uses `snapshot.type = "explicit"`,
+`renv::snapshot()` then reads `DESCRIPTION` as the authoritative dependency
+list and writes those packages to `renv.lock`. Packages already in the
+Docker image are skipped (so `tidyverse` and its dependencies are not
+written to `DESCRIPTION` or `renv.lock` redundantly).
+
+The chain is: code references package → `DESCRIPTION` updated → `renv.lock`
+updated via snapshot. A package does not reach `renv.lock` unless it first
+appears in `DESCRIPTION`.
 
 ### Step 3: Decide whether to rebuild
 
