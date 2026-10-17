@@ -1209,12 +1209,14 @@ build_docker_image() {
 
     local _built=false
     local _log=""
-    # --verbose: stream --progress=plain directly; no spinner, full output.
+    # --verbose (or VERBOSITY_LEVEL>=2): stream --progress=plain directly; no
+    # spinner, full output. VERBOSITY_LEVEL is set by main()'s global pre-scan
+    # when the user passes -v/--verbose before the subcommand.
     # Interactive TTY (non-verbose): run build in the background, capture
     # --progress=plain output, and poll the log to show the current layer on a
     # single updating status line.
     # CI / no-TTY: stream the build directly so raw output is preserved.
-    if [[ "$verbose" == "true" ]]; then
+    if [[ "$verbose" == "true" ]] || [[ "${VERBOSITY_LEVEL:-0}" -ge 2 ]]; then
         log_info "Verbose mode: streaming full build output"
         if [[ "$runtime" == "docker" ]]; then
             DOCKER_BUILDKIT=1 docker build --progress=plain \
