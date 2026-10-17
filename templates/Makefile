@@ -224,6 +224,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	elif Rscript -e "quit(status = if(requireNamespace('zzrenvcheck', quietly=TRUE)) 0L else 1L)" 2>/dev/null; then \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)" \
 		|| echo "⚠️  Package validation failed"; \
+		touch /tmp/zzvim-r-hook-ran; \
 	else \
 		echo "zzrenvcheck not installed on host."; \
 		printf "Install now? [Y/n] "; \
