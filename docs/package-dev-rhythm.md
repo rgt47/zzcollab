@@ -107,6 +107,20 @@ docker run --rm pp-eda Rscript -e \
      lib.loc = '/usr/local/lib/R/site-library')), sep = '\n')"
 ```
 
+## Auto-snapshot and the .Last hook
+
+The container `.Rprofile` defines a `.Last` hook that calls `renv::snapshot()`
+when R exits. This is intentionally disabled during `make r` sessions via
+`ZZCOLLAB_AUTO_SNAPSHOT=false`, because the host-side `zzrenvcheck`
+post-session validation is authoritative: it repairs `DESCRIPTION` before
+snapshotting, whereas a bare `renv::snapshot()` inside the container would
+snapshot whatever is currently declared without first detecting gaps.
+
+The `.Last` hook remains active in other container contexts (e.g. ad hoc
+`docker run` invocations) as a fallback. A known renv defect where
+`snapshot()` raises "argument is of length zero" under explicit snapshot mode
+is caught silently.
+
 ## zzrenvcheck vs renv::snapshot
 
 `renv::snapshot()` is a write operation: it records whatever is declared in
