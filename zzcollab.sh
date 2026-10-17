@@ -709,6 +709,15 @@ EOF
         log_success "Created renv/.gitignore"
     fi
 
+    if [[ ! -f "renv/settings.json" ]]; then
+        cat > renv/settings.json << 'EOF'
+{
+  "external.libraries": ["/usr/local/lib/R/library"]
+}
+EOF
+        log_success "Created renv/settings.json"
+    fi
+
     # Symmetric to cmd_rm_renv: a present Dockerfile may have been generated in
     # DESCRIPTION-install mode. renv.lock now exists, so regenerate it to flip
     # to renv-restore mode; otherwise adding renv leaves the image installing
