@@ -136,11 +136,15 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
         cmds+="
 "
         if [[ "$base_name" == "tidyverse" ]]; then
-            cmds+='# Install TinyTeX and bookdown. rocker/tidyverse ships the tinytex R
-# package but not the TeX Live distribution or bookdown; rocker/verse
-# pre-installs both, but verse has no arm64 image variant. Install here
-# so PDF rendering (including the warmup) works.
-RUN R -e "tinytex::install_tinytex(); install.packages('\''bookdown'\'')"
+            cmds+='# Install TinyTeX to /opt/tinytex (system-wide, not root'"'"'s HOME) so the
+# non-root analyst user can use it. rocker/verse pre-installs TinyTeX;
+# tidyverse does not. tlmgr path add symlinks lualatex/xelatex/pdflatex
+# into /usr/local/bin so quarto can call them without knowing the
+# arch-specific bin path. bookdown and curl are in verse but not tidyverse.
+RUN R -e "tinytex::install_tinytex(dir='"'"'/opt/tinytex'"'"', add_path=FALSE)" && \
+    /opt/tinytex/bin/*/tlmgr path add && \
+    chmod -R 777 /opt/tinytex && \
+    R -e "install.packages(c('"'"'curl'"'"', '"'"'bookdown'"'"'))"
 
 '
         fi
@@ -1038,7 +1042,8 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     ZZCOLLAB_CONTAINER=true \\
     ZZCOLLAB_INSTALL_MODE=${install_mode} \\
     ZZCOLLAB_AUTO_RESTORE=false \\
-    XDG_CACHE_HOME=/tmp
+    XDG_CACHE_HOME=/tmp \\
+    TINYTEX_DIR=/opt/tinytex
 
 ${system_deps_install}
 
