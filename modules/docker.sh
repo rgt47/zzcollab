@@ -136,10 +136,11 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
         cmds+="
 "
         if [[ "$base_name" == "tidyverse" ]]; then
-            cmds+='# Install TinyTeX. rocker/tidyverse ships the tinytex R package but not
-# the TeX Live distribution; rocker/verse pre-installs it, but verse has no
-# arm64 image variant. Install the distribution here so PDF rendering works.
-RUN R -e "tinytex::install_tinytex()"
+            cmds+='# Install TinyTeX and bookdown. rocker/tidyverse ships the tinytex R
+# package but not the TeX Live distribution or bookdown; rocker/verse
+# pre-installs both, but verse has no arm64 image variant. Install here
+# so PDF rendering (including the warmup) works.
+RUN R -e "tinytex::install_tinytex(); install.packages('\''bookdown'\'')"
 
 '
         fi
