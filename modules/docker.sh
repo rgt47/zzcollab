@@ -119,16 +119,30 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
 "
     fi
 
-    # For LaTeX-capable bases (rocker/verse, the publishing profile), pre-bake
+    # For LaTeX-capable bases (rocker/verse and rocker/tidyverse), pre-bake
     # the LaTeX package closure at build time so PDF rendering works for the
     # non-root user without runtime installs. The verse default has auto-install
     # off; two warm-up renders (report format + a kitchen-sink of common
     # statistician packages) install the closure as root with the option
     # explicitly enabled. This block lands before the renv.lock COPY in the
     # generated Dockerfile, so a lockfile change does not invalidate the layer.
-    if [[ "${base_image##*/}" == "verse" ]]; then
+    #
+    # rocker/verse pre-installs TinyTeX; rocker/tidyverse includes only the
+    # tinytex R package, so the TeX Live distribution must be installed first.
+    # tidyverse is preferred on Apple Silicon because verse has no arm64 image;
+    # running verse under QEMU kills Haskell binaries (pandoc) at runtime.
+    local base_name="${base_image##*/}"
+    if [[ "$base_name" == "verse" || "$base_name" == "tidyverse" ]]; then
         cmds+="
 "
+        if [[ "$base_name" == "tidyverse" ]]; then
+            cmds+='# Install TinyTeX. rocker/tidyverse ships the tinytex R package but not
+# the TeX Live distribution; rocker/verse pre-installs it, but verse has no
+# arm64 image variant. Install the distribution here so PDF rendering works.
+RUN R -e "tinytex::install_tinytex()"
+
+'
+        fi
         cmds+="$(cat <<'WARMUP_BLOCK'
 # Pre-bake the LaTeX package closure at build time (as root, where tlmgr can
 # write) so PDF rendering works for the non-root user with no runtime install.
@@ -873,11 +887,12 @@ resolve_image_digest() {
         return 0
     fi
 
-    # Pull the amd64 image explicitly. The rocker images publish amd64 manifests
-    # and CI builds on amd64, so on an arm64 host a plain pull fails with "no
-    # matching manifest for linux/arm64". --platform makes digest resolution work
-    # on Apple Silicon too. RepoDigests still records the tag's (arch-independent)
-    # repo digest, so the pinned FROM is the same digest CI resolves.
+    # Pull the amd64 image to resolve the manifest list digest. Some rocker
+    # images (e.g. verse) are amd64-only, so --platform linux/amd64 avoids a
+    # "no matching manifest for linux/arm64" error on Apple Silicon. For
+    # multi-arch images (tidyverse, rstudio, r-ver), docker inspect RepoDigests
+    # returns the manifest list digest, which is platform-agnostic; a FROM line
+    # pinned to it resolves the correct platform at build time via --platform.
     log_info "  Pulling ${image_ref} (linux/amd64) to resolve digest..."
     if ! docker pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
         log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
@@ -1021,7 +1036,8 @@ ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
     ZZCOLLAB_CONTAINER=true \\
     ZZCOLLAB_INSTALL_MODE=${install_mode} \\
-    ZZCOLLAB_AUTO_RESTORE=false
+    ZZCOLLAB_AUTO_RESTORE=false \\
+    XDG_CACHE_HOME=/tmp
 
 ${system_deps_install}
 
@@ -1166,16 +1182,21 @@ build_docker_image() {
     # Assemble docker build flags as an array so multi-token values are passed
     # as distinct, unsplit arguments.
     local build_args=()
-    # The Makefile runs every container with --platform linux/amd64 (for parity
-    # with CI, which is amd64). Build the image the same way on arm64 hosts, for
-    # ALL base images: an arm64-native build (e.g. rocker/r-ver for the minimal
-    # and rstudio profiles) is invisible to the amd64-pinned `make r` /
-    # `docker-test`, which then report "image not found". A previous version
-    # pinned amd64 only for tidyverse/shiny/verse, so minimal/rstudio builds on
-    # Apple Silicon broke at run time (found by the real-infra validation pass).
+    # Build platform: match the Makefile's auto-detected PLATFORM so the image
+    # and container run use the same architecture. On arm64 hosts with a
+    # multi-arch base (tidyverse, rstudio, r-ver) we build linux/arm64 natively,
+    # avoiding QEMU emulation that kills Haskell binaries such as pandoc. For
+    # verse (amd64-only; no arm64 image variant) we force linux/amd64 on both
+    # arm64 and x86_64 hosts so the build and run always agree.
+    local build_base_name="${BASE_IMAGE##*/}"
     if [[ "$(uname -m)" == "arm64" ]]; then
-        build_args+=(--platform linux/amd64)
-        log_info "arm64 host: building for linux/amd64 (matches the amd64-pinned container runs)"
+        if [[ "$build_base_name" == "verse" ]]; then
+            build_args+=(--platform linux/amd64)
+            log_info "arm64 host + amd64-only base (verse): building for linux/amd64"
+        else
+            build_args+=(--platform linux/arm64)
+            log_info "arm64 host: building for linux/arm64 (native)"
+        fi
     fi
 
     # Build with hash label for future cache lookups
