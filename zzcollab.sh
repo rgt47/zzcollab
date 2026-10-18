@@ -389,7 +389,7 @@ cmd_docker() {
         case "$1" in
             --build|-b) build_image=true; shift ;;
             --r-version) r_version="$2"; shift 2 ;;
-            --base-image) base_image="$2"; shift 2 ;;
+            --base|--base-image) base_image="$2"; shift 2 ;;
             --profile|-r) profile="$2"; shift 2 ;;
             --no-renv) no_renv=true; shift ;;
             --verbose) verbose="true"; shift ;;

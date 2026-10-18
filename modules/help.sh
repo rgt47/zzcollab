@@ -118,7 +118,8 @@ DOCKER
   zzc docker                  Generate Dockerfile (interactive)
   zzc docker --build          Generate and build the image
   zzc docker --profile NAME   Use a specific profile
-  zzc docker --base-image IMG Use a custom base image
+  zzc docker --base IMG       Switch base image (updates state + Dockerfile atomically)
+  zzc docker --base-image IMG Alias for --base
   zzc docker --no-renv        Install from DESCRIPTION (no renv.lock)
 
 Make targets:
