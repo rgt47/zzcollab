@@ -26,7 +26,19 @@ R can load any package present in either layer.
 
 ### Step 2: Quit R
 
-The post-session hook in `make r` runs automatically after `q()`:
+The post-session hook runs `zzrenvcheck::check_packages()` automatically.
+There are two paths depending on how the session was ended.
+
+**Normal exit (`q()` inside R, then `:q` in vim):** the `make r` shell block
+runs the hook synchronously and writes `/tmp/zzvim-r-hook-ran` as a
+sentinel.
+
+**Force exit (`:qa!` in vim):** the `make r` shell block never runs. The
+zzvim-R plugin detects the absent sentinel on `VimLeavePre` and fires the
+hook itself as a background process, so vim exits immediately. Output is
+written to `/tmp/zzvim-r-renvcheck.log`.
+
+In both cases the effective call is:
 
 ```
 zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE,
@@ -120,6 +132,12 @@ The `.Last` hook remains active in other container contexts (e.g. ad hoc
 `docker run` invocations) as a fallback. A known renv defect where
 `snapshot()` raises "argument is of length zero" under explicit snapshot mode
 is caught silently.
+
+The zzvim-R plugin provides a second fallback for `:qa!` exits: its
+`VimLeavePre` autocmd checks for the `/tmp/zzvim-r-hook-ran` sentinel written
+by `make r`. If the sentinel is absent (`:qa!` path), the plugin runs
+`zzrenvcheck` as a detached background process so vim exits without delay.
+Results are logged to `/tmp/zzvim-r-renvcheck.log`.
 
 ## Container R startup time
 
