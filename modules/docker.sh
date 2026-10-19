@@ -39,6 +39,49 @@ get_base_image_tools() {
 # Mirrors get_base_image_tools's grouping today, but is kept separate since
 # pandoc and Quarto presence are unrelated facts about the upstream image and
 # could diverge in a future rocker release.
+# Whether the base image already ships a TeX Live distribution. Verified by
+# inspecting each rocker/* base: only verse has /usr/local/texlive, because
+# rocker runs install_texlive.sh when building it. tidyverse, rstudio and
+# r-ver ship the tinytex R package but no TeX tree for it to drive, so a
+# PDF render there fails at run time with 'No TeX installation was detected'.
+# The tidyverse arm must come first: 'tidyverse' contains the substring
+# 'verse', so a lone *verse* glob would match it and wrongly report true.
+get_base_image_has_texlive() {
+    local base_image="$1"
+    local has_texlive="false"
+
+    case "$base_image" in
+        *tidyverse*) has_texlive="false" ;;
+        *verse*)     has_texlive="true" ;;
+    esac
+
+    echo "$has_texlive"
+}
+
+# Resolve whether this project needs a PDF toolchain. Precedence mirrors
+# base-image resolution: an explicit config value wins, then the value
+# remembered from the last generation, then a default derived from the
+# archetype. Remembering matters because 'zzc docker' regenerates from
+# .zzcollab-state; without it, regenerating in a shell that happens not to
+# load the project config would silently drop TeX from a manuscript image.
+get_needs_pdf() {
+    local declared="${CONFIG_PDF:-}"
+
+    if [[ -z "$declared" && -f .zzcollab-state ]]; then
+        declared=$(grep -m1 '^pdf=' .zzcollab-state 2>/dev/null | cut -d= -f2- || true)
+    fi
+
+    case "$declared" in
+        true|yes|on)  echo "true";  return ;;
+        false|no|off) echo "false"; return ;;
+    esac
+
+    case "${CONFIG_ARCHETYPE:-}" in
+        manuscript|book) echo "true" ;;
+        *)               echo "false" ;;
+    esac
+}
+
 get_base_image_has_quarto() {
     local base_image="$1"
     local has_quarto="false"
@@ -82,6 +125,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
     # install (white paper F-8).
     load_config 2>/dev/null || true
 
+    # Does this project render PDF? Resolved once here and used by both the
+    # converter and TeX Live decisions below.
+    local needs_pdf
+    needs_pdf=$(get_needs_pdf)
+
     # The 'blog' and 'book' archetypes render via 'quarto render' (see
     # render-report.yml), regardless of which profile backs the Dockerfile.
     # Most rocker/* bases bake Quarto in already (get_base_image_has_quarto),
@@ -89,22 +137,36 @@ RUN apt-get update && apt-get install -y --no-install-recommends pandoc && rm -r
     # left 'quarto' missing from $PATH and failed the render step at
     # container-run time with no build-time signal. Install it explicitly
     # whenever the base lacks it and the archetype needs it.
-    local has_quarto
+    #
+    # A declared pdf capability also requires it: a PDF render needs a
+    # converter, not just a TeX engine, and rocker/r-ver ships neither
+    # Quarto nor pandoc. Without this, declaring pdf on a minimal base would
+    # produce an image holding a full TeX tree with nothing able to drive it.
+    local has_quarto needs_quarto
     has_quarto=$(get_base_image_has_quarto "$base_image")
+    needs_quarto="false"
     case "${CONFIG_ARCHETYPE:-}" in
-        blog|book)
-            if [[ "$has_quarto" == "false" ]]; then
-                cmds+="# Install Quarto CLI (base image lacks it; the '${CONFIG_ARCHETYPE}'
-# archetype's render step shells out to 'quarto render').
+        blog|book) needs_quarto="true" ;;
+    esac
+    [[ "$needs_pdf" == "true" ]] && needs_quarto="true"
+
+    if [[ "$needs_quarto" == "true" && "$has_quarto" == "false" ]]; then
+        # TARGETARCH is predefined by BuildKit (amd64 / arm64) and happens to
+        # match Quarto's release-asset suffixes exactly. It must still be
+        # declared with ARG to be readable in the RUN. Previously this was
+        # hardcoded to linux-amd64.deb, which cannot install on an arm64
+        # build; that was latent while only blog/book on a minimal base hit
+        # this path, and would have become reachable via the pdf capability.
+        cmds+="# Install Quarto CLI (base image lacks it, and this project renders via
+# 'quarto render'). TARGETARCH keeps the asset correct on arm64 and amd64.
+ARG TARGETARCH
 RUN apt-get update && apt-get install -y --no-install-recommends wget gdebi-core && rm -rf /var/lib/apt/lists/* && \\
-    wget -q \"https://github.com/quarto-dev/quarto-cli/releases/download/v${ZZCOLLAB_QUARTO_VERSION}/quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\" && \\
-    gdebi -n \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\" && \\
-    rm \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-amd64.deb\"
+    wget -q \"https://github.com/quarto-dev/quarto-cli/releases/download/v${ZZCOLLAB_QUARTO_VERSION}/quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-\${TARGETARCH}.deb\" && \\
+    gdebi -n \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-\${TARGETARCH}.deb\" && \\
+    rm \"quarto-${ZZCOLLAB_QUARTO_VERSION}-linux-\${TARGETARCH}.deb\"
 
 "
-            fi
-            ;;
-    esac
+    fi
 
     local pkgs=""
     [[ "${CONFIG_LANGUAGESERVER:-true}" == "true" ]] && pkgs="'languageserver'"
@@ -119,23 +181,26 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
 "
     fi
 
-    # For LaTeX-capable bases (rocker/verse and rocker/tidyverse), pre-bake
-    # the LaTeX package closure at build time so PDF rendering works for the
-    # non-root user without runtime installs. The verse default has auto-install
-    # off; two warm-up renders (report format + a kitchen-sink of common
-    # statistician packages) install the closure as root with the option
-    # explicitly enabled. This block lands before the renv.lock COPY in the
-    # generated Dockerfile, so a lockfile change does not invalidate the layer.
+    # TeX Live is gated on the declared pdf capability, not on the base image.
+    # Keying it off the base was wrong in both directions: a tidyverse base
+    # chosen for its arm64 variant pulled in ~650MB of TeX for an HTML-only
+    # project, while a manuscript on rocker/rstudio or rocker/r-ver got no TeX
+    # at all and failed at render time with 'No TeX installation was detected'
+    # and no build-time signal. Need now comes from the project (get_needs_pdf)
+    # and the capability is probed from the base (get_base_image_has_texlive),
+    # so only the gap is installed. This mirrors how Quarto is handled above.
     #
-    # rocker/verse pre-installs TeX Live; rocker/tidyverse includes only the
-    # tinytex R package, so the TeX Live distribution must be installed first.
-    # tidyverse is preferred on Apple Silicon because verse has no arm64 image;
-    # running verse under QEMU kills Haskell binaries (pandoc) at runtime.
-    local base_name="${base_image##*/}"
-    if [[ "$base_name" == "verse" || "$base_name" == "tidyverse" ]]; then
+    # The warm-up runs whenever PDF is needed, including on verse where TeX is
+    # already present: it pre-bakes the package closure as root so the non-root
+    # user never has to install LaTeX packages mid-render. The install step
+    # runs only when the base lacks TeX. This block lands before the renv.lock
+    # COPY, so a lockfile change does not invalidate the layer.
+    local has_texlive
+    has_texlive=$(get_base_image_has_texlive "$base_image")
+    if [[ "$needs_pdf" == "true" ]]; then
         cmds+="
 "
-        if [[ "$base_name" == "tidyverse" ]]; then
+        if [[ "$has_texlive" == "false" ]]; then
             # Read into a variable rather than "$(cat <<'EOF')": bash 3.2
             # (the system bash on macOS) still scans a heredoc body inside
             # command substitution for quotes, so an apostrophe in the prose
@@ -155,15 +220,78 @@ RUN R -e \"install.packages(c(${pkgs}), Ncpus = max(1L, parallel::detectCores())
 # and the engines. bookdown and curl are in verse but not tidyverse.
 #
 # The repository argument pins TeX Live, and is not optional in practice.
-# The script defaults to https://mirror.ctan.org, a redirector that resolves
-# to an arbitrary mirror per build: besides leaving the TeX package set
-# unpinned, some mirrors it returns serve certificates this image cannot
-# verify, so the default fails the build outright. A frozen tlnet-final
-# snapshot is reachable, deterministic, and pins TeX Live the way
+# The script defaults to https://mirror.ctan.org, a redirector resolving to
+# an arbitrary mirror per build. That leaves the TeX package set unpinned
+# and fails outright in two observed ways: a mirror whose certificate this
+# image cannot verify, and a mirror serving a TeX Live release mismatched
+# against the local install, which makes tlmgr refuse to install anything.
+# A frozen tlnet-final snapshot pins TeX Live the way
 # RENV_CONFIG_REPOS_OVERRIDE above pins CRAN.
-RUN /rocker_scripts/install_texlive.sh \
-        https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final && \
-    R -e "install.packages(c('curl', 'bookdown'))"
+#
+# Pinning to one host trades mirror roulette for a single point of failure,
+# so try several. PINNED holds hosts serving the bit-identical snapshot,
+# confirmed by comparing tlpkg/texlive.tlpdb.sha512 (2fb7adc5...), so
+# substituting one for another changes nothing and needs no announcement.
+# FALLBACK is the same TeX Live release but a different day's snapshot: it
+# keeps a build working when the pinned hosts are down, but the package set
+# is not bit-identical, so taking it is reported loudly. A rolling mirror is
+# never an acceptable fallback, because unpinning silently is worse than
+# failing: better to stop and let someone refresh the snapshot deliberately.
+RUN <<'TEXLIVE'
+set -eu
+# Refresh the apt lists unconditionally. install_texlive.sh apt-installs
+# wget, perl and xzdec, but only runs apt-get update when it detects the
+# lists are empty, and that detection misses the state the pandoc and
+# quarto steps above leave behind (both end with rm -rf
+# /var/lib/apt/lists/*). Without this the script fails on rocker/r-ver with
+# "Package 'perl' has no installation candidate" and "Unable to locate
+# package xzdec". The script removes the lists again when it finishes.
+apt-get update
+# wget is also needed by the mirror probe below, before the script runs at
+# all. rocker/tidyverse and rocker/verse ship it; r-ver and rstudio do not,
+# and this step is reachable from any of them now that TeX is gated on the
+# pdf capability rather than on the base image.
+command -v wget >/dev/null 2>&1 || \
+  apt-get install -y --no-install-recommends wget ca-certificates
+
+PINNED='https://ftp.tu-chemnitz.de/pub/tug/historic/systems/texlive/2025/tlnet-final
+https://ftp.math.utah.edu/pub/tex/historic/systems/texlive/2025/tlnet-final'
+FALLBACK='https://texlive.info/tlnet-archive/2025/11/06/tlnet'
+
+repo=''
+for r in $PINNED; do
+  if wget -q --spider --timeout=20 --tries=2 "$r/install-tl-unx.tar.gz"; then
+    repo="$r"
+    break
+  fi
+  echo "notice: pinned TeX Live mirror unreachable, trying next: $r"
+done
+
+if [ -z "$repo" ]; then
+  for r in $FALLBACK; do
+    if wget -q --spider --timeout=20 --tries=2 "$r/install-tl-unx.tar.gz"; then
+      repo="$r"
+      echo "WARNING: every pinned TeX Live mirror is unreachable."
+      echo "WARNING: falling back to $r"
+      echo "WARNING: same TeX Live release, but NOT the bit-identical"
+      echo "WARNING: snapshot, so the TeX package set may differ slightly."
+      break
+    fi
+  done
+fi
+
+if [ -z "$repo" ]; then
+  echo "ERROR: no pinned TeX Live snapshot is reachable." >&2
+  echo "ERROR: refusing to fall back to a rolling CTAN mirror, which would" >&2
+  echo "ERROR: unpin the TeX package set and can serve a release mismatched" >&2
+  echo "ERROR: against install-tl. Refresh the snapshot URLs instead." >&2
+  exit 1
+fi
+
+echo "TeX Live repository: $repo"
+/rocker_scripts/install_texlive.sh "$repo"
+R -e "install.packages(c('curl', 'bookdown'))"
+TEXLIVE
 
 # Renviron.site (written above) only covers R sessions. Add the stable
 # arch-agnostic bin/linux symlink to PATH as well so a shell-side

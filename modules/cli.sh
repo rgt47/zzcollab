@@ -141,7 +141,7 @@ validate_base_image() {
 
 # Initialize variables for command line options
 # Use centralized constants if available
-readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/r-ver}"
+readonly DEFAULT_BASE_IMAGE="${ZZCOLLAB_DEFAULT_BASE_IMAGE:-rocker/tidyverse}"
 BASE_IMAGE="${DEFAULT_BASE_IMAGE}"
 
 # User-friendly interface variables

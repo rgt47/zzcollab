@@ -43,6 +43,13 @@ CONFIG_LANGUAGESERVER="true"
 # Research archetype (init-time scaffolding axis): manuscript | analysis |
 # book | package | simulation | blog. Empty -> analysis.
 CONFIG_ARCHETYPE=""
+# Whether this project renders PDF, which decides if the image gets a TeX
+# Live toolchain (~650MB) and a converter. Tri-state: true/false force it,
+# empty derives from the archetype (manuscript and book render PDF, the
+# rest do not). Declared as a capability rather than inferred from the base
+# image, so that a base chosen for other reasons (e.g. rocker/tidyverse for
+# its arm64 variant) does not silently drag TeX in or leave it out.
+CONFIG_PDF=""
 # Dependency-validation (zzrenvcheck) defaults read by 'zzc validate'. strict
 # also scans tests/ and vignettes/; fix auto-repairs DESCRIPTION. Empty ->
 # strict on, fix off.
@@ -241,6 +248,7 @@ load_config() {
     CONFIG_WITH_EXAMPLES="false"
     CONFIG_LANGUAGESERVER="true"
     CONFIG_ARCHETYPE=""
+    CONFIG_PDF=""
     CONFIG_VALIDATE_STRICT=""
     CONFIG_VALIDATE_FIX=""
 
@@ -305,6 +313,7 @@ defaults.skip_confirmation      CONFIG_SKIP_CONFIRMATION
 defaults.with_examples          CONFIG_WITH_EXAMPLES
 defaults.languageserver         CONFIG_LANGUAGESERVER
 defaults.archetype              CONFIG_ARCHETYPE
+defaults.pdf                    CONFIG_PDF
 validate.strict                 CONFIG_VALIDATE_STRICT
 validate.fix                    CONFIG_VALIDATE_FIX
 author.name                     CONFIG_AUTHOR_NAME

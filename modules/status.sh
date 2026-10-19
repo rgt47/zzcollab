@@ -55,10 +55,20 @@ _zzc_compute_level() {
 #   $1 r_version  $2 base_image:tag  $3 base_digest  $4 ppm_snapshot
 #   $5 install_mode  $6 archetype (optional; preserved from the existing record
 #   when omitted, so Dockerfile regeneration does not drop it)
+#   $7 pdf (optional; preserved the same way. Recording it matters because
+#   'zzc docker' regenerates from this record: were it absent, regenerating
+#   from a shell that did not load the project config would silently drop the
+#   TeX toolchain from a manuscript image. Readers use _zzc_state_get, which
+#   tolerates a missing key, so adding it keeps schema=1 readable by older
+#   records that predate it.)
 _zzc_write_state() {
     local arch="${6:-}"
     [[ -z "$arch" && -f .zzcollab-state ]] && \
         arch=$(grep -m1 '^archetype=' .zzcollab-state 2>/dev/null | cut -d= -f2- || true)
+    local pdf="${7:-}"
+    [[ -z "$pdf" && -f .zzcollab-state ]] && \
+        pdf=$(grep -m1 '^pdf=' .zzcollab-state 2>/dev/null | cut -d= -f2- || true)
+    [[ -z "$pdf" ]] && pdf="$(get_needs_pdf 2>/dev/null || true)"
     {
         echo "schema=1"
         echo "template_version=${ZZCOLLAB_TEMPLATE_VERSION:-unknown}"
@@ -68,6 +78,7 @@ _zzc_write_state() {
         echo "ppm_snapshot=${4:-}"
         echo "install_mode=${5:-}"
         echo "archetype=${arch}"
+        echo "pdf=${pdf}"
         echo "generated=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     } > .zzcollab-state
 }

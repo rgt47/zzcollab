@@ -60,7 +60,13 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 # install.sh rewrites ZZCOLLAB_VERSION in the installed copy.
 readonly ZZCOLLAB_VERSION="0.3.0"
 readonly ZZCOLLAB_TEMPLATE_VERSION="$ZZCOLLAB_VERSION"
-readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/r-ver"
+# rocker/tidyverse rather than rocker/r-ver: it is the only rocker base that
+# ships pandoc, Quarto and the tidyverse while also publishing an arm64
+# variant, so the default works natively on Apple Silicon. rocker/verse has
+# no arm64 image, and running it under QEMU kills pandoc outright (the
+# Haskell runtime hits unimplemented syscalls). Note this default pulls in
+# the TeX Live install step, since that is keyed on a verse/tidyverse base.
+readonly ZZCOLLAB_DEFAULT_BASE_IMAGE="rocker/tidyverse"
 readonly ZZCOLLAB_DEFAULT_R_VERSION="4.6.0"
 # Package versions for the minimal starter renv.lock. Bumped per release to
 # track current CRAN/PPM versions, so a generated lockfile pins versions that
