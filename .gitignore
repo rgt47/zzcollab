@@ -63,7 +63,13 @@ dev-archive/
 # Technical documentation tree: version-controlled locally (Dropbox), but
 # intentionally untracked so it is never pushed to the public GitHub repo.
 # Vignettes (the package's public documentation) are deliberately NOT ignored.
-/docs/
+# dockerfile-variable-reference.md is excepted: vignettes/configuration.Rmd
+# links to it as a public reference, so it ships rather than staying local.
+# (/docs/* rather than /docs/ so git still walks the directory far enough
+# for the negation below to apply; a bare /docs/ exclusion can't be undone
+# for one file inside it.)
+/docs/*
+!/docs/dockerfile-variable-reference.md
 *.backup
 *.bak
 
