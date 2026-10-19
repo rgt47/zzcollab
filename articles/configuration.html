@@ -70,7 +70,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-10-18</h4>
+            <h4 data-toc-skip class="date">2026-10-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/configuration.Rmd" class="external-link"><code>vignettes/configuration.Rmd</code></a></small>
       <div class="d-none name"><code>configuration.Rmd</code></div>
@@ -81,9 +81,24 @@ Development Team</h4>
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>ZZCOLLAB’s configuration system provides flexible control over Docker
-environments, package management, and team collaboration through a
-multi-layered configuration hierarchy and comprehensive CLI flags.</p>
+<p>ZZCOLLAB’s configuration system controls which Docker image a project
+builds on, which rendering capabilities (PDF, Quarto) it carries, and a
+handful of developer-experience toggles (language server, linting). This
+vignette describes what the two-file configuration hierarchy actually
+does, verified against the current shell implementation
+(<code>modules/config.sh</code>, <code>modules/docker.sh</code>), not
+against an aspirational design. Where something documented in earlier
+versions of this guide turned out not to exist in the code, it has been
+removed rather than carried forward; those removals are called out
+explicitly in Section 8.</p>
+<p>For a mechanical, line-by-line account of exactly how each setting
+reaches the generated <code>Dockerfile</code> — including the one
+genuinely non-trivial interaction, between the <code>pdf</code> and
+<code>archetype</code> settings — see
+<code>docs/dockerfile-variable-reference.md</code> in the package
+source. This vignette is the user-facing summary of the decisions that
+matter; that document is the reference for the mechanics behind
+them.</p>
 <blockquote>
 <p><strong>Key terms in this vignette.</strong> New to the vocabulary?
 These are the terms this guide uses; each is defined again on first use.
@@ -93,19 +108,25 @@ Full definitions are in <code><a href="../articles/glossary.html">vignette('glos
 <strong>Profile</strong>: the Docker image bundle the environment is
 built from (<code>minimal</code>, <code>tidyverse</code>,
 <code>rstudio</code>, <code>publishing</code>; <code>analysis</code> is
-a deprecated alias for <code>tidyverse</code>).</li>
+a deprecated alias for <code>tidyverse</code> as a profile name — see
+the warning in Section 4 about the unrelated <code>analysis</code>
+<em>archetype</em>).</li>
+<li>
+<strong>Archetype</strong>: the research-compendium shape a project
+scaffolds (<code>analysis</code>, <code>manuscript</code>,
+<code>book</code>, <code>blog</code>, <code>package</code>,
+<code>simulation</code>). Two archetypes (<code>manuscript</code>,
+<code>book</code>) default the project to needing a PDF toolchain; see
+Section 5.</li>
+<li>
+<strong>Capability (<code>pdf</code>)</strong>: an explicit,
+tri-state override (<code>true</code>/<code>false</code>/unset) for
+whether the Dockerfile installs a TeX Live toolchain, independent of
+archetype.</li>
 <li>
 <strong>Two-layer package management</strong>: shared, image-baked
 packages (Layer 1) versus per-user packages added at runtime (Layer
 2).</li>
-<li>
-<strong>Package backend (renv / Nix / none)</strong>: how the
-project records exact package versions; a single mutually-exclusive
-choice.</li>
-<li>
-<strong>Auto-snapshot / auto-restore</strong>: zzcollab records
-installed packages to <code>renv.lock</code> on exit and installs
-missing ones on start.</li>
 <li>
 <strong>Base image</strong>: the starting Docker image a project
 builds on (e.g. <code>rocker/tidyverse</code>,
@@ -125,32 +146,42 @@ framework’s command-line interface; <code>zzc</code> is an alias for
 </h3>
 <ul>
 <li>
-<strong>Multi-layered configuration</strong>: User, project, system,
-and built-in defaults</li>
+<strong>Two-layer configuration</strong>: user config
+(<code>~/.zzcollab/config.yaml</code>) and project config
+(<code>./zzcollab.yaml</code>), merged with project values winning.
+There is no system-wide (<code>/etc/zzcollab/...</code>) configuration
+layer despite a constant of that name existing in the source — see
+Section 8.</li>
 <li>
 <strong>Docker profile system</strong>: four built-in profiles
-(minimal, tidyverse, rstudio, publishing), with other environments
-available via a custom base image. The <code>tidyverse</code> profile
-was formerly named <code>analysis</code>; <code>analysis</code> is still
-accepted as a deprecated alias.</li>
+(<code>minimal</code>, <code>tidyverse</code>, <code>rstudio</code>,
+<code>publishing</code>); other base images are reached with
+<code>--base</code>/<code>--base-image</code>, not through additional
+named profiles.</li>
 <li>
-<strong>Dynamic package management</strong>: Add packages via
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with automatic snapshot/restore</li>
+<strong>Capability gating</strong>: <code>pdf</code> (TeX Live +
+Quarto) is resolved per project from explicit config, remembered state,
+or archetype default — not hardcoded to a profile.</li>
 <li>
-<strong>Two-layer architecture</strong>: Docker profiles
-(team/shared) + renv packages (personal/flexible)</li>
+<strong>Two-layer package architecture</strong>: Docker image
+(team/shared) + renv (personal/flexible).</li>
 <li>
-<strong>CLI and R interfaces</strong>: Work via command line or
-entirely within R/RStudio</li>
+<strong>CLI and R interfaces</strong>: most configuration is set via
+the <code>zzc</code>/ <code>zzcollab</code> CLI; a narrower R interface
+wraps the same commands.</li>
 </ul>
 </div>
 <div class="section level3">
 <h3 id="configuration-philosophy">Configuration Philosophy<a class="anchor" aria-label="anchor" href="#configuration-philosophy"></a>
 </h3>
-<p>ZZCOLLAB follows a “configure once, use everywhere” approach: - Set
-defaults once in configuration files - Override per-project when needed
-- Eliminate repetitive flag typing - Share team configurations via
-version control</p>
+<p>Set defaults once (<code>zzc config set ...</code>), override per
+project (<code>zzc config set-local ...</code> or editing
+<code>./zzcollab.yaml</code> directly), and let
+<code>zzc docker</code>/<code>zzc rebuild</code> regenerate the
+Dockerfile from whatever the merged configuration says — a project’s
+Dockerfile is not something fixed once at <code>zzc init</code> time; it
+is regenerated from current settings every time the docker-generation
+path runs.</p>
 </div>
 </div>
 <div class="section level2">
@@ -159,92 +190,83 @@ version control</p>
 <div class="section level3">
 <h3 id="priority-order-highest-to-lowest">Priority Order (Highest to Lowest)<a class="anchor" aria-label="anchor" href="#priority-order-highest-to-lowest"></a>
 </h3>
-<p>ZZCOLLAB loads configuration from multiple sources:</p>
+<p>Verified against <code>load_config()</code> in
+<code>modules/config.sh</code>:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Command-line flags</strong> - Explicit flags override all
-other settings</li>
+<strong>Project config</strong> — <code>./zzcollab.yaml</code>,
+loaded last and so winning over user config for any key it sets.</li>
 <li>
-<strong>Environment variables</strong> - Shell environment variables
-(e.g., <code>ZZCOLLAB_TEAM_NAME</code>)</li>
+<strong>User config</strong> — <code>~/.zzcollab/config.yaml</code>,
+loaded first.</li>
 <li>
-<strong>Project config</strong> - <code>./zzcollab.yaml</code> in
-current directory (team-specific)</li>
-<li>
-<strong>User config</strong> - <code>~/.zzcollab/config.yaml</code>
-(personal defaults)</li>
-<li>
-<strong>System config</strong> -
-<code>/etc/zzcollab/config.yaml</code> (organization-wide)</li>
-<li>
-<strong>Built-in defaults</strong> - Fallback values ensuring
-functionality</li>
+<strong>Built-in shell defaults</strong> — hardcoded fallbacks in
+the relevant module (e.g. <code>languageserver</code> defaults to
+<code>true</code>, <code>docker_runtime</code> to <code>docker</code>,
+<code>ZZCOLLAB_DEFAULT_R_VERSION</code> to <code>4.6.0</code>).</li>
 </ol>
-<p>Higher priority sources override lower priority ones, allowing
-precise control at each level.</p>
+<p>A handful of CLI flags (<code>--profile</code>,
+<code>--base</code>/<code>--base-image</code>, <code>--r-version</code>,
+<code>--no-renv</code>) and a handful of specific environment variables
+(<code>PPM_SNAPSHOT</code>, <code>ZZCOLLAB_QUARTO_VERSION</code>,
+<code>ZZRENVCHECK_TAG</code>) sit above all of this when supplied — they
+are read directly by the generation code, not merged through
+<code>load_config()</code>. But there is <strong>no generic
+environment-variable override layer</strong> for ordinary config keys:
+setting a <code>ZZCOLLAB_TEAM_NAME</code> environment variable, for
+instance, has no effect. If you want a setting changed for one
+invocation only, pass the CLI flag (if one exists) or edit
+<code>./zzcollab.yaml</code> temporarily; there is no third way.</p>
+<p>There is also <strong>no system-wide configuration file</strong>.
+<code>lib/constants.sh</code> defines
+<code>ZZCOLLAB_CONFIG_SYSTEM="/etc/zzcollab/config.yaml"</code>, but
+<code>load_config()</code> never reads it — it loads only
+<code>$CONFIG_USER</code> and <code>$CONFIG_PROJECT</code>. An
+organization wanting shared defaults across many users today has to
+distribute a project-config template, not an <code>/etc</code> file. See
+Section 8.</p>
 </div>
 <div class="section level3">
 <h3 id="configuration-locations">Configuration Locations<a class="anchor" aria-label="anchor" href="#configuration-locations"></a>
 </h3>
 <div class="section level4">
-<h4 id="user-configuration--zzcollabconfig-yaml">User Configuration (~/.zzcollab/config.yaml)<a class="anchor" aria-label="anchor" href="#user-configuration--zzcollabconfig-yaml"></a>
+<h4 id="user-configuration--zzcollabconfig-yaml">User Configuration (<code>~/.zzcollab/config.yaml</code>)<a class="anchor" aria-label="anchor" href="#user-configuration--zzcollabconfig-yaml"></a>
 </h4>
 <p>Personal defaults across all your projects:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># ~/.zzcollab/config.yaml</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">team-name</span><span class="kw">:</span><span class="at"> </span><span class="st">"myteam"</span></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">  </span><span class="fu">github-account</span><span class="kw">:</span><span class="at"> </span><span class="st">"myusername"</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="at">  </span><span class="fu">dockerhub-account</span><span class="kw">:</span><span class="at"> </span><span class="st">"myusername"</span></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="at">  </span><span class="fu">profile-name</span><span class="kw">:</span><span class="at"> </span><span class="st">"analysis"</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># Optional: Custom profile compositions</span></span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">profiles</span><span class="kw">:</span></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="at">  </span><span class="fu">my-custom</span><span class="kw">:</span></span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="at">    </span><span class="fu">base-image</span><span class="kw">:</span><span class="at"> </span><span class="st">"rocker/r-ver:latest"</span></span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="at">    </span><span class="fu">libs-bundle</span><span class="kw">:</span><span class="at"> </span><span class="st">"minimal"</span></span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="at">    </span><span class="fu">pkgs-bundle</span><span class="kw">:</span><span class="at"> </span><span class="st">"tidyverse"</span></span></code></pre></div>
-<p><strong>When to use</strong>: Set your personal preferences once,
-apply to all future projects.</p>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">team_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"myteam"</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">  </span><span class="fu">github_account</span><span class="kw">:</span><span class="at"> </span><span class="st">"myusername"</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="at">  </span><span class="fu">dockerhub_account</span><span class="kw">:</span><span class="at"> </span><span class="st">"myusername"</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="at">  </span><span class="fu">profile_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"tidyverse"</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="at">  </span><span class="fu">languageserver</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p><strong>When to use</strong>: set your personal preferences once;
+every new project inherits them unless the project config overrides a
+key.</p>
 </div>
 <div class="section level4">
-<h4 id="project-configuration--zzcollab-yaml">Project Configuration (./zzcollab.yaml)<a class="anchor" aria-label="anchor" href="#project-configuration--zzcollab-yaml"></a>
+<h4 id="project-configuration--zzcollab-yaml">Project Configuration (<code>./zzcollab.yaml</code>)<a class="anchor" aria-label="anchor" href="#project-configuration--zzcollab-yaml"></a>
 </h4>
-<p>Team-specific settings shared via Git:</p>
+<p>Project-specific overrides, intended to be committed:</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># ./zzcollab.yaml (in project root)</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">team</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"genomicslab"</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="at">  </span><span class="fu">project</span><span class="kw">:</span><span class="at"> </span><span class="st">"cancer-study"</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"Multi-omics cancer research"</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="at">  </span><span class="fu">profile-name</span><span class="kw">:</span><span class="at"> </span><span class="st">"analysis"</span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="at">    </span><span class="fu">auto-create-repo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="at">    </span><span class="fu">enable-actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p><strong>When to use</strong>: Share team standards, ensure all
-members use identical configurations.</p>
-</div>
-<div class="section level4">
-<h4 id="system-configuration-etczzcollabconfig-yaml">System Configuration (/etc/zzcollab/config.yaml)<a class="anchor" aria-label="anchor" href="#system-configuration-etczzcollabconfig-yaml"></a>
-</h4>
-<p>Organization-wide policies (requires admin):</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># /etc/zzcollab/config.yaml</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">organization</span><span class="kw">:</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"University Research Computing"</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="at">  </span><span class="fu">docker-registry</span><span class="kw">:</span><span class="at"> </span><span class="st">"registry.university.edu"</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="at">  </span><span class="fu">profile-name</span><span class="kw">:</span><span class="at"> </span><span class="st">"analysis"</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span><span class="co">  # Enforce private repos</span></span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="at">    </span><span class="fu">enable-actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p><strong>When to use</strong>: IT administrators setting
-organization-wide policies.</p>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="at">  </span><span class="fu">profile_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"tidyverse"</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="at">  </span><span class="fu">archetype</span><span class="kw">:</span><span class="at"> </span><span class="st">"manuscript"</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf</span><span class="kw">:</span><span class="at"> </span><span class="st">"true"</span></span></code></pre></div>
+<p><strong>When to use</strong>: pin a project’s profile, archetype, or
+capability settings so <code>zzc docker</code>/<code>zzc rebuild</code>
+reproduces the same Dockerfile regardless of who runs it or what their
+personal user config says. This is also what
+<code>zzc config set-local KEY VALUE</code> writes to.</p>
+<p>A real example, generated by
+<code>zzc config set-local pdf true</code> on a
+<code>tidyverse</code>-profile blog post that needed PDF output without
+switching archetype:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Project-specific zzcollab configuration</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co"># Overrides user config (~/.zzcollab/config.yaml)</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co"># Commit this file to version control.</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="at">  </span><span class="fu">pdf</span><span class="kw">:</span><span class="at"> </span><span class="st">"true"</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -257,29 +279,100 @@ organization-wide policies.</p>
 <div class="section level4">
 <h4 id="initialize-configuration">Initialize Configuration<a class="anchor" aria-label="anchor" href="#initialize-configuration"></a>
 </h4>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Create user configuration file with interactive prompts</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Create the user configuration file (interactive prompts for</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co"># team_name, github_account, profile_name)</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="ex">zzc</span> config init</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co"># Same, explicitly interactive (default is already interactive when no</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># config file exists)</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="ex">zzc</span> config init <span class="at">--interactive</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="set-configuration-values">Set Configuration Values<a class="anchor" aria-label="anchor" href="#set-configuration-values"></a>
 </h4>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Set team name (typically your GitHub username for solo work)</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myteam"</span></span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Set team name</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"myteam"</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Set GitHub account</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"myusername"</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="ex">zzc</span> config set github-account <span class="st">"myusername"</span></span>
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># Set Docker Hub account (defaults to team-name if not set)</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="ex">zzcollab</span> config set dockerhub-account <span class="st">"myusername"</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># Set Docker Hub account</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="ex">zzc</span> config set dockerhub-account <span class="st">"myusername"</span></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co"># Set default Docker profile</span></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co"># Set the default Docker profile</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="ex">zzc</span> config set profile-name <span class="st">"tidyverse"</span></span>
 <span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co"># Opt out of the in-container R language server (default: true)</span></span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="ex">zzcollab</span> config set languageserver false</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co"># Set the default archetype for new projects</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="ex">zzc</span> config set archetype <span class="st">"manuscript"</span></span>
 <span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co"># Pre-select 'create remote now' in the init feature wizard (default: false)</span></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="ex">zzcollab</span> config set auto_github true</span></code></pre></div>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co"># Declare whether this project/user needs a PDF toolchain</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="ex">zzc</span> config set pdf <span class="st">"true"</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co"># Opt out of the in-container R language server (default: true)</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="ex">zzc</span> config set languageserver false</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co"># Pre-select 'create remote now' in the init feature wizard (default: false)</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="ex">zzc</span> config set auto_github true</span></code></pre></div>
+<p>CLI keys are kebab-case (<code>profile-name</code>,
+<code>dockerhub-account</code>) and are normalized to the snake_case
+form used internally (<code>profile_name</code>,
+<code>dockerhub_account</code>) before being written — either spelling
+is accepted on the command line.</p>
+<p><code>zzc config set</code> validates several keys against a fixed
+value set and rejects anything else with an error naming the valid
+values:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>Key</th>
+<th>Valid values</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>profile_name</code> / <code>profile</code>
+</td>
+<td>
+<code>minimal</code>, <code>tidyverse</code>, <code>analysis</code>
+(deprecated alias for <code>tidyverse</code>), <code>rstudio</code>,
+<code>publishing</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>archetype</code></td>
+<td>
+<code>manuscript</code>, <code>analysis</code>, <code>book</code>,
+<code>package</code>, <code>simulation</code>, <code>blog</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>docker_runtime</code></td>
+<td>
+<code>docker</code>, <code>podman</code>,
+<code>apptainer</code>
+</td>
+</tr>
+<tr class="even">
+<td>
+<code>validate_strict</code>, <code>validate_fix</code>,
+<code>auto_github</code>, <code>languageserver</code>,
+<code>remote_allow</code>
+</td>
+<td>
+<code>true</code>, <code>false</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>forge</code></td>
+<td>
+<code>github</code>, <code>gitlab</code>, <code>none</code>
+</td>
+</tr>
+</tbody>
+</table>
 <p><strong><code>languageserver</code></strong> (default
 <code>true</code>) installs the R language server in the Docker image so
 an editor gets in-container LSP completion and diagnostics. zzcollab
@@ -291,39 +384,66 @@ workflows.</p>
 <code>false</code>), when true, pre-selects the ‘create remote now’
 checkbox in the init feature wizard so the compendium’s GitHub remote is
 created during initialization.</p>
+<p><strong><code>pdf</code></strong> (tri-state:
+<code>true</code>/<code>false</code>/unset) declares whether the project
+needs a PDF rendering toolchain. See Section 5 for how this interacts
+with <code>archetype</code> and with the base image’s existing
+capabilities — it is the one setting in this system with real
+cross-variable logic behind it, and the one most worth understanding
+before setting blindly.</p>
+<blockquote>
+<p><strong>A name collides with itself.</strong> <code>analysis</code>
+is simultaneously a valid value for <code>archetype</code> (a plain
+data-analysis compendium, the default archetype) and a
+<em>deprecated</em> value for <code>profile_name</code> (an old name for
+the <code>tidyverse</code> Docker profile, kept only for backward
+compatibility). Setting <code>archetype: analysis</code> and setting
+<code>profile_name: analysis</code> do completely different, unrelated
+things. This is a real naming collision in the current code, not a typo
+in this document.</p>
+</blockquote>
 </div>
 <div class="section level4">
 <h4 id="get-configuration-values">Get Configuration Values<a class="anchor" aria-label="anchor" href="#get-configuration-values"></a>
 </h4>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Get specific value</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">zzcollab</span> config get team-name</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co"># Output: myteam</span></span>
-<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># Get Docker profile</span></span>
-<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="ex">zzcollab</span> config get profile-name</span>
-<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co"># Output: analysis</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">zzc</span> config get team-name</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="co"># Output: myteam</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="ex">zzc</span> config get profile-name</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># Output: tidyverse  (or whatever the merged user+project config says)</span></span></code></pre></div>
+<p><code>config get</code> reads the merged (project-overrides-user)
+value for a single key; it does not report which file the value came
+from.</p>
 </div>
 <div class="section level4">
 <h4 id="list-all-configuration">List All Configuration<a class="anchor" aria-label="anchor" href="#list-all-configuration"></a>
 </h4>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Show all effective configuration</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Show configuration sources (which file provides each value)</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co"># Output shows:</span></span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co"># team-name: "myteam" (from ~/.zzcollab/config.yaml)</span></span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co"># profile-name: "analysis" (from ./zzcollab.yaml) [OVERRIDING user config]</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Show the full merged configuration (sections: author, license,</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="co"># r_package, style, plus team/profile/archetype/pdf/docker settings)</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="ex">zzc</span> config list</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co"># Show only the project-local config file's own contents</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="ex">zzc</span> config list <span class="at">--local</span></span></code></pre></div>
+<p>There is no <code>--verbose</code> flag on <code>config list</code>,
+and the output does not annotate which file supplied each value — if you
+need to know whether a value is coming from user config or project
+config, the only way is to inspect <code>~/.zzcollab/config.yaml</code>
+and <code>./zzcollab.yaml</code> directly, or run
+<code>config list --local</code> to see the project file’s own content
+in isolation and compare.</p>
 </div>
 <div class="section level4">
 <h4 id="validate-configuration">Validate Configuration<a class="anchor" aria-label="anchor" href="#validate-configuration"></a>
 </h4>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># Check configuration for errors and inconsistencies</span></span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co"># Validate with detailed output</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="ex">zzcollab</span> config validate <span class="at">--verbose</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="ex">zzc</span> config validate</span></code></pre></div>
+<p>This checks that <code>~/.zzcollab/config.yaml</code> and
+<code>./zzcollab.yaml</code> (if present) each parse as valid YAML via
+<code>yq eval '.'</code>. It does <strong>not</strong> check cross-key
+consistency, does not check that a referenced profile exists, and
+produces plain <code>Valid YAML: &lt;path&gt;</code> /
+<code>Malformed YAML: &lt;path&gt;</code> lines rather than a checklist
+— there is no <code>--verbose</code> mode and no “configuration
+hierarchy is consistent” check.</p>
 </div>
 </div>
 <div class="section level3">
@@ -332,60 +452,45 @@ created during initialization.</p>
 <div class="section level4">
 <h4 id="solo-researcher-setup">Solo Researcher Setup<a class="anchor" aria-label="anchor" href="#solo-researcher-setup"></a>
 </h4>
-<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># One-time configuration</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myresearch"</span></span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"myusername"</span></span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co"># Create projects using defaults</span></span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="fu">mkdir</span> penguin-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-study</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Uses all configured defaults</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="ex">zzc</span> config init</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"myresearch"</span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="ex">zzc</span> config set github-account <span class="st">"myusername"</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="ex">zzc</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># Create projects using the configured defaults</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="fu">mkdir</span> penguin-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> penguin-study</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="ex">zzc</span> tidyverse          <span class="co"># init + renv + docker, using the resolved profile</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="team-lead-setup">Team Lead Setup<a class="anchor" aria-label="anchor" href="#team-lead-setup"></a>
 </h4>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Personal defaults</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"genomicslab"</span></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"genomicslab"</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co"># Create team project with project-specific config</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="fu">mkdir</span> cancer-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> cancer-study</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># Customize project config for team</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> zzcollab.yaml <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="st">team:</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="st">  name: "genomicslab"</span></span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="st">  project: "cancer-study"</span></span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="st">defaults:</span></span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="st">  profile-name: "analysis"</span></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="st">collaboration:</span></span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="st">  github:</span></span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="st">    auto-create-repo: true</span></span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="st">    default-visibility: "private"</span></span>
-<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a></span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co"># Build and share team image</span></span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"genomicslab"</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="ex">zzc</span> config set github-account <span class="st">"genomicslab"</span></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="ex">zzc</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">mkdir</span> cancer-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> cancer-study</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="ex">zzc</span> tidyverse</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="ex">zzc</span> github             <span class="co"># create private GitHub repo</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># Pin the profile for the project explicitly, independent of whatever</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># collaborators have set in their own user config</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="ex">zzc</span> config set-local profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="team-member-setup">Team Member Setup<a class="anchor" aria-label="anchor" href="#team-member-setup"></a>
 </h4>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Minimal personal config needed</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"genomicslab"</span></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co"># Join existing project</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/cancer-study.git</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="bu">cd</span> cancer-study</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">make</span> docker-build  <span class="co"># Build Docker image from project Dockerfile</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co"># Project config (./zzcollab.yaml) provides all team settings</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"genomicslab"</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/cancer-study.git</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="bu">cd</span> cancer-study</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="fu">make</span> docker-build       <span class="co"># builds from the committed Dockerfile</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co"># ./zzcollab.yaml (committed) supplies the project's profile/archetype/</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co"># pdf settings; only account identity needs to come from user config</span></span></code></pre></div>
 </div>
 </div>
 </div>
@@ -393,88 +498,70 @@ created during initialization.</p>
 <h2 id="cli-flags-reference">CLI Flags Reference<a class="anchor" aria-label="anchor" href="#cli-flags-reference"></a>
 </h2>
 <div class="section level3">
-<h3 id="project-initialization-flags">Project Initialization Flags<a class="anchor" aria-label="anchor" href="#project-initialization-flags"></a>
+<h3 id="project-initialization">Project Initialization<a class="anchor" aria-label="anchor" href="#project-initialization"></a>
 </h3>
-<div class="section level4">
-<h4 id="team-and-project-identity">Team and Project Identity<a class="anchor" aria-label="anchor" href="#team-and-project-identity"></a>
-</h4>
-<p><strong>Recommended approach</strong> (new):</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Create project with profile, then add GitHub</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="fu">mkdir</span> study1 <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study1</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span></code></pre></div>
-<p><strong>Team image naming</strong>: record the DockerHub account
-once; the project name comes from the working directory.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Docker Hub namespace for team images</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set dockerhub-account myteam</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co"># Image name becomes: myteam/&lt;project&gt;:latest</span></span></code></pre></div>
-</div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">mkdir</span> study1 <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study1</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">zzc</span> tidyverse           <span class="co"># full setup: init + renv + docker, tidyverse profile</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="ex">zzc</span> github              <span class="co"># create private GitHub repo</span></span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">zzc</span> config set dockerhub-account myteam</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># Image name becomes: myteam/&lt;project&gt;:latest</span></span></code></pre></div>
 <div class="section level4">
 <h4 id="docker-profile-selection">Docker Profile Selection<a class="anchor" aria-label="anchor" href="#docker-profile-selection"></a>
 </h4>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Create the project with a profile (run in the project directory)</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzcollab</span> minimal          <span class="co"># ~650MB, essential dev tools</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzcollab</span> tidyverse        <span class="co"># ~1.2GB, tidyverse ecosystem (was: analysis)</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="ex">zzcollab</span> rstudio          <span class="co"># RStudio Server</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">zzcollab</span> publishing       <span class="co"># ~4.2GB, manuscript rendering (LaTeX pre-baked)</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># For Shiny, ML, or other domains, build on a base image and add</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co"># packages via renv:</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/shiny   <span class="co"># Shiny apps</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co"># List all available profiles</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="ex">zzcollab</span> list</span></code></pre></div>
-<p><strong>Profile Details</strong>: See “Docker Profile System” section
-below.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">zzc</span> minimal             <span class="co"># ~650MB, essential dev tools, rocker/r-ver</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">zzc</span> tidyverse           <span class="co"># ~1.2GB, tidyverse ecosystem, rocker/tidyverse</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="ex">zzc</span> rstudio             <span class="co"># ~980MB, RStudio Server, rocker/rstudio</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="ex">zzc</span> publishing          <span class="co"># ~4.2GB, manuscript rendering, rocker/verse</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># For Shiny, Bioconductor, geospatial, or other domains: build on a</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co"># custom base image and add packages via renv</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/shiny</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="ex">zzc</span> list profiles       <span class="co"># list profiles with base images and sizes</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="ex">zzc</span> list libs           <span class="co"># list system library bundles</span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="ex">zzc</span> list pkgs           <span class="co"># list R package bundles</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="custom-docker-composition">Custom Docker Composition<a class="anchor" aria-label="anchor" href="#custom-docker-composition"></a>
 </h4>
-<p>For specialized needs, build on a custom base image with the
-<code>docker</code> command:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Override the base Docker image</span></span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/r-ver:latest</span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/rstudio:4.3.0</span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker:latest</span></code></pre></div>
-<p>Additional R packages are installed inside the container and captured
-in <code>renv.lock</code>; the package set is recorded there rather than
-selected by a CLI flag. System library dependencies are detected
-automatically.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/r-ver:latest</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/rstudio:4.3.0</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> bioconductor/bioconductor_docker:latest</span></code></pre></div>
+<p><code>--base</code> accepts any syntactically valid Docker image
+reference (<code>validate_base_image()</code> checks the string format
+only; it does not check the image against a known list). Additional R
+packages are installed inside the container and captured in
+<code>renv.lock</code> — the package set lives there, not in a CLI flag.
+System library dependencies needed by those packages are derived
+automatically from code + <code>DESCRIPTION</code> +
+<code>renv.lock</code>, filtered against what the chosen base already
+ships.</p>
 </div>
-</div>
-<div class="section level3">
-<h3 id="team-collaboration-flags">Team Collaboration Flags<a class="anchor" aria-label="anchor" href="#team-collaboration-flags"></a>
-</h3>
 <div class="section level4">
-<h4 id="team-docker-workflow">Team Docker Workflow<a class="anchor" aria-label="anchor" href="#team-docker-workflow"></a>
+<h4 id="switching-profile-on-an-existing-project">Switching Profile on an Existing Project<a class="anchor" aria-label="anchor" href="#switching-profile-on-an-existing-project"></a>
 </h4>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Team member joins existing project</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study1.git</span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="bu">cd</span> study1</span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="fu">make</span> docker-build  <span class="co"># Build Docker image from project Dockerfile</span></span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">make</span> r             <span class="co"># Enter container</span></span></code></pre></div>
-<p><strong>Team Image Workflow</strong>: 1. Team lead builds and pushes:
-<code>make docker-build &amp;&amp; make docker-push-team</code> 2. Team
-members clone and build:
-<code>git clone ... &amp;&amp; make docker-build</code> 3. Everyone has
-identical Docker environment (same Dockerfile)</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--profile</span> minimal     <span class="co"># regenerate Dockerfile for a different</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>                                  <span class="co"># profile; non-destructive</span></span></code></pre></div>
+<p>This is the command used to move a project from, say,
+<code>tidyverse</code> to <code>minimal</code> without recreating it —
+exactly the kind of change this vignette’s companion reference document
+(<code>dockerfile-variable- reference.md</code>) walks through the
+consequences of, including the package-list reproducibility gap that a
+profile switch can expose: a project whose code relies on packages the
+<em>old</em> base image happened to ship, but which are declared nowhere
+in <code>renv.lock</code>/<code>DESCRIPTION</code>, will fail to find
+them after switching to a leaner base. Check what your code actually
+<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code>s against what <code>renv.lock</code> actually
+pins before switching down to a smaller profile.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="output-and-behavior-flags">Output and Behavior Flags<a class="anchor" aria-label="anchor" href="#output-and-behavior-flags"></a>
 </h3>
-<p>These global flags work with any command:</p>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># -v / --verbose : detailed output</span></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-v</span> docker</span>
-<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co"># -q / --quiet : errors only</span></span>
-<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-q</span> config list</span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a></span>
-<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a><span class="co"># -y / --yes (or -Y / --yes-all) : accept defaults (non-interactive)</span></span>
-<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-y</span> analysis</span>
-<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a></span>
-<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a><span class="co"># --no-build : skip the Docker build prompt</span></span>
-<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--no-build</span> docker</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-v</span> docker            <span class="co"># -v / --verbose : detailed output</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-q</span> config list       <span class="co"># -q / --quiet : errors only</span></span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-y</span> tidyverse         <span class="co"># -y / --yes (-Y / --yes-all) : accept defaults</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">--no-build</span> docker    <span class="co"># skip the Docker build prompt</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -483,101 +570,97 @@ identical Docker environment (same Dockerfile)</p>
 <div class="section level3">
 <h3 id="understanding-docker-profiles">Understanding Docker Profiles<a class="anchor" aria-label="anchor" href="#understanding-docker-profiles"></a>
 </h3>
-<p>Docker profiles are pre-configured environments optimized for
-specific research workflows. Each profile combines: - <strong>Base
-Docker image</strong> (e.g., rocker/rstudio, bioconductor) -
-<strong>System libraries</strong> (e.g., GDAL for geospatial, JAGS for
-Bayesian) - <strong>R packages</strong> (pre-installed for fast
-container startup)</p>
-<p>Profiles provide the Docker environment (Layer 1), while additional
-packages are added dynamically via <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> with
-automatic snapshot/restore on container exit (Layer 2).</p>
+<p>A profile resolves to exactly one thing in the generator: a base
+Docker image (<code>get_profile_base_image()</code> against
+<code>templates/bundles.yaml</code>). Nothing else about a profile — its
+advertised package bundle, its advertised system-library bundle — is
+read by the Dockerfile generator. Those bundle definitions exist in
+<code>bundles.yaml</code> for documentation and for
+<code>zzc list libs</code>/<code>zzc list pkgs</code>, but
+<code>generate_dockerfile_inline()</code> does not consult them; actual
+R-package installation always comes from <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code>
+against <code>renv.lock</code> (or, in <code>--no-renv</code> mode, from
+<code>DESCRIPTION</code>), never from a profile’s declared package
+list.</p>
+<p>Concretely, this means <code>minimal</code>’s advertised package
+bundle (<code>renv</code>, <code>devtools</code>, <code>usethis</code>,
+<code>tinytest</code>, <code>roxygen2</code>, <code>here</code>) is
+<strong>not actually installed</strong> by choosing the
+<code>minimal</code> profile — the only effect of <code>minimal</code>
+is the base image, <code>rocker/r-ver</code>. If your project’s code
+depends on packages the old base happened to provide, switching profile
+does not compensate by installing the new profile’s advertised bundle;
+it only changes the starting image.</p>
 </div>
 <div class="section level3">
 <h3 id="available-profiles">Available Profiles<a class="anchor" aria-label="anchor" href="#available-profiles"></a>
 </h3>
 <div class="section level4">
-<h4 id="the-four-profiles">The Four Profiles<a class="anchor" aria-label="anchor" href="#the-four-profiles"></a>
+<h4 id="minimal-650mb">minimal (~650MB)<a class="anchor" aria-label="anchor" href="#minimal-650mb"></a>
 </h4>
-<div class="section level5">
-<h5 id="minimal-650mb">minimal (~650MB)<a class="anchor" aria-label="anchor" href="#minimal-650mb"></a>
-</h5>
-<div class="sourceCode" id="cb18"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/r-ver:latest</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, usethis, tinytest, roxygen2</span></span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a></span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="fu">use_cases</span><span class="kw">:</span></span>
-<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Lightweight development</span></span>
-<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> CI/CD pipelines</span></span>
-<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Quick prototyping</span></span>
-<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Resource-constrained environments</span></span></code></pre></div>
+<p>Base image: <code>rocker/r-ver:latest</code>. No tidyverse, no
+pandoc, no Quarto, no TeX Live baked in. Use for lightweight
+development, CI/CD, or any project that declares every dependency it
+needs in <code>renv.lock</code>/ <code>DESCRIPTION</code> rather than
+relying on anything the base image happens to ship.</p>
 </div>
-<div class="section level5">
-<h5 id="tidyverse-1-2gb-recommended">tidyverse (~1.2GB) [RECOMMENDED]<a class="anchor" aria-label="anchor" href="#tidyverse-1-2gb-recommended"></a>
-</h5>
-<p>Formerly named <code>analysis</code>; <code>analysis</code> remains
-accepted as a deprecated alias.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/tidyverse:latest</span></span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, here</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> tidyverse (dplyr, ggplot2, tidyr, readr, purrr, stringr, forcats, lubridate)</span></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a></span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="fu">use_cases</span><span class="kw">:</span></span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> General data analysis</span></span>
-<span id="cb19-8"><a href="#cb19-8" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Exploratory data analysis</span></span>
-<span id="cb19-9"><a href="#cb19-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Team development</span></span>
-<span id="cb19-10"><a href="#cb19-10" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Teaching and workshops</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="tidyverse-1-2gb-the-framework-default">tidyverse (~1.2GB) — the framework default<a class="anchor" aria-label="anchor" href="#tidyverse-1-2gb-the-framework-default"></a>
+</h4>
+<p>Base image: <code>rocker/tidyverse:latest</code>. Formerly named
+<code>analysis</code> as a profile; <code>analysis</code> is still
+accepted as a deprecated profile alias. Chosen as the framework’s
+default base image specifically because it is the only “full” rocker
+base (tidyverse/verse/rstudio/shiny) that also publishes an arm64 image
+— <code>rocker/verse</code> does not, and running it under QEMU
+emulation breaks pandoc outright.</p>
 </div>
-<div class="section level5">
-<h5 id="rstudio-980mb">rstudio (~980MB)<a class="anchor" aria-label="anchor" href="#rstudio-980mb"></a>
-</h5>
-<div class="sourceCode" id="cb20"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/rstudio:latest</span></span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, usethis, tinytest, roxygen2</span></span>
-<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a><span class="fu">use_cases</span><span class="kw">:</span></span>
-<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> RStudio Server (browser IDE at localhost:8787)</span></span>
-<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Interactive development</span></span></code></pre></div>
+<div class="section level4">
+<h4 id="rstudio-980mb">rstudio (~980MB)<a class="anchor" aria-label="anchor" href="#rstudio-980mb"></a>
+</h4>
+<p>Base image: <code>rocker/rstudio:latest</code>. RStudio Server at
+<code>http://localhost:8787</code> via
+<code>make docker-rstudio</code>.</p>
 </div>
-<div class="section level5">
-<h5 id="publishing-4-2gb">publishing (~4.2GB)<a class="anchor" aria-label="anchor" href="#publishing-4-2gb"></a>
-</h5>
-<p>A first-class named profile for manuscript rendering. It renders PDF
-by default when a LaTeX toolchain is present and falls back to HTML
-otherwise (capability-adaptive). The LaTeX package closure is pre-baked
-into the image at build time, so PDF rendering needs no runtime
-install.</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">base_image</span><span class="kw">:</span><span class="at"> rocker/verse:latest</span></span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="fu">packages</span><span class="kw">:</span></span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> renv, devtools, here</span></span>
-<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> rmarkdown, bookdown (LaTeX toolchain pre-baked)</span></span>
-<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a></span>
-<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="fu">use_cases</span><span class="kw">:</span></span>
-<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Manuscript and report rendering (PDF/HTML)</span></span>
-<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Bookdown projects</span></span>
-<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Reproducible publishing pipelines</span></span></code></pre></div>
-</div>
+<div class="section level4">
+<h4 id="publishing-4-2gb">publishing (~4.2GB)<a class="anchor" aria-label="anchor" href="#publishing-4-2gb"></a>
+</h4>
+<p>Base image: <code>rocker/verse:latest</code>, which ships TeX Live
+and Quarto already baked in by rocker upstream
+(<code>install_texlive.sh</code> is run when rocker builds
+<code>verse</code> from <code>tidyverse</code>). Choosing this profile
+does not by itself set <code>archetype</code> or <code>pdf</code> —
+those are separate settings (see Section 5) that control whether the
+generator <em>also</em> installs anything on top of what
+<code>rocker/verse</code> already provides. In practice, because
+<code>rocker/verse</code> already has TeX Live, the TeX-install block in
+the generator is skipped on this profile regardless of
+<code>pdf</code>’s value; the only thing
+<code>pdf</code>/<code>archetype</code> still control on
+<code>publishing</code> is the LaTeX-package warm-up block (pre-baking
+the specific package closure your render needs, as root, at build
+time).</p>
 </div>
 <div class="section level4">
 <h4 id="specialized-environments-via-a-custom-base-image">Specialized Environments via a Custom Base Image<a class="anchor" aria-label="anchor" href="#specialized-environments-via-a-custom-base-image"></a>
 </h4>
-<p>Other environments are not separate profiles. Build on a domain base
-image with <code>zzcollab docker --base-image</code> and add packages
-via renv:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/shiny                      <span class="co"># Shiny Server</span></span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> bioconductor/bioconductor_docker  <span class="co"># genomics</span></span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial                 <span class="co"># GIS / spatial</span></span></code></pre></div>
-<p>For manuscript rendering, prefer the named <code>publishing</code>
-profile (<code>zzc publishing</code>) rather than a custom
-<code>rocker/verse</code> base image. Machine-learning packages
-(tidymodels, xgboost, ranger) are added via renv on top of the
-<code>tidyverse</code> profile.</p>
+<p>Other environments are not separate named profiles. Build on a domain
+base image with <code>--base</code>/<code>--base-image</code> and add
+packages via renv:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/shiny</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> bioconductor/bioconductor_docker</span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/geospatial</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
 <h3 id="profile-selection-guide">Profile Selection Guide<a class="anchor" aria-label="anchor" href="#profile-selection-guide"></a>
 </h3>
 <table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
 <thead><tr class="header">
 <th>Research Domain</th>
 <th>Recommended Profile</th>
@@ -585,261 +668,176 @@ profile (<code>zzc publishing</code>) rather than a custom
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Data analysis</td>
-<td>analysis</td>
-<td>minimal</td>
+<td>General data analysis</td>
+<td><code>tidyverse</code></td>
+<td><code>minimal</code></td>
 </tr>
 <tr class="even">
-<td>Machine learning</td>
-<td>analysis (ML packages via renv)</td>
-<td>minimal</td>
+<td>Lightweight / CI</td>
+<td><code>minimal</code></td>
+<td>—</td>
 </tr>
 <tr class="odd">
-<td>Genomics</td>
-<td>analysis + Bioconductor base image</td>
-<td>minimal</td>
+<td>Interactive apps / RStudio IDE</td>
+<td><code>rstudio</code></td>
+<td><code>tidyverse</code></td>
 </tr>
 <tr class="even">
-<td>GIS/spatial</td>
-<td>analysis + rocker/geospatial base image</td>
-<td>minimal</td>
+<td>Manuscript / PDF rendering</td>
+<td><code>publishing</code></td>
+<td>
+<code>tidyverse</code> + <code>pdf: true</code>
+</td>
 </tr>
 <tr class="odd">
-<td>Publishing</td>
-<td>publishing</td>
-<td>tidyverse</td>
-</tr>
-<tr class="even">
-<td>Interactive apps</td>
-<td>analysis + rocker/shiny base image</td>
-<td>rstudio</td>
-</tr>
-<tr class="odd">
-<td>Teaching</td>
-<td>analysis</td>
-<td>minimal, rstudio</td>
+<td>Domain-specific (genomics, GIS, Shiny)</td>
+<td>
+<code>tidyverse</code> or <code>minimal</code> + custom
+<code>--base</code>
+</td>
+<td>—</td>
 </tr>
 </tbody>
 </table>
+<p>The <code>publishing</code> vs. <code>tidyverse</code> +
+<code>pdf: true</code> choice is a real trade-off, not a stylistic one:
+<code>publishing</code> (4.2GB) ships the full <code>rocker/verse</code>
+TeX Live tree pre-installed; <code>tidyverse</code> +
+<code>pdf: true</code> (measured around 3.9GB for a project also running
+<code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code>) installs only TeX Live on top of
+<code>tidyverse</code>, arrives at a somewhat smaller image, and —
+unlike <code>publishing</code> — has a native arm64 build. On Apple
+Silicon hardware, <code>tidyverse</code> + <code>pdf: true</code> is
+usually the better choice unless you specifically need something else
+<code>rocker/verse</code> provides.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="capability-settings-pdf-and-archetype">Capability Settings: <code>pdf</code> and
+<code>archetype</code><a class="anchor" aria-label="anchor" href="#capability-settings-pdf-and-archetype"></a>
+</h2>
+<p>This section is a summary;
+<code>docs/dockerfile-variable-reference.md</code> Section 3 has the
+full mechanical walkthrough, including the precedence rules and the one
+asymmetry worth knowing about before you rely on it.</p>
+<div class="section level3">
+<h3 id="what-archetype-controls">What <code>archetype</code> Controls<a class="anchor" aria-label="anchor" href="#what-archetype-controls"></a>
+</h3>
+<p><code>archetype</code> (set via <code>zzc init --archetype A</code>,
+or persisted with <code>zzc config set archetype A</code>) primarily
+controls what <code>zzc init</code> scaffolds — which template files,
+which symlinks, which entry point a render targets. Six values exist:
+<code>manuscript</code>, <code>book</code>, <code>blog</code>,
+<code>analysis</code> (the default), <code>package</code>,
+<code>simulation</code>.</p>
+<p>Only two of those six values feed into Dockerfile generation at all:
+<code>manuscript</code> and <code>book</code> default the project to
+needing a PDF toolchain; <code>blog</code> and <code>book</code> default
+it to needing Quarto. The other three (<code>analysis</code>,
+<code>package</code>, <code>simulation</code>) produce a Dockerfile
+identical to leaving <code>archetype</code> unset.</p>
 </div>
 <div class="section level3">
-<h3 id="custom-profile-composition">Custom Profile Composition<a class="anchor" aria-label="anchor" href="#custom-profile-composition"></a>
+<h3 id="what-pdf-controls">What <code>pdf</code> Controls<a class="anchor" aria-label="anchor" href="#what-pdf-controls"></a>
 </h3>
-<p>When predefined profiles don’t fit, compose custom environments:</p>
-<div class="section level4">
-<h4 id="example-bayesian-statistics-environment">Example: Bayesian Statistics Environment<a class="anchor" aria-label="anchor" href="#example-bayesian-statistics-environment"></a>
-</h4>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">mkdir</span> bayes-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> bayes-study</span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a></span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="co"># Inside container, add specialized Bayesian packages:</span></span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a><span class="co"># install.packages(c("rstan", "brms", "rstanarm", "bayesplot", "loo"))</span></span>
-<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
+<p><code>pdf</code> is a direct, explicit override that always wins over
+the archetype-derived default:</p>
+<ul>
+<li>
+<code>pdf: true</code> forces the TeX Live install block on (if the
+base image doesn’t already have TeX Live) and always also forces Quarto
+on.</li>
+<li>
+<code>pdf: false</code> forces the TeX Live block off — even on a
+<code>manuscript</code> or <code>book</code> archetype.</li>
+<li>Left unset, the archetype default from the table above applies.</li>
+</ul>
+<p>There is <strong>no equivalent explicit setting for Quarto
+alone</strong>. The only ways to get Quarto installed are: set
+<code>archetype</code> to <code>blog</code> or <code>book</code>, or set
+<code>pdf: true</code> (which drags Quarto in as a side effect, with no
+way to decline it). A project wanting Quarto-only rendering, no PDF/TeX,
+outside the <code>blog</code>/<code>book</code> archetypes has no config
+key for that today.</p>
 </div>
-<div class="section level4">
-<h4 id="example-web-scraping-nlp-environment">Example: Web Scraping + NLP Environment<a class="anchor" aria-label="anchor" href="#example-web-scraping-nlp-environment"></a>
-</h4>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Start from the analysis profile</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">mkdir</span> nlp-scraper <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> nlp-scraper</span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># Add NLP packages dynamically:</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co"># install.packages(c("rvest", "httr", "xml2", "tidytext", "textrecipes", "spacyr"))</span></span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="example-lightweight-reporting">Example: Lightweight Reporting<a class="anchor" aria-label="anchor" href="#example-lightweight-reporting"></a>
-</h4>
-<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="co"># Minimal base for a small footprint</span></span>
-<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="fu">mkdir</span> reports <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> reports</span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="ex">zzcollab</span> minimal</span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a></span>
-<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a><span class="co"># Add reporting packages:</span></span>
-<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a><span class="co"># install.packages(c("rmarkdown", "knitr", "gt", "flextable"))</span></span>
-<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
-</div>
+<div class="section level3">
+<h3 id="worked-decision">Worked Decision<a class="anchor" aria-label="anchor" href="#worked-decision"></a>
+</h3>
+<p>Ask these two questions, in order:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Does the project render to PDF at all?</strong> If no, leave
+<code>pdf</code> unset and pick <code>archetype: analysis</code> (or
+<code>package</code>/<code>simulation</code> as fits) — you get neither
+TeX nor Quarto installed, the smallest image.</li>
+<li>
+<strong>If yes: does the base image already have TeX Live?</strong>
+Check with <code>zzc list profiles</code> — only <code>publishing</code>
+(<code>rocker/verse</code>) does. If you’re on any other profile, set
+<code>pdf: true</code> explicitly rather than relying on archetype
+alone, both so the setting survives a profile switch and so
+<code>.zzcollab-state</code> remembers it correctly across regeneration
+(<code>zzc docker</code> without <code>--profile</code> reuses the base
+image recorded in <code>.zzcollab-state</code>, and <code>pdf</code>’s
+remembered value in that same file is what keeps a bare
+<code>zzc docker</code> from silently dropping TeX from a manuscript
+project that never set <code>CONFIG_PDF</code> directly).</li>
+</ol>
 </div>
 </div>
 <div class="section level2">
 <h2 id="two-layer-package-management-architecture">Two-Layer Package Management Architecture<a class="anchor" aria-label="anchor" href="#two-layer-package-management-architecture"></a>
 </h2>
-<p>ZZCOLLAB uses a two-layer system for maximum flexibility and
-reproducibility.</p>
 <div class="section level3">
 <h3 id="layer-1-docker-profile-teamshared">Layer 1: Docker Profile (Team/Shared)<a class="anchor" aria-label="anchor" href="#layer-1-docker-profile-teamshared"></a>
 </h3>
-<p><strong>What</strong>: Pre-installed R packages in the Docker image
-<strong>Control</strong>: the profile (<code>zzc &lt;profile&gt;</code>
-/ <code>docker --profile</code>) or a custom base image
-<strong>Shared</strong>: All team members get identical packages
-<strong>Purpose</strong>: Fast container startup, team consistency</p>
-<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># Team lead creates base environment</span></span>
-<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># ML packages added via renv on top of analysis</span></span>
-<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span>
-<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a></span>
-<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a><span class="co"># All team members get identical environment</span></span></code></pre></div>
-<p><strong>Layer 1 packages are in the Docker image</strong>: -
-Available immediately when container starts - No installation time -
-Shared across all users of the image - Fixed until image is rebuilt</p>
+<p><strong>What</strong>: the base image’s own packages (and, for
+<code>pdf</code>/archetype-gated projects, TeX Live/Quarto).
+<strong>Control</strong>: <code>--profile</code>/<code>--base</code> at
+generation time. <strong>Shared</strong>: every build from the same
+Dockerfile gets the same image. <strong>Purpose</strong>: fast container
+startup, team consistency.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="ex">zzc</span> tidyverse</span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="ex">zzc</span> dockerhub           <span class="co"># push for team members</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="layer-2-dynamic-renv-personalflexible">Layer 2: Dynamic renv (Personal/Flexible)<a class="anchor" aria-label="anchor" href="#layer-2-dynamic-renv-personalflexible"></a>
 </h3>
-<p><strong>What</strong>: Packages added via
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> inside containers with automatic
-snapshot on exit <strong>Control</strong>: Team members install as
-needed <strong>Flexible</strong>: Each person can add different packages
-<strong>Purpose</strong>: Analysis-specific packages, reproducible
-dependency tracking</p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Inside container</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
-<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a><span class="co"># Install packages as needed (standard R command)</span></span>
-<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
-<span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"pins"</span><span class="kw">)</span></span>
-<span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"vetiver"</span><span class="kw">)</span></span>
-<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a></span>
-<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="co"># When you exit R, packages are automatically saved to renv.lock (via .Last() in .Rprofile)</span></span>
-<span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="fu">q()</span></span>
-<span id="cb27-11"><a href="#cb27-11" tabindex="-1"></a></span>
-<span id="cb27-12"><a href="#cb27-12" tabindex="-1"></a><span class="co"># Back on host - commit the updated renv.lock</span></span>
-<span id="cb27-13"><a href="#cb27-13" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
-<span id="cb27-14"><a href="#cb27-14" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add ML deployment packages"</span></span>
-<span id="cb27-15"><a href="#cb27-15" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
-<p><strong>Layer 2 packages via renv</strong>: - Installed on-demand
-inside containers - Added dynamically as analysis needs evolve -
-Accumulates packages from all team members - renv.lock is the source of
-truth for reproducibility</p>
+<p><strong>What</strong>: packages installed inside the container with
+<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, snapshotted to <code>renv.lock</code>
+automatically on exit via <code>.Last()</code> in
+<code>.Rprofile</code>. <strong>Control</strong>: whoever is working in
+the container, at any time. <strong>Purpose</strong>: analysis-specific
+packages, without rebuilding the image.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> r</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># exit R — snapshot to renv.lock happens automatically</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co"># back on host</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add tidymodels"</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="how-the-layers-work-together">How the Layers Work Together<a class="anchor" aria-label="anchor" href="#how-the-layers-work-together"></a>
+<h3 id="key-principle-renv-lock-is-the-source-of-truth-for-packages">Key Principle: <code>renv.lock</code> is the Source of Truth for
+Packages<a class="anchor" aria-label="anchor" href="#key-principle-renv-lock-is-the-source-of-truth-for-packages"></a>
 </h3>
-<div class="section level4">
-<h4 id="scenario-genomics-team-with-multiple-analyses">Scenario: Genomics Team with Multiple Analyses<a class="anchor" aria-label="anchor" href="#scenario-genomics-team-with-multiple-analyses"></a>
-</h4>
-<p><strong>Team Lead Setup (Layer 1)</strong>:</p>
-<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Create a base environment with common packages</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">mkdir</span> baseenv <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> baseenv</span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Or another profile</span></span>
-<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb28-6"><a href="#cb28-6" tabindex="-1"></a><span class="ex">zzc</span> dockerhub                    <span class="co"># Push for team members</span></span></code></pre></div>
-<p><strong>Team Member Alice (Layer 2 - RNA-seq)</strong>:</p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="fu">make</span> docker-build                <span class="co"># Or: docker pull genomicslab/rnaseq-study:latest</span></span>
-<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a></span>
-<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a><span class="co"># Add RNA-seq specific packages</span></span>
-<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"tximport"</span><span class="ex">,</span> <span class="st">"DESeq2"</span>, <span class="st">"apeglm"</span>, <span class="st">"EnhancedVolcano"</span><span class="kw">))</span></span>
-<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages in renv.lock</span></span>
-<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
-<p><strong>Team Member Bob (Layer 2 - ChIP-seq)</strong>:</p>
-<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/chipseq-study.git</span>
-<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="bu">cd</span> chipseq-study</span>
-<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a></span>
-<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a><span class="co"># Add ChIP-seq specific packages</span></span>
-<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"ChIPseeker"</span><span class="ex">,</span> <span class="st">"ChIPpeakAnno"</span>, <span class="st">"DiffBind"</span>, <span class="st">"csaw"</span><span class="kw">))</span></span>
-<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages in renv.lock</span></span>
-<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
-<p><strong>Result</strong>: - Both use <strong>identical Layer
-1</strong> (Bioconductor base via team image) - Each has
-<strong>different Layer 2</strong> (analysis-specific packages in
-renv.lock) - Complete reproducibility via renv.lock (source of
-truth)</p>
-</div>
-</div>
-<div class="section level3">
-<h3 id="key-principle-renv-lock-is-source-of-truth">Key Principle: renv.lock is Source of Truth<a class="anchor" aria-label="anchor" href="#key-principle-renv-lock-is-source-of-truth"></a>
-</h3>
-<p>Docker images provide foundation and performance, but
-<strong>renv.lock ensures reproducibility</strong>:</p>
-<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Five years later, reproduce Alice's RNA-seq analysis</span></span>
-<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/genomicslab/rnaseq-study.git</span>
-<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a></span>
-<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a><span class="co"># Can use ANY compatible Docker base image</span></span>
-<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">--profile</span> minimal  <span class="co"># or analysis, or rstudio</span></span>
-<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a></span>
-<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a><span class="co"># renv automatically restores EXACT packages Alice used on R startup</span></span>
-<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a><span class="co"># Auto-restore installs: tximport, DESeq2, apeglm, EnhancedVolcano at exact versions</span></span>
-<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="co"># (No manual renv::restore() call needed - happens automatically)</span></span>
-<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a></span>
-<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="co"># Run analysis - identical results</span></span>
-<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="ex">Rscript</span> analysis/scripts/differential_expression.R</span></code></pre></div>
-<p><strong>Why this works</strong>: renv.lock specifies exact package
-versions from CRAN/Bioconductor/GitHub snapshots, independent of Docker
-image.</p>
-</div>
-<div class="section level3">
-<h3 id="package-selection-strategy">Package Selection Strategy<a class="anchor" aria-label="anchor" href="#package-selection-strategy"></a>
-</h3>
-<div class="section level4">
-<h4 id="choose-docker-profile-layer-1-based-on">Choose Docker Profile (Layer 1) Based On:<a class="anchor" aria-label="anchor" href="#choose-docker-profile-layer-1-based-on"></a>
-</h4>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Research domain</strong>
-<ul>
-<li>Genomics → <code>analysis</code> + a Bioconductor base image</li>
-<li>GIS/spatial → <code>analysis</code> + the
-<code>rocker/geospatial</code> base image</li>
-<li>Machine learning → <code>analysis</code> profile (ML packages via
-renv)</li>
-<li>General analysis → <code>analysis</code> profile</li>
-</ul>
-</li>
-<li>
-<strong>Team consensus</strong>
-<ul>
-<li>What does everyone need?</li>
-<li>What’s the common foundation?</li>
-</ul>
-</li>
-<li>
-<strong>Performance considerations</strong>
-<ul>
-<li>Large, stable packages → Docker profile (tidyverse, Bioconductor
-core)</li>
-<li>Team-wide dependencies → Docker profile</li>
-</ul>
-</li>
-</ol>
-</div>
-<div class="section level4">
-<h4 id="add-via-renv-layer-2-based-on">Add via renv (Layer 2) Based On:<a class="anchor" aria-label="anchor" href="#add-via-renv-layer-2-based-on"></a>
-</h4>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Analysis-specific needs</strong>
-<ul>
-<li>Domain-specific packages (tximport, ChIPseeker)</li>
-<li>Specialized statistical methods</li>
-</ul>
-</li>
-<li>
-<strong>Experimental packages</strong>
-<ul>
-<li>Newly released packages</li>
-<li>Development versions from GitHub</li>
-</ul>
-</li>
-<li>
-<strong>Version-specific requirements</strong>
-<ul>
-<li>Packages requiring exact versions</li>
-<li>Packages with breaking changes between versions</li>
-</ul>
-</li>
-</ol>
-</div>
+<p>The Docker image provides the starting foundation and build-time
+performance; <code>renv.lock</code> is what actually pins exact package
+versions. A collaborator can, in principle, restore from
+<code>renv.lock</code> on top of a different compatible base image and
+get the same packages at the same versions — but see the caveat in
+“Docker Profile System” above: this only holds for packages that are
+genuinely recorded in <code>renv.lock</code>. Code that
+<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code>s a package the <em>old</em> base happened to
+ship, but that was never added to
+<code>renv.lock</code>/<code>DESCRIPTION</code>, is not actually
+reproducible across a profile switch, no matter how the renv layer is
+described in principle.</p>
 </div>
 </div>
 <div class="section level2">
@@ -848,163 +846,57 @@ core)</li>
 <div class="section level3">
 <h3 id="scenario-1-solo-data-scientist">Scenario 1: Solo Data Scientist<a class="anchor" aria-label="anchor" href="#scenario-1-solo-data-scientist"></a>
 </h3>
-<p><strong>Goal</strong>: Quick project setup, standard data analysis
-tools</p>
-<p><strong>Configuration</strong>:</p>
-<div class="sourceCode" id="cb32"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="co"># One-time setup</span></span>
-<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"datasci"</span></span>
-<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
-<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co"># Create projects with configured defaults</span></span>
-<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="fu">mkdir</span> customer-churn <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> customer-churn</span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Uses all configured defaults</span></span>
-<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a></span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="fu">mkdir</span> sales-forecast <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> sales-forecast</span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="ex">zzcollab</span>  <span class="co"># Consistent environment across projects</span></span></code></pre></div>
-<p><strong>Benefits</strong>: - No repetitive flag typing - Consistent
-environment across projects - Professional reproducibility for
-portfolio</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="ex">zzc</span> config init</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"datasci"</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="ex">zzc</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a></span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a><span class="fu">mkdir</span> customer-churn <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> customer-churn</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="ex">zzc</span> tidyverse            <span class="co"># uses the configured defaults</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="scenario-2-academic-research-lab">Scenario 2: Academic Research Lab<a class="anchor" aria-label="anchor" href="#scenario-2-academic-research-lab"></a>
+<h3 id="scenario-2-team-lead-standardizing-a-lab">Scenario 2: Team Lead Standardizing a Lab<a class="anchor" aria-label="anchor" href="#scenario-2-team-lead-standardizing-a-lab"></a>
 </h3>
-<p><strong>Goal</strong>: Team collaboration, consistent environments,
-specialized workflows</p>
-<p><strong>Team Lead Setup</strong>:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># Personal config</span></span>
-<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"psychlab"</span></span>
-<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set github-account <span class="st">"psychlab"</span></span>
-<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a></span>
-<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a><span class="co"># Create shared project</span></span>
-<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a><span class="fu">mkdir</span> attention-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> attention-study</span>
-<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span>
-<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a></span>
-<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a><span class="co"># Customize for team</span></span>
-<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> zzcollab.yaml <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a><span class="st">team:</span></span>
-<span id="cb33-13"><a href="#cb33-13" tabindex="-1"></a><span class="st">  name: "psychlab"</span></span>
-<span id="cb33-14"><a href="#cb33-14" tabindex="-1"></a><span class="st">  project: "attention-study"</span></span>
-<span id="cb33-15"><a href="#cb33-15" tabindex="-1"></a></span>
-<span id="cb33-16"><a href="#cb33-16" tabindex="-1"></a><span class="st">defaults:</span></span>
-<span id="cb33-17"><a href="#cb33-17" tabindex="-1"></a><span class="st">  profile-name: "analysis"</span></span>
-<span id="cb33-18"><a href="#cb33-18" tabindex="-1"></a></span>
-<span id="cb33-19"><a href="#cb33-19" tabindex="-1"></a><span class="st">collaboration:</span></span>
-<span id="cb33-20"><a href="#cb33-20" tabindex="-1"></a><span class="st">  github:</span></span>
-<span id="cb33-21"><a href="#cb33-21" tabindex="-1"></a><span class="st">    auto-create-repo: true</span></span>
-<span id="cb33-22"><a href="#cb33-22" tabindex="-1"></a><span class="st">    default-visibility: "private"</span></span>
-<span id="cb33-23"><a href="#cb33-23" tabindex="-1"></a><span class="st">    enable-actions: true</span></span>
-<span id="cb33-24"><a href="#cb33-24" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb33-25"><a href="#cb33-25" tabindex="-1"></a></span>
-<span id="cb33-26"><a href="#cb33-26" tabindex="-1"></a><span class="co"># Build and share</span></span>
-<span id="cb33-27"><a href="#cb33-27" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb33-28"><a href="#cb33-28" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb33-29"><a href="#cb33-29" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p><strong>Team Member Workflow</strong>:</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Minimal personal setup</span></span>
-<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"psychlab"</span></span>
-<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a></span>
-<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="co"># Join project</span></span>
-<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/psychlab/attention-study.git</span>
-<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="bu">cd</span> attention-study</span>
-<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a></span>
-<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a><span class="co"># Start working immediately</span></span>
-<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"psychlab"</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a><span class="ex">zzc</span> config set github-account <span class="st">"psychlab"</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a><span class="fu">mkdir</span> attention-study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> attention-study</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="ex">zzc</span> tidyverse</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a></span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a><span class="co"># Pin the project's profile and archetype explicitly so it survives</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a><span class="co"># regardless of what any individual team member's user config says</span></span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a><span class="ex">zzc</span> config set-local profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a><span class="ex">zzc</span> config set-local archetype <span class="st">"manuscript"</span></span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a><span class="ex">zzc</span> config set-local pdf <span class="st">"true"</span></span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Team setup"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
+<p>Team members then only need:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"psychlab"</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/psychlab/attention-study.git</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="bu">cd</span> attention-study</span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="fu">make</span> docker-build        <span class="co"># ./zzcollab.yaml supplies the rest</span></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="scenario-3-bioinformatics-core-facility">Scenario 3: Bioinformatics Core Facility<a class="anchor" aria-label="anchor" href="#scenario-3-bioinformatics-core-facility"></a>
+<h3 id="scenario-3-right-sizing-an-existing-project">Scenario 3: Right-Sizing an Existing Project<a class="anchor" aria-label="anchor" href="#scenario-3-right-sizing-an-existing-project"></a>
 </h3>
-<p><strong>Goal</strong>: Multiple specialized environments,
-organization-wide standards</p>
-<p><strong>System Admin Setup</strong>
-(<code>/etc/zzcollab/config.yaml</code>):</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">organization</span><span class="kw">:</span></span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"Bioinformatics Core"</span></span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="at">  </span><span class="fu">docker-registry</span><span class="kw">:</span><span class="at"> </span><span class="st">"registry.core.university.edu"</span></span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a></span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a><span class="fu">defaults</span><span class="kw">:</span></span>
-<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a><span class="at">  </span><span class="fu">github-account</span><span class="kw">:</span><span class="at"> </span><span class="st">"bioinformatics-core"</span></span>
-<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a></span>
-<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span></span>
-<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a><span class="at">    </span><span class="fu">enable-actions</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
-<p><strong>Core Director Setup</strong>:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Base images for different workflows</span></span>
-<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">mkdir</span> biocore-rnaseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-rnaseq</span>
-<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; add genomics packages via renv</span></span>
-<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a></span>
-<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-chipseq <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-chipseq</span>
-<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a></span>
-<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="bu">cd</span> .. <span class="kw">&amp;&amp;</span> <span class="fu">mkdir</span> biocore-singlecell <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> biocore-singlecell</span>
-<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="ex">zzc</span> analysis</span>
-<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span></code></pre></div>
-<p><strong>Researcher Workflow</strong>:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a><span class="co"># Join workflow-specific project</span></span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/biocore/rnaseq-study.git</span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a><span class="bu">cd</span> rnaseq-study</span>
-<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a><span class="fu">make</span> docker-build  <span class="co"># Build from project Dockerfile</span></span>
-<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a></span>
-<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a><span class="co"># Add analysis-specific packages</span></span>
-<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"workflow_specific_package"</span><span class="kw">)</span></span>
-<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures the package</span></span>
-<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="scenario-4-data-science-consulting-firm">Scenario 4: Data Science Consulting Firm<a class="anchor" aria-label="anchor" href="#scenario-4-data-science-consulting-firm"></a>
-</h3>
-<p><strong>Goal</strong>: Client projects, quarterly environment
-updates, reproducible deliverables</p>
-<p><strong>DevOps Team Setup</strong>:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Quarterly standardized environment</span></span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a><span class="fu">mkdir</span> q1-2025-base <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> q1-2025-base</span>
-<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
-<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a></span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a><span class="co"># Document package versions</span></span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&gt;</span> ENVIRONMENT.md <span class="op">&lt;&lt; 'EOF'</span></span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a><span class="st"># Q1 2025 Standardized Environment</span></span>
-<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a></span>
-<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="st">Base: rocker/ml:latest (R 4.4.0)</span></span>
-<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="st">Profile: analysis</span></span>
-<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a></span>
-<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a><span class="st">Key packages:</span></span>
-<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a><span class="st">- tidyverse 2.0.0</span></span>
-<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a><span class="st">- tidymodels 1.2.0</span></span>
-<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a><span class="st">- xgboost 1.7.6</span></span>
-<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a><span class="st">- shiny 1.8.0</span></span>
-<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a></span>
-<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a><span class="st">Last updated: 2025-01-15</span></span>
-<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a><span class="op">EOF</span></span>
-<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a></span>
-<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a><span class="fu">make</span> docker-build</span>
-<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a><span class="fu">make</span> docker-push-team</span>
-<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Q1 2025 base environment"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
-<p><strong>Data Scientist Workflow</strong>:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Create client project using quarterly base</span></span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">mkdir</span> client-churn-prediction <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> client-churn-prediction</span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup; ML packages added via renv</span></span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="ex">zzc</span> github</span>
-<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a></span>
-<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="co"># Team base image provides foundation</span></span>
-<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="fu">make</span> r</span>
-<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a></span>
-<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co"># Add client-specific packages</span></span>
-<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="ex">c</span><span class="er">(</span><span class="st">"probably"</span><span class="ex">,</span> <span class="st">"workflowsets"</span>, <span class="st">"themis"</span><span class="kw">))</span></span>
-<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="co"># Auto-snapshot on exit captures these packages</span></span>
-<span id="cb39-12"><a href="#cb39-12" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span>
-<span id="cb39-13"><a href="#cb39-13" tabindex="-1"></a></span>
-<span id="cb39-14"><a href="#cb39-14" tabindex="-1"></a><span class="co"># All projects use same Q1 2025 foundation</span></span>
-<span id="cb39-15"><a href="#cb39-15" tabindex="-1"></a><span class="co"># Client-specific packages in renv.lock</span></span></code></pre></div>
+<p>A project on <code>tidyverse</code> + <code>pdf: true</code> wants to
+check whether a smaller base would work:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Check what the code actually needs vs. what renv.lock actually pins</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-rn</span> <span class="st">"library("</span> analysis/ R/</span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="fu">grep</span> <span class="at">-o</span> <span class="st">'"[A-Za-z0-9.]*": {'</span> renv.lock</span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># If everything the code uses is genuinely in renv.lock/DESCRIPTION:</span></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--profile</span> minimal</span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="ex">zzc</span> rebuild <span class="at">--verbose</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co"># If the code relies on tidyverse packages absent from renv.lock, add</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="co"># them to renv.lock first (renv::snapshot() inside the container with</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="co"># those libraries loaded), or stay on the tidyverse profile.</span></span></code></pre></div>
+<p>See <code>docs/dockerfile-variable-reference.md</code> for exactly
+which variables this regeneration reads and in what order.</p>
 </div>
 </div>
 <div class="section level2">
@@ -1013,206 +905,116 @@ updates, reproducible deliverables</p>
 <div class="section level3">
 <h3 id="validation-commands">Validation Commands<a class="anchor" aria-label="anchor" href="#validation-commands"></a>
 </h3>
-<div class="section level4">
-<h4 id="check-configuration-integrity">Check Configuration Integrity<a class="anchor" aria-label="anchor" href="#check-configuration-integrity"></a>
-</h4>
-<div class="sourceCode" id="cb40"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Validate all configuration files</span></span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a></span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a><span class="co"># Expected output:</span></span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a><span class="co"># ✓ User configuration valid: ~/.zzcollab/config.yaml</span></span>
-<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="co"># ✓ No project configuration found (not in project directory)</span></span>
-<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a><span class="co"># ✓ No system configuration found (not installed system-wide)</span></span>
-<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a><span class="co"># ✓ Configuration hierarchy is consistent</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="view-effective-configuration">View Effective Configuration<a class="anchor" aria-label="anchor" href="#view-effective-configuration"></a>
-</h4>
-<div class="sourceCode" id="cb41"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># See merged configuration from all sources</span></span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co"># See which file provides each value</span></span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
-<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a></span>
-<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="co"># Output:</span></span>
-<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="co"># team-name: "genomicslab"</span></span>
-<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a><span class="co">#   Source: ~/.zzcollab/config.yaml (user config)</span></span>
-<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
-<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting "analysis"]</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="test-configuration">Test Configuration<a class="anchor" aria-label="anchor" href="#test-configuration"></a>
-</h4>
-<div class="sourceCode" id="cb42"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="co"># Validate the effective configuration before creating a project</span></span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a></span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a><span class="co"># Review the merged configuration and its sources</span></span>
-<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a><span class="ex">zzcollab</span> config list</span></code></pre></div>
-</div>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a><span class="ex">zzc</span> config validate      <span class="co"># checks YAML syntax of user + project config</span></span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a><span class="ex">zzc</span> config list          <span class="co"># merged configuration</span></span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="ex">zzc</span> config list <span class="at">--local</span>  <span class="co"># project config file's own content only</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="common-issues-and-solutions">Common Issues and Solutions<a class="anchor" aria-label="anchor" href="#common-issues-and-solutions"></a>
+<h3 id="common-issues">Common Issues<a class="anchor" aria-label="anchor" href="#common-issues"></a>
 </h3>
 <div class="section level4">
-<h4 id="issue-1-configuration-hierarchy-confusion">Issue 1: Configuration Hierarchy Confusion<a class="anchor" aria-label="anchor" href="#issue-1-configuration-hierarchy-confusion"></a>
+<h4 id="issue-1-a-setting-isnt-taking-effect">Issue 1: A setting isn’t taking effect<a class="anchor" aria-label="anchor" href="#issue-1-a-setting-isnt-taking-effect"></a>
 </h4>
-<p><strong>Problem</strong>: Settings not taking effect as expected</p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="co"># Symptom: Set profile-name in user config but project uses different profile</span></span>
-<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span>
-<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a><span class="ex">zzcollab</span> config get profile-name</span>
-<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a><span class="co"># Output: rstudio  (Expected: analysis)</span></span></code></pre></div>
-<p><strong>Solution</strong>: Check configuration sources</p>
-<div class="sourceCode" id="cb44"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span>
-<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a><span class="co"># Output shows:</span></span>
-<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a><span class="co"># profile-name: "rstudio"</span></span>
-<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a><span class="co">#   Source: ./zzcollab.yaml (project config) [OVERRIDES user setting]</span></span>
-<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a></span>
-<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a><span class="co"># Project config (./zzcollab.yaml) overrides user config</span></span>
-<span id="cb44-7"><a href="#cb44-7" tabindex="-1"></a><span class="co"># Remove from project config or understand this is intentional</span></span>
-<span id="cb44-8"><a href="#cb44-8" tabindex="-1"></a><span class="ex">vim</span> ./zzcollab.yaml  <span class="co"># Remove profile-name to use user default</span></span></code></pre></div>
+<p>Project config always wins over user config for any key it sets. If
+<code>zzc config get profile-name</code> returns something other than
+what you set with <code>zzc config set</code>, check
+<code>./zzcollab.yaml</code> for an override:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="fu">cat</span> ./zzcollab.yaml</span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a><span class="ex">zzc</span> config list <span class="at">--local</span></span></code></pre></div>
+<p>There is no built-in command that annotates <em>which</em> file
+supplied a merged value — comparing the two files directly is the only
+way.</p>
 </div>
 <div class="section level4">
-<h4 id="issue-2-docker-platform-compatibility">Issue 2: Docker Platform Compatibility<a class="anchor" aria-label="anchor" href="#issue-2-docker-platform-compatibility"></a>
+<h4 id="issue-2-arm64-mac-cannot-build-an-amd64-only-base-image">Issue 2: ARM64 Mac Cannot Build an AMD64-Only Base Image<a class="anchor" aria-label="anchor" href="#issue-2-arm64-mac-cannot-build-an-amd64-only-base-image"></a>
 </h4>
-<p><strong>Problem</strong>: An ARM64 Mac cannot build an AMD64-only
-base image.</p>
-<div class="sourceCode" id="cb45"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="co"># Error when building on the rocker/geospatial base image:</span></span>
-<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a><span class="co"># Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8</span></span></code></pre></div>
-<p><strong>Solution 1</strong>: Use an ARM64-compatible base and add
-packages via renv</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="ex">zzcollab</span> analysis</span>
-<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a><span class="co"># Then add spatial packages inside the container:</span></span>
-<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a><span class="co"># install.packages(c("sf", "terra", "raster"))</span></span>
-<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a><span class="co"># (Auto-snapshot on exit saves these to renv.lock)</span></span></code></pre></div>
-<p><strong>Solution 2</strong>: Force the AMD64 platform (runs under
-emulation)</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span>
-<span id="cb47-2"><a href="#cb47-2" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> rocker/geospatial</span>
-<span id="cb47-3"><a href="#cb47-3" tabindex="-1"></a><span class="co"># Slower under emulation, but compatible</span></span></code></pre></div>
+<pre class="text"><code>Error: rocker/geospatial:latest: no matching manifest for linux/arm64/v8</code></pre>
+<p><strong>Preferred fix</strong>: use an arm64-compatible base
+(<code>tidyverse</code>, <code>rstudio</code>, <code>r-ver</code> all
+publish arm64 images; <code>rocker/verse</code> does not) and add the
+domain packages via renv instead of switching base image.</p>
+<p><strong>Fallback</strong>: force amd64 under emulation (slower, but
+compatible):</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--base</span> rocker/geospatial</span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="issue-3-missing-configuration-file">Issue 3: Missing Configuration File<a class="anchor" aria-label="anchor" href="#issue-3-missing-configuration-file"></a>
+<h4 id="issue-3-missing-user-configuration-file">Issue 3: Missing User Configuration File<a class="anchor" aria-label="anchor" href="#issue-3-missing-user-configuration-file"></a>
 </h4>
-<p><strong>Problem</strong>: Configuration file not found</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" tabindex="-1"></a><span class="co"># Error: Configuration file not found: ~/.zzcollab/config.yaml</span></span></code></pre></div>
-<p><strong>Solution</strong>: Initialize configuration</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb49-2"><a href="#cb49-2" tabindex="-1"></a><span class="co"># Interactive prompts:</span></span>
-<span id="cb49-3"><a href="#cb49-3" tabindex="-1"></a><span class="co"># Team name: myteam</span></span>
-<span id="cb49-4"><a href="#cb49-4" tabindex="-1"></a><span class="co"># GitHub account: myusername</span></span>
-<span id="cb49-5"><a href="#cb49-5" tabindex="-1"></a><span class="co"># Docker profile (default: analysis):</span></span>
-<span id="cb49-6"><a href="#cb49-6" tabindex="-1"></a></span>
-<span id="cb49-7"><a href="#cb49-7" tabindex="-1"></a><span class="co"># Configuration created at: ~/.zzcollab/config.yaml</span></span></code></pre></div>
+<pre class="text"><code>Error: Configuration file not found: ~/.zzcollab/config.yaml</code></pre>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="ex">zzc</span> config init</span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="issue-4-docker-daemon-not-running">Issue 4: Docker Daemon Not Running<a class="anchor" aria-label="anchor" href="#issue-4-docker-daemon-not-running"></a>
 </h4>
-<p><strong>Problem</strong>: Cannot connect to Docker daemon</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" tabindex="-1"></a><span class="co"># Error: Cannot connect to the Docker daemon at unix:///var/run/docker.sock</span></span></code></pre></div>
-<p><strong>Solution</strong>: Start Docker daemon</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="co"># macOS/Windows: Start Docker Desktop app</span></span>
-<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a></span>
-<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a><span class="co"># Linux: Start Docker service</span></span>
-<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span>
-<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable docker  <span class="co"># Auto-start on boot</span></span>
-<span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a></span>
-<span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a><span class="co"># Verify Docker is running</span></span>
-<span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a><span class="ex">docker</span> info</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="ex">docker</span> info      <span class="co"># verify the daemon is reachable</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a><span class="co"># macOS/Windows: start Docker Desktop</span></span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a><span class="co"># Linux: sudo systemctl start docker</span></span></code></pre></div>
 </div>
 <div class="section level4">
-<h4 id="issue-5-profile-not-found">Issue 5: Profile Not Found<a class="anchor" aria-label="anchor" href="#issue-5-profile-not-found"></a>
+<h4 id="issue-5-tex-live-build-failure-on-a-minimal-base">Issue 5: TeX Live Build Failure on a Minimal Base<a class="anchor" aria-label="anchor" href="#issue-5-tex-live-build-failure-on-a-minimal-base"></a>
 </h4>
-<p><strong>Problem</strong>: Custom profile specified but not
-defined</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="co"># Error: Profile 'my-custom' not found in configuration</span></span></code></pre></div>
-<p><strong>Solution</strong>: Define the profile</p>
-<div class="sourceCode" id="cb53"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="co"># Edit user configuration</span></span>
-<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="ex">vim</span> ~/.zzcollab/config.yaml</span>
-<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a></span>
-<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="co"># Add custom profile:</span></span>
-<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="ex">profiles:</span></span>
-<span id="cb53-6"><a href="#cb53-6" tabindex="-1"></a>  <span class="ex">my-custom:</span></span>
-<span id="cb53-7"><a href="#cb53-7" tabindex="-1"></a>    <span class="ex">base-image:</span> <span class="st">"rocker/r-ver:latest"</span></span>
-<span id="cb53-8"><a href="#cb53-8" tabindex="-1"></a>    <span class="ex">libs-bundle:</span> <span class="st">"minimal"</span></span>
-<span id="cb53-9"><a href="#cb53-9" tabindex="-1"></a>    <span class="ex">pkgs-bundle:</span> <span class="st">"tidyverse"</span></span>
-<span id="cb53-10"><a href="#cb53-10" tabindex="-1"></a>    <span class="ex">description:</span> <span class="st">"My custom analysis environment"</span></span></code></pre></div>
+<p>If <code>zzc docker --profile minimal</code> (or any profile lacking
+TeX Live) with <code>pdf: true</code> fails during the TeX Live install
+step with something like
+<code>Package 'perl' has no installation candidate</code> or
+<code>Unable to locate package xzdec</code>: this was a real bug in the
+generator (the apt package lists get cleared by the pandoc/Quarto steps
+that run immediately before the TeX Live block, and the bootstrap’s
+<code>apt-get update</code> was conditional on a check that missed that
+state). It is fixed as of the <code>apt-get update</code> being
+unconditional in that block; if you hit this on an older checkout,
+update the framework.</p>
 </div>
 </div>
 </div>
 <div class="section level2">
 <h2 id="r-interface-configuration">R Interface Configuration<a class="anchor" aria-label="anchor" href="#r-interface-configuration"></a>
 </h2>
-<p>ZZCOLLAB provides a complete R interface for configuration
-management.</p>
-<div class="section level3">
-<h3 id="configuration-functions">Configuration Functions<a class="anchor" aria-label="anchor" href="#configuration-functions"></a>
-</h3>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<p>The R interface wraps the same shell commands documented above; it
+does not add configuration capability the CLI lacks, and in one place
+(<code><a href="../reference/init_project.html">init_project()</a></code>’s <code>profile</code> argument) it is
+currently <strong>narrower</strong> than the CLI:
+<code><a href="../reference/init_project.html">init_project()</a></code> validates <code>profile</code> against only
+<code>c("minimal", "analysis", "rstudio")</code> — it does not currently
+accept <code>"tidyverse"</code> or <code>"publishing"</code> even though
+the shell CLI and <code>bundles.yaml</code> both support them. Use the
+shell CLI (<code>zzc tidyverse</code>, <code>zzc publishing</code>)
+directly if you need those profiles; <code><a href="../reference/init_project.html">init_project()</a></code> will
+reject them.</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rgt47/zzcollab" class="external-link">zzcollab</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Initialize configuration</span></span>
-<span><span class="fu"><a href="../reference/init_config.html">init_config</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Set configuration values</span></span>
+<span><span class="fu"><a href="../reference/init_config.html">init_config</a></span><span class="op">(</span><span class="op">)</span>                               <span class="co"># create ~/.zzcollab/config.yaml</span></span>
 <span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"myteam"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"analysis"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"profile_name"</span>, <span class="st">"tidyverse"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"github_account"</span>, <span class="st">"myusername"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Get configuration values</span></span>
 <span><span class="va">team</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_config.html">get_config</a></span><span class="op">(</span><span class="st">"team_name"</span><span class="op">)</span></span>
-<span><span class="va">profile</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_config.html">get_config</a></span><span class="op">(</span><span class="st">"profile_name"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># List all configuration</span></span>
 <span><span class="va">all_config</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/list_config.html">list_config</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">all_config</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Validate configuration</span></span>
-<span><span class="va">valid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_config.html">validate_config</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">valid</span><span class="op">$</span><span class="va">valid</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/message.html" class="external-link">message</a></span><span class="op">(</span><span class="st">"Configuration errors:"</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">valid</span><span class="op">$</span><span class="va">errors</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="configuration-aware-project-functions">Configuration-Aware Project Functions<a class="anchor" aria-label="anchor" href="#configuration-aware-project-functions"></a>
-</h3>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Functions use configuration defaults automatically</span></span>
-<span></span>
-<span><span class="co"># Create project with defaults from config</span></span>
-<span><span class="fu"><a href="../reference/init_project.html">init_project</a></span><span class="op">(</span><span class="st">"my-analysis"</span><span class="op">)</span></span>
-<span><span class="co"># Uses: team_name, profile_name from config</span></span>
-<span></span>
-<span><span class="co"># Override specific settings</span></span>
-<span><span class="fu"><a href="../reference/init_project.html">init_project</a></span><span class="op">(</span></span>
-<span>  project_name <span class="op">=</span> <span class="st">"special-study"</span>,</span>
-<span>  profile <span class="op">=</span> <span class="st">"rstudio"</span>  <span class="co"># Override default profile</span></span>
-<span>  <span class="co"># Other settings from config</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Explicit full control</span></span>
+<span><span class="va">valid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_config.html">validate_config</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># init_project()'s profile argument accepts only "minimal", "analysis",</span></span>
+<span><span class="co"># or "rstudio" (narrower than the CLI; see note above)</span></span>
 <span><span class="fu"><a href="../reference/init_project.html">init_project</a></span><span class="op">(</span></span>
 <span>  team_name <span class="op">=</span> <span class="st">"genomicslab"</span>,</span>
 <span>  project_name <span class="op">=</span> <span class="st">"cancer-study"</span>,</span>
 <span>  profile <span class="op">=</span> <span class="st">"analysis"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="configuration-inspection">Configuration Inspection<a class="anchor" aria-label="anchor" href="#configuration-inspection"></a>
-</h3>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Get effective configuration from all sources</span></span>
-<span><span class="va">effective</span> <span class="op">&lt;-</span> <span class="fu">get_effective_config</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">effective</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Check configuration sources</span></span>
-<span><span class="va">sources</span> <span class="op">&lt;-</span> <span class="fu">get_config_sources</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">sources</span><span class="op">$</span><span class="va">team_name</span><span class="op">)</span>  <span class="co"># Shows which file provides value</span></span>
-<span></span>
-<span><span class="co"># Get default values</span></span>
-<span><span class="va">defaults</span> <span class="op">&lt;-</span> <span class="fu">get_config_defaults</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">defaults</span><span class="op">)</span></span></code></pre></div>
-</div>
+<p><code>get_config_default(key, default)</code> is the internal
+null-coalescing helper other package functions use; it is documented
+(<code><a href="../reference/get_config_default.html">?get_config_default</a></code>) but is not typically called directly
+by users.</p>
+<p>There are no <code>get_effective_config()</code>,
+<code>get_config_sources()</code>, or <code>get_config_defaults()</code>
+functions in the current R interface — an earlier version of this
+vignette described them; they do not exist in <code>R/config.R</code>.
+Source inspection (<code>config list</code> for the merged result, or
+the two YAML files directly for provenance) is the only way to answer
+“where did this value come from” today.</p>
 </div>
 <div class="section level2">
 <h2 id="best-practices">Best Practices<a class="anchor" aria-label="anchor" href="#best-practices"></a>
@@ -1224,243 +1026,186 @@ management.</p>
 <h4 id="solo-researcher">Solo Researcher<a class="anchor" aria-label="anchor" href="#solo-researcher"></a>
 </h4>
 <ul>
-<li>
-<strong>Use</strong>: User configuration only
-(<code>~/.zzcollab/config.yaml</code>)</li>
-<li>
-<strong>Profiles</strong>: 1-2 profiles (minimal, analysis)</li>
-<li>
-<strong>Package management</strong>: Add via renv as needed</li>
-<li>
-<strong>Version control</strong>: Commit renv.lock, not user
-config</li>
+<li>User configuration only.</li>
+<li>Add packages via renv as needed; commit <code>renv.lock</code>, not
+user config.</li>
 </ul>
 </div>
 <div class="section level4">
-<h4 id="small-team-2-5-people">Small Team (2-5 people)<a class="anchor" aria-label="anchor" href="#small-team-2-5-people"></a>
+<h4 id="small-team-25-people">Small Team (2–5 people)<a class="anchor" aria-label="anchor" href="#small-team-25-people"></a>
 </h4>
 <ul>
-<li>
-<strong>Use</strong>: Project configuration
-(<code>./zzcollab.yaml</code> in Git)</li>
-<li>
-<strong>Profiles</strong>: 2-3 profiles for team domains</li>
-<li>
-<strong>Package management</strong>: Team discusses additions, uses
-renv</li>
-<li>
-<strong>Version control</strong>: Commit project config,
-renv.lock</li>
+<li>Project configuration (<code>./zzcollab.yaml</code>), committed to
+Git, pins
+<code>profile_name</code>/<code>archetype</code>/<code>pdf</code> so
+every member’s regeneration produces the same Dockerfile regardless of
+their personal user config.</li>
+<li>Team discusses package additions; renv tracks them.</li>
 </ul>
 </div>
 <div class="section level4">
-<h4 id="large-organization-10-people">Large Organization (10+ people)<a class="anchor" aria-label="anchor" href="#large-organization-10-people"></a>
+<h4 id="larger-organization">Larger Organization<a class="anchor" aria-label="anchor" href="#larger-organization"></a>
 </h4>
 <ul>
-<li>
-<strong>Use</strong>: System + project configurations</li>
-<li>
-<strong>Profiles</strong>: Comprehensive profile library</li>
-<li>
-<strong>Package management</strong>: IT manages base images, teams
-use renv</li>
-<li>
-<strong>Version control</strong>: Centralized profile library +
-project configs</li>
+<li>There is currently no system-wide config file to centralize this
+with (see Section 2 and Section 8) — distribute a project-config
+template or a shared <code>zzcollab.yaml</code> snippet instead.</li>
 </ul>
 </div>
 </div>
 <div class="section level3">
 <h3 id="security-considerations">Security Considerations<a class="anchor" aria-label="anchor" href="#security-considerations"></a>
 </h3>
-<div class="section level4">
-<h4 id="private-repository-settings">Private Repository Settings<a class="anchor" aria-label="anchor" href="#private-repository-settings"></a>
-</h4>
-<div class="sourceCode" id="cb57"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb57-1"><a href="#cb57-1" tabindex="-1"></a><span class="co"># ./zzcollab.yaml</span></span>
-<span id="cb57-2"><a href="#cb57-2" tabindex="-1"></a><span class="fu">collaboration</span><span class="kw">:</span></span>
-<span id="cb57-3"><a href="#cb57-3" tabindex="-1"></a><span class="at">  </span><span class="fu">github</span><span class="kw">:</span></span>
-<span id="cb57-4"><a href="#cb57-4" tabindex="-1"></a><span class="at">    </span><span class="fu">default-visibility</span><span class="kw">:</span><span class="at"> </span><span class="st">"private"</span><span class="co">  # Always private</span></span>
-<span id="cb57-5"><a href="#cb57-5" tabindex="-1"></a><span class="at">    </span><span class="fu">branch-protection</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">         # Require PR reviews</span></span>
-<span id="cb57-6"><a href="#cb57-6" tabindex="-1"></a></span>
-<span id="cb57-7"><a href="#cb57-7" tabindex="-1"></a><span class="fu">repository</span><span class="kw">:</span></span>
-<span id="cb57-8"><a href="#cb57-8" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-merge-commits</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">       # Clean history</span></span>
-<span id="cb57-9"><a href="#cb57-9" tabindex="-1"></a><span class="at">  </span><span class="fu">allow-squash-merging</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Allow squash</span></span>
-<span id="cb57-10"><a href="#cb57-10" tabindex="-1"></a><span class="at">  </span><span class="fu">delete-head-branches</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">      # Auto-cleanup</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="container-security">Container Security<a class="anchor" aria-label="anchor" href="#container-security"></a>
-</h4>
-<div class="sourceCode" id="cb58"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb58-1"><a href="#cb58-1" tabindex="-1"></a><span class="fu">development</span><span class="kw">:</span></span>
-<span id="cb58-2"><a href="#cb58-2" tabindex="-1"></a><span class="at">  </span><span class="fu">container</span><span class="kw">:</span></span>
-<span id="cb58-3"><a href="#cb58-3" tabindex="-1"></a><span class="at">    </span><span class="fu">default-user</span><span class="kw">:</span><span class="at"> </span><span class="st">"analyst"</span><span class="co">        # Never run as root</span></span>
-<span id="cb58-4"><a href="#cb58-4" tabindex="-1"></a><span class="at">    </span><span class="fu">read-only-volumes</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">        # Mount shared volumes read-only</span></span></code></pre></div>
-</div>
-<div class="section level4">
-<h4 id="sensitive-data">Sensitive Data<a class="anchor" aria-label="anchor" href="#sensitive-data"></a>
-</h4>
 <ul>
+<li>Never commit API keys, passwords, or credentials to
+<code>zzcollab.yaml</code> or <code>renv.lock</code>.</li>
+<li>Use <code>~/.Renviron</code> (outside Git) for secrets.</li>
 <li>
-<strong>Never commit</strong>: API keys, passwords, credentials</li>
-<li>
-<strong>Use</strong>: Environment variables for secrets</li>
-<li>
-<strong>Store</strong>: Credentials outside Git (e.g.,
-<code>~/.Renviron</code>)</li>
+<code>zzc github</code> defaults to creating private repositories;
+confirm the visibility setting if that matters for your project.</li>
 </ul>
-</div>
 </div>
 <div class="section level3">
-<h3 id="performance-optimization">Performance Optimization<a class="anchor" aria-label="anchor" href="#performance-optimization"></a>
+<h3 id="performance">Performance<a class="anchor" aria-label="anchor" href="#performance"></a>
 </h3>
-<div class="section level4">
-<h4 id="build-time-reduction">Build Time Reduction<a class="anchor" aria-label="anchor" href="#build-time-reduction"></a>
-</h4>
-<ol style="list-style-type: decimal">
-<li>
-<strong>Use appropriate profiles</strong>
 <ul>
-<li>Development: <code>minimal</code> or <code>analysis</code>
-</li>
-<li>CI/CD: <code>minimal</code>
-</li>
-<li>Production: <code>analysis</code> or domain-specific</li>
+<li>
+<code>minimal</code> and <code>tidyverse</code> build fastest;
+<code>publishing</code> is the largest and slowest cold build (4.2GB,
+full TeX Live baked in by rocker).</li>
+<li>A profile switch on an existing project
+(<code>zzc docker --profile X</code>) only changes the base image and
+regenerates the Dockerfile; it does not retroactively add the
+switched-to profile’s advertised packages — see the Layer 1 caveat
+above.</li>
+<li>
+<code>make check-renv</code> (strict + auto-fix) and
+<code>make snapshot</code> (grow
+<code>renv.lock</code>/<code>DESCRIPTION</code> from the running image)
+are the two make targets to run before committing a package change.</li>
 </ul>
-</li>
-<li>
-<strong>Layer caching</strong>
-<ul>
-<li>Base image changes → full rebuild</li>
-<li>Package additions → partial rebuild</li>
-<li>Use stable base images</li>
-</ul>
-</li>
-<li>
-<strong>Parallel operations</strong>
-<ul>
-<li>Enable parallel package installation</li>
-<li>Build profiles concurrently when possible</li>
-</ul>
-</li>
-</ol>
-</div>
-<div class="section level4">
-<h4 id="container-size-optimization">Container Size Optimization<a class="anchor" aria-label="anchor" href="#container-size-optimization"></a>
-</h4>
-<div class="sourceCode" id="cb59"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb59-1"><a href="#cb59-1" tabindex="-1"></a><span class="co"># Prefer lightweight profiles for CI/CD</span></span>
-<span id="cb59-2"><a href="#cb59-2" tabindex="-1"></a><span class="fu">profiles</span><span class="kw">:</span></span>
-<span id="cb59-3"><a href="#cb59-3" tabindex="-1"></a><span class="at">  </span><span class="fu">minimal</span><span class="kw">:</span><span class="co">           # ~650MB</span></span>
-<span id="cb59-4"><a href="#cb59-4" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb59-5"><a href="#cb59-5" tabindex="-1"></a><span class="at">  </span><span class="fu">analysis</span><span class="kw">:</span><span class="co">          # ~1.2GB (for development)</span></span>
-<span id="cb59-6"><a href="#cb59-6" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb59-7"><a href="#cb59-7" tabindex="-1"></a><span class="co">  # Avoid enabling unnecessary heavy profiles</span></span></code></pre></div>
-</div>
-</div>
-<div class="section level3">
-<h3 id="troubleshooting-strategy">Troubleshooting Strategy<a class="anchor" aria-label="anchor" href="#troubleshooting-strategy"></a>
-</h3>
-<ol style="list-style-type: decimal">
-<li>
-<p><strong>Check configuration hierarchy</strong></p>
-<div class="sourceCode" id="cb60"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" tabindex="-1"></a><span class="ex">zzcollab</span> config list <span class="at">--verbose</span></span></code></pre></div>
-</li>
-<li>
-<p><strong>Validate configuration</strong></p>
-<div class="sourceCode" id="cb61"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb61-1"><a href="#cb61-1" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span></code></pre></div>
-</li>
-<li>
-<p><strong>Test with dry-run</strong></p>
-<div class="sourceCode" id="cb62"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb62-1"><a href="#cb62-1" tabindex="-1"></a><span class="ex">zzcollab</span> config validate</span></code></pre></div>
-</li>
-<li>
-<p><strong>Check Docker status</strong></p>
-<div class="sourceCode" id="cb63"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb63-1"><a href="#cb63-1" tabindex="-1"></a><span class="ex">docker</span> info</span>
-<span id="cb63-2"><a href="#cb63-2" tabindex="-1"></a><span class="ex">docker</span> images</span></code></pre></div>
-</li>
-<li>
-<p><strong>Verbose output</strong></p>
-<div class="sourceCode" id="cb64"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb64-1"><a href="#cb64-1" tabindex="-1"></a><span class="ex">zzcollab</span> <span class="at">-v</span> analysis</span></code></pre></div>
-</li>
-</ol>
 </div>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
 </h2>
-<p>ZZCOLLAB’s configuration system provides control over reproducible
-research environments through multiple layers:</p>
 <div class="section level3">
 <h3 id="key-concepts">Key Concepts<a class="anchor" aria-label="anchor" href="#key-concepts"></a>
 </h3>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Configuration hierarchy</strong>: Command-line → environment
-→ project → user → system → defaults</li>
+<strong>Configuration hierarchy</strong>: project config overrides
+user config; there is no environment-variable layer for ordinary keys
+and no system-wide config file, despite documentation (and a dead
+constant in the source) once suggesting otherwise.</li>
 <li>
-<strong>Docker profiles</strong>: four built-in profiles (minimal
-~650MB, tidyverse ~1.2GB, rstudio ~980MB, publishing ~4.2GB;
-<code>analysis</code> is a deprecated alias for <code>tidyverse</code>);
-other environments via a custom base image</li>
+<strong>Docker profiles</strong>: four built-in profiles resolving
+to a base image only (<code>minimal</code>, <code>tidyverse</code>,
+<code>rstudio</code>, <code>publishing</code>); a profile’s advertised
+package/library bundle is not installed by choosing it.</li>
 <li>
-<strong>Two-layer architecture</strong>: Docker profiles (shared) +
-renv packages (flexible)</li>
+<strong>Capability settings</strong>: <code>pdf</code> (explicit,
+tri-state, always wins) and <code>archetype</code> (supplies the default
+when <code>pdf</code> is unset) jointly gate the TeX Live and Quarto
+install blocks — see <code>docs/dockerfile-variable-reference.md</code>
+for the full logic.</li>
 <li>
-<strong>CLI flags</strong>: Comprehensive control over all
-aspects</li>
+<strong>Two-layer package architecture</strong>: Docker image
+(shared) + renv (flexible), with <code>renv.lock</code> as the actual
+reproducibility source of truth — conditional on dependencies actually
+being declared there.</li>
 <li>
-<strong>R interface</strong>: Complete configuration management
-within R</li>
+<strong>R interface</strong>: thinner than the CLI in at least one
+place (<code><a href="../reference/init_project.html">init_project()</a></code>’s profile set); prefer the CLI when
+in doubt.</li>
 </ol>
 </div>
 <div class="section level3">
 <h3 id="quick-reference">Quick Reference<a class="anchor" aria-label="anchor" href="#quick-reference"></a>
 </h3>
-<p><strong>Initialize configuration</strong>:</p>
-<div class="sourceCode" id="cb65"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb65-1"><a href="#cb65-1" tabindex="-1"></a><span class="ex">zzcollab</span> config init</span>
-<span id="cb65-2"><a href="#cb65-2" tabindex="-1"></a><span class="ex">zzcollab</span> config set team-name <span class="st">"myteam"</span></span>
-<span id="cb65-3"><a href="#cb65-3" tabindex="-1"></a><span class="ex">zzcollab</span> config set profile-name <span class="st">"analysis"</span></span></code></pre></div>
-<p><strong>Create project</strong>:</p>
-<div class="sourceCode" id="cb66"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb66-1"><a href="#cb66-1" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb66-2"><a href="#cb66-2" tabindex="-1"></a><span class="ex">zzc</span> analysis                     <span class="co"># Full setup (init + renv + docker)</span></span>
-<span id="cb66-3"><a href="#cb66-3" tabindex="-1"></a><span class="ex">zzc</span> github                       <span class="co"># Create private GitHub repo</span></span></code></pre></div>
-<p><strong>Team collaboration</strong>:</p>
-<div class="sourceCode" id="cb67"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb67-1"><a href="#cb67-1" tabindex="-1"></a><span class="co"># Team lead:</span></span>
-<span id="cb67-2"><a href="#cb67-2" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team</span>
-<span id="cb67-3"><a href="#cb67-3" tabindex="-1"></a></span>
-<span id="cb67-4"><a href="#cb67-4" tabindex="-1"></a><span class="co"># Team member:</span></span>
-<span id="cb67-5"><a href="#cb67-5" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/myteam/study.git <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
-<span id="cb67-6"><a href="#cb67-6" tabindex="-1"></a><span class="fu">make</span> docker-build</span></code></pre></div>
-<p><strong>Package management</strong>:</p>
-<div class="sourceCode" id="cb68"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb68-1"><a href="#cb68-1" tabindex="-1"></a><span class="co"># Inside container:</span></span>
-<span id="cb68-2"><a href="#cb68-2" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"package"</span><span class="kw">)</span></span>
-<span id="cb68-3"><a href="#cb68-3" tabindex="-1"></a><span class="co"># Auto-snapshot on exit - no manual snapshot needed</span></span>
-<span id="cb68-4"><a href="#cb68-4" tabindex="-1"></a><span class="fu">q()</span>  <span class="co"># Exit R - snapshot happens automatically</span></span></code></pre></div>
-<p><strong>Common make targets</strong>:</p>
-<div class="sourceCode" id="cb69"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb69-1"><a href="#cb69-1" tabindex="-1"></a><span class="fu">make</span> snapshot      <span class="co"># grow renv.lock + DESCRIPTION from the image (run</span></span>
-<span id="cb69-2"><a href="#cb69-2" tabindex="-1"></a>                   <span class="co"># before commit): hydrate, snapshot, then zzrenvcheck</span></span>
-<span id="cb69-3"><a href="#cb69-3" tabindex="-1"></a><span class="fu">make</span> check-renv    <span class="co"># validate deps: strict + auto-fix (run before commit)</span></span>
-<span id="cb69-4"><a href="#cb69-4" tabindex="-1"></a><span class="fu">make</span> style         <span class="co"># format R code with styler (code-quality feature)</span></span>
-<span id="cb69-5"><a href="#cb69-5" tabindex="-1"></a><span class="fu">make</span> lint          <span class="co"># lint R code with lintr (code-quality feature)</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Initialize</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="ex">zzc</span> config init</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="ex">zzc</span> config set team-name <span class="st">"myteam"</span></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="ex">zzc</span> config set profile-name <span class="st">"tidyverse"</span></span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Create a project</span></span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">mkdir</span> study <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a><span class="ex">zzc</span> tidyverse</span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a><span class="ex">zzc</span> github</span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a></span>
+<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a><span class="co"># Switch profile on an existing project</span></span>
+<span id="cb34-12"><a href="#cb34-12" tabindex="-1"></a><span class="ex">zzc</span> docker <span class="at">--profile</span> minimal</span>
+<span id="cb34-13"><a href="#cb34-13" tabindex="-1"></a><span class="ex">zzc</span> rebuild <span class="at">--verbose</span></span>
+<span id="cb34-14"><a href="#cb34-14" tabindex="-1"></a></span>
+<span id="cb34-15"><a href="#cb34-15" tabindex="-1"></a><span class="co"># Team collaboration</span></span>
+<span id="cb34-16"><a href="#cb34-16" tabindex="-1"></a><span class="fu">make</span> docker-build <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-push-team     <span class="co"># lead</span></span>
+<span id="cb34-17"><a href="#cb34-17" tabindex="-1"></a><span class="fu">git</span> clone ... <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> study <span class="kw">&amp;&amp;</span> <span class="fu">make</span> docker-build <span class="co"># member</span></span>
+<span id="cb34-18"><a href="#cb34-18" tabindex="-1"></a></span>
+<span id="cb34-19"><a href="#cb34-19" tabindex="-1"></a><span class="co"># Package management (inside container)</span></span>
+<span id="cb34-20"><a href="#cb34-20" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"package"</span><span class="kw">)</span></span>
+<span id="cb34-21"><a href="#cb34-21" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># auto-snapshot on exit</span></span>
+<span id="cb34-22"><a href="#cb34-22" tabindex="-1"></a></span>
+<span id="cb34-23"><a href="#cb34-23" tabindex="-1"></a><span class="co"># Before committing a dependency change</span></span>
+<span id="cb34-24"><a href="#cb34-24" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
+<span id="cb34-25"><a href="#cb34-25" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="further-reading">Further Reading<a class="anchor" aria-label="anchor" href="#further-reading"></a>
 </h3>
 <ul>
 <li>
-<code>zzcollab --help</code> - Complete CLI reference</li>
+<code>zzc --help</code> / <code>zzc docker help</code> /
+<code>zzc config help</code> — CLI reference, verified current as of
+this vignette’s last edit.</li>
 <li>
-<code><a href="https://rdrr.io/pkg/zzcollab/man" class="external-link">help(package = "zzcollab")</a></code> - R package
-documentation</li>
+<code><a href="https://rdrr.io/pkg/zzcollab/man" class="external-link">help(package = "zzcollab")</a></code> — R package
+documentation.</li>
 <li>
-<code><a href="../articles/getting-started.html">vignette("getting-started")</a></code> - Comprehensive
-tutorial</li>
+<code><a href="../articles/getting-started.html">vignette("getting-started")</a></code> — tutorial.</li>
 <li>
-<code>docs/VARIANTS.md</code> - The four built-in profiles and the
-custom base-image workflow for specialized environments</li>
+<code><a href="../articles/glossary.html">vignette("glossary")</a></code> — term definitions.</li>
 <li>
-<code>docs/CONFIGURATION.md</code> - Advanced configuration
-guide</li>
+<code>docs/dockerfile-variable-reference.md</code> — full
+variable-by-variable mechanics of Dockerfile generation, including the
+<code>pdf</code>/<code>archetype</code> interaction summarized in
+Section 5 above.</li>
 </ul>
 </div>
+</div>
+<div class="section level2">
+<h2 id="changelog-note-for-maintainers">Changelog Note for Maintainers<a class="anchor" aria-label="anchor" href="#changelog-note-for-maintainers"></a>
+</h2>
+<p>This vignette was rewritten against the current shell implementation
+on 2026-10-19. Content removed from the prior version because it
+described behavior not present in the code:</p>
+<ul>
+<li>A system-wide <code>/etc/zzcollab/config.yaml</code> configuration
+layer (<code>ZZCOLLAB_CONFIG_SYSTEM</code> is defined in
+<code>lib/constants.sh</code> but never read by
+<code>load_config()</code>).</li>
+<li>A generic environment-variable configuration-override layer
+(<code>ZZCOLLAB_TEAM_NAME</code> and similar were never
+implemented).</li>
+<li>
+<code>config list --verbose</code> and per-key source annotation in
+<code>config list</code>/<code>config validate</code> output.</li>
+<li>Custom profile composition via a <code>profiles:</code> block in
+user config
+(<code>base-image</code>/<code>libs-bundle</code>/<code>pkgs-bundle</code>
+keys) — no code reads such a block.</li>
+<li>The R functions <code>get_effective_config()</code>,
+<code>get_config_sources()</code>, <code>get_config_defaults()</code>
+(plural) — none exist in <code>R/config.R</code>.</li>
+<li>The claim that the <code>publishing</code> profile is
+“capability-adaptive,” rendering PDF when a LaTeX toolchain is present
+and falling back to HTML otherwise by itself — no such fallback logic
+was found in <code>modules/docker.sh</code>; what exists is the
+<code>pdf</code>/<code>archetype</code> gating described in Section 5,
+which is an install-time decision, not a render-time fallback.</li>
+</ul>
+<p>If any of the above is reintroduced in the codebase, this vignette
+should be updated to describe it again — these are accurate removals for
+this date’s source, not permanent judgments about the design.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
