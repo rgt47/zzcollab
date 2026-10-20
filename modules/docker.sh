@@ -319,9 +319,15 @@ TEXLIVE_BLOCK
 # lualatex by default, which the warm-up renders below also exercise. The
 # earlier warm-ups covered only pdflatex and xelatex, so the first real
 # 'quarto render --to pdf' was left to install them at run time.
+#
+# tcolorbox, pdfcol, fontawesome5, and luatexbase are Quarto's own PDF
+# template dependencies (callout boxes under lualatex), not exercised by
+# any of the three rmarkdown/bookdown warm-up documents below, which have
+# no callout equivalent. They are pre-installed here but not self-tested
+# by a render the way the rest of this list is.
 RUN <<'WARMUP'
 set -eu
-R -e "tinytex::tlmgr_install(c('amsfonts','booktabs','setspace','multirow','wrapfig','float','colortbl','pdflscape','tabu','varwidth','threeparttable','threeparttablex','environ','trimspaces','ulem','makecell','mathtools','fancyhdr','caption','enumitem','fp','pgf','pgfplots','siunitx','lineno','lualatex-math','unicode-math'))"
+R -e "tinytex::tlmgr_install(c('amsfonts','booktabs','setspace','multirow','wrapfig','float','colortbl','pdflscape','tabu','varwidth','threeparttable','threeparttablex','environ','trimspaces','ulem','makecell','mathtools','fancyhdr','caption','enumitem','fp','pgf','pgfplots','siunitx','lineno','lualatex-math','unicode-math','tcolorbox','pdfcol','fontawesome5','luatexbase'))"
 d=/tmp/texwarmup
 mkdir -p "$d"
 cat > "$d/01-report.Rmd" <<'RMD'
