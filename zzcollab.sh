@@ -97,6 +97,39 @@ is_workspace_initialized() {
     [[ -f "DESCRIPTION" ]]
 }
 
+# Walk up from $PWD looking for a zzcollab workspace marker, mirroring the
+# shell's single-letter navigation functions (~/.zshrc: _zzcollab_root, used
+# by a, r, p, 0, ...). Echoes the root directory and returns 0, or returns 1
+# if no marker is found between here and /.
+zzc_find_workspace_root() {
+    local dir="$PWD"
+    while [[ "$dir" != "/" ]]; do
+        if [[ -f "$dir/.zzcollab" ]] \
+           || [[ -f "$dir/.zzcollab-state" ]] \
+           || [[ -f "$dir/.zzcollab/manifest.json" ]] \
+           || [[ -f "$dir/.zzcollab/manifest.txt" ]]; then
+            echo "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+    return 1
+}
+
+# cd to the workspace root if one is found above the current directory, so
+# every command operates on the project root regardless of which
+# subdirectory it was invoked from. A no-op when already at the root, or
+# when no marker exists anywhere above (e.g. a brand-new project directory,
+# where 'zzc init'/'zzc <profile>' is expected to scaffold in place).
+zzc_cd_to_workspace_root() {
+    local root
+    if root=$(zzc_find_workspace_root) && [[ "$root" != "$PWD" ]]; then
+        log_info "Running from a subdirectory of the workspace; switching to $root"
+        cd "$root" || { log_error "Failed to switch to workspace root: $root"; return 1; }
+    fi
+    return 0
+}
+
 # Run setup_project; on failure, roll back the partial scaffold by removing the
 # top-level entries it newly created. A snapshot taken before scaffolding means
 # pre-existing files are never removed (safe even under --force). This avoids a
@@ -2922,6 +2955,18 @@ cmd_menu() {
 }
 
 main() {
+    # Cheap early pass so -v/-q are already in effect for the workspace-root
+    # switch message below; the full pre-scan further down repeats this
+    # (idempotently) and also strips these flags out of "$@".
+    local _early_arg
+    for _early_arg in "$@"; do
+        case "$_early_arg" in
+            -v|--verbose) export VERBOSITY_LEVEL=2 ;;
+            -q|--quiet)   export VERBOSITY_LEVEL=0 ;;
+        esac
+    done
+    zzc_cd_to_workspace_root || exit 1
+
     # No arguments → context-aware entry point
     if [[ $# -eq 0 ]]; then
         if is_workspace_initialized; then
