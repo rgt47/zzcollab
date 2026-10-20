@@ -121,7 +121,7 @@ DOCKER
   zzc docker --base IMG       Switch base image (updates state + Dockerfile atomically)
   zzc docker --base-image IMG Alias for --base
   zzc docker --no-renv        Install from DESCRIPTION (no renv.lock)
-  zzc docker render           Render analysis/report/index.qmd (or .Rmd) to PDF
+  zzc docker render           Render analysis/report/index.qmd (or report.Rmd) to PDF
   zzc docker render FILE      Render a specific .qmd/.Rmd file instead
   zzc docker render --html    ...to HTML instead
 
@@ -131,8 +131,8 @@ Make targets:
   make docker-rstudio         RStudio Server at http://localhost:8787
   make docker-test            Run tests in the container
   make check-binaries         Audit renv.lock for missing system deps
-  make docker-render-qmd-pdf  Render index.qmd to PDF (same as zzc docker render)
-  make docker-render-qmd-html Render index.qmd to HTML
+  make docker-render-qmd-pdf  Render the report to PDF (same as zzc docker render)
+  make docker-render-qmd-html Render the report to HTML
 
 The image provides the shared environment; renv.lock pins exact package
 versions. See vignette("quickstart1") for the full workflow.

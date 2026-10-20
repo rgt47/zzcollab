@@ -522,7 +522,7 @@ cmd_docker() {
 }
 
 # Render a Quarto/R Markdown report inside the project's Docker container.
-# Defaults to analysis/report/index.qmd or index.Rmd (whichever exists; a
+# Defaults to analysis/report/index.qmd or report.Rmd (whichever exists; a
 # project is expected to have only one). Delegates to the generated
 # Makefile's docker-render-qmd target rather than reimplementing the
 # container invocation (platform/runtime detection, apptainer support) here
@@ -546,7 +546,7 @@ RENDER REPORT
   zzc docker render --html        Render to HTML instead
   zzc docker render --format FMT  Render to any Quarto-supported format
 
-With no FILE, renders analysis/report/index.qmd or index.Rmd (whichever
+With no FILE, renders analysis/report/index.qmd or report.Rmd (whichever
 exists). FILE may be a path, or a bare name resolved against
 analysis/report/ (e.g. 'test.Rmd').
 
@@ -571,7 +571,7 @@ HELPEOF
 
     if [[ -z "$file" ]]; then
         local qmd="analysis/report/index.qmd"
-        local rmd="analysis/report/index.Rmd"
+        local rmd="analysis/report/report.Rmd"
         if [[ -f "$qmd" && -f "$rmd" ]]; then
             log_error "Both $qmd and $rmd exist; a project should have only one. Specify which to render: zzc docker render <file>"
             exit 1
