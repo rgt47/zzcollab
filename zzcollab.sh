@@ -377,6 +377,12 @@ init_export_config_vars() {
 
 cmd_docker() {
 
+    if [[ "${1:-}" == "render" ]]; then
+        shift
+        cmd_docker_render "$@"
+        return $?
+    fi
+
     local build_image=""
     local r_version=""
     local base_image=""
@@ -480,6 +486,79 @@ cmd_docker() {
     else
         log_info "Build with: make docker-build"
     fi
+}
+
+# Render a Quarto/R Markdown report inside the project's Docker container.
+# Defaults to analysis/report/index.qmd or index.Rmd (whichever exists; a
+# project is expected to have only one). Delegates to the generated
+# Makefile's docker-render-qmd target rather than reimplementing the
+# container invocation (platform/runtime detection, apptainer support) here
+# a second time.
+cmd_docker_render() {
+
+    local format="pdf"
+    local file=""
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --pdf) format="pdf"; shift ;;
+            --html) format="html"; shift ;;
+            --format) format="$2"; shift 2 ;;
+            help|--help|-h)
+                cat << 'HELPEOF'
+RENDER REPORT
+
+  zzc docker render               Render the project's report to PDF (default)
+  zzc docker render FILE          Render a specific .qmd/.Rmd file instead
+  zzc docker render --html        Render to HTML instead
+  zzc docker render --format FMT  Render to any Quarto-supported format
+
+With no FILE, renders analysis/report/index.qmd or index.Rmd (whichever
+exists). FILE may be a path, or a bare name resolved against
+analysis/report/ (e.g. 'test.Rmd').
+
+Runs inside the project's Docker container via 'make docker-render-qmd'.
+HELPEOF
+                exit 0
+                ;;
+            -*) log_error "Unknown option: $1"; exit 1 ;;
+            *)
+                if [[ -n "$file" ]]; then
+                    log_error "Only one file may be given, got '$file' and '$1'"
+                    exit 1
+                fi
+                file="$1"
+                shift
+                ;;
+        esac
+    done
+
+    ensure_workspace_initialized "docker render" || exit 1
+    [[ -f Makefile ]] || { log_error "No Makefile found. Run 'zzc docker' first to generate one."; exit 1; }
+
+    if [[ -z "$file" ]]; then
+        local qmd="analysis/report/index.qmd"
+        local rmd="analysis/report/index.Rmd"
+        if [[ -f "$qmd" && -f "$rmd" ]]; then
+            log_error "Both $qmd and $rmd exist; a project should have only one. Specify which to render: zzc docker render <file>"
+            exit 1
+        elif [[ -f "$qmd" ]]; then
+            file="$qmd"
+        elif [[ -f "$rmd" ]]; then
+            file="$rmd"
+        else
+            log_error "No report found. Expected $qmd or $rmd, or pass a path: zzc docker render <file>"
+            exit 1
+        fi
+    else
+        if [[ ! -f "$file" && -f "analysis/report/$file" ]]; then
+            file="analysis/report/$file"
+        fi
+        [[ -f "$file" ]] || { log_error "File not found: $file"; exit 1; }
+    fi
+
+    log_info "Rendering $file to $format (in container)..."
+    make docker-render-qmd "FILE=$file" "FORMAT=$format"
 }
 
 cmd_build() {
@@ -2965,8 +3044,35 @@ main() {
                 commands_run=$((commands_run + 1))
                 ;;
             docker)
-                # Collect docker-specific flags
                 shift
+                if [[ "${1:-}" == "render" ]]; then
+                    shift
+                    local render_args=()
+                    local render_got_file=""
+                    while [[ $# -gt 0 ]]; do
+                        case "$1" in
+                            --pdf|--html) render_args+=("$1"); shift ;;
+                            --format) render_args+=("--format" "$2"); shift 2 ;;
+                            help|--help|-h) render_args+=("$1"); shift ;;
+                            -*) break ;;
+                            init|renv|docker|git|github|gitlab|push|dockerhub|minimal|analysis|rstudio|tidyverse|publishing)
+                                break
+                                ;;
+                            *)
+                                if [[ -n "$render_got_file" ]]; then
+                                    break
+                                fi
+                                render_args+=("$1")
+                                render_got_file=1
+                                shift
+                                ;;
+                        esac
+                    done
+                    cmd_docker_render ${render_args[@]+"${render_args[@]}"}
+                    commands_run=$((commands_run + 1))
+                    continue
+                fi
+                # Collect docker-specific flags
                 local docker_args=()
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
