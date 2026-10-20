@@ -530,27 +530,31 @@ cmd_docker() {
 cmd_docker_render() {
 
     local format="pdf"
+    local format_explicit=""
     local file=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --pdf) format="pdf"; shift ;;
-            --html) format="html"; shift ;;
-            --format) format="$2"; shift 2 ;;
+            --pdf) format="pdf"; format_explicit=true; shift ;;
+            --html) format="html"; format_explicit=true; shift ;;
+            --format) format="$2"; format_explicit=true; shift 2 ;;
             help|--help|-h)
                 cat << 'HELPEOF'
 RENDER REPORT
 
   zzc docker render               Render the project's report to PDF (default)
   zzc docker render FILE          Render a specific .qmd/.Rmd file instead
-  zzc docker render --html        Render to HTML instead
-  zzc docker render --format FMT  Render to any Quarto-supported format
+  zzc docker render --html        Render to HTML instead (.qmd only)
+  zzc docker render --format FMT  Render to any Quarto-supported format (.qmd only)
 
 With no FILE, renders analysis/report/index.qmd or report.Rmd (whichever
 exists). FILE may be a path, or a bare name resolved against
 analysis/report/ (e.g. 'test.Rmd').
 
-Runs inside the project's Docker container via 'make docker-render-qmd'.
+A .qmd file runs through 'make docker-render-qmd' (Quarto). A .Rmd file
+runs through 'make docker-render' (tools/render.sh, which stamps
+provenance and honors the document's own knit:/output: YAML) --format
+has no effect there, since render.sh does not take a format override.
 HELPEOF
                 exit 0
                 ;;
@@ -590,8 +594,22 @@ HELPEOF
         [[ -f "$file" ]] || { log_error "File not found: $file"; exit 1; }
     fi
 
-    log_info "Rendering $file to $format (in container)..."
-    make docker-render-qmd "FILE=$file" "FORMAT=$format"
+    case "$file" in
+        *.qmd)
+            log_info "Rendering $file to $format (in container)..."
+            make docker-render-qmd "FILE=$file" "FORMAT=$format"
+            ;;
+        *.Rmd|*.rmd)
+            [[ -n "$format_explicit" ]] && log_warn "--format/--html/--pdf has no effect on a .Rmd report; format is set by the document's own YAML (knit:/output:)."
+            [[ -f tools/render.sh ]] || { log_error "tools/render.sh not found. Run 'zzc tools' to install the render-stamp helpers first."; exit 1; }
+            log_info "Rendering $file via tools/render.sh (in container)..."
+            make docker-render "REPORT=$file"
+            ;;
+        *)
+            log_error "Unsupported file type: $file (expected .qmd or .Rmd)"
+            exit 1
+            ;;
+    esac
 }
 
 cmd_build() {
