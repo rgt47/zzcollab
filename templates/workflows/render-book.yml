@@ -4,18 +4,30 @@
 # `quarto render analysis/report`, unlike the report/manuscript/blog archetypes
 # (which render-report.yml handles), so books get their own workflow.
 #
-# Self-adapting backend, by artifact presence:
-#   Dockerfile present -> build the project image and render inside it, so
-#                         heavy R books get pinned packages and system libs.
-#   otherwise          -> render on the host with quarto; restore renv.lock
-#                         when present, else render bare (prose books need
-#                         only quarto and pandoc).
+# One workflow serves every book; per-book differences are data, not edits to
+# this file. The workflow adapts to what the repository contains:
+#   Dockerfile          -> build the project image and render inside it.
+#   otherwise           -> render on the host runner, provisioning only the
+#                          engines the book executes:
+#     executable {r} chunks or renv.lock -> R (packages as prebuilt binaries)
+#     executable {python} chunks/.ipynb  -> Python and Jupyter
+#     a pdf format in _quarto*.yml       -> TinyTeX, and the PDF release
+#     {mermaid} chunks plus pdf          -> Chrome Headless Shell
 #
-# Renders on every push and pull request (the gate, catching a broken render
-# before it reaches main) and uploads the _book artifact. Deploys to Netlify
-# only on a push to main, so one render serves both the gate and the deploy.
-# Netlify deploy needs the NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID secrets; the
-# deploy step is a no-op safe skip on forks/PRs where they are absent.
+# Optional per-book settings in .github/book-ci.yml (all keys optional):
+#   quarto: '1.10.18'      # Quarto version (default below)
+#   engines: [r, python]   # replaces detection; [] means prose only
+#   apt: [libglpk-dev]     # extra system libraries for the host render
+#
+# Optional per-book hooks, run with bash on the host backend:
+#   tools/ci/pre-render    # before the render (generate data, run tests)
+#   tools/ci/post-deploy   # after the deploy on main (print volumes, etc.)
+#
+# Renders on every push and pull request (the gate) and uploads the _book
+# artifact. Deploys to Netlify only on a push to main, so one render serves
+# both the gate and the deploy. Netlify deploy needs the NETLIFY_AUTH_TOKEN
+# and NETLIFY_SITE_ID secrets. A weekly scheduled run catches breakage from
+# upstream changes (CRAN, Quarto, runner images) between pushes.
 name: Render book and deploy
 
 on:
@@ -24,75 +36,233 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * 1'
+
+# Write access lets the job publish the PDF to the 'Latest PDF' release.
+permissions:
+  contents: write
+
+# A newer push supersedes a pending run. In-progress runs on main are not
+# cancelled, so a deploy is never interrupted halfway; pull request runs are.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  QUARTO_DEFAULT_VERSION: '1.10.18'
 
 jobs:
   render-book:
     runs-on: ubuntu-latest
+    # GitHub's default is 360 minutes; a hung render (for example, Mermaid
+    # waiting on a missing Chrome) should fail fast instead.
+    timeout-minutes: 90
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          # Chapters that compute statements from git history need it all.
+          fetch-depth: 0
 
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-
-      - name: Detect backend and engine
+      - name: Detect backend, engines, and formats
         id: mode
         run: |
+          set -euo pipefail
+          cfg=.github/book-ci.yml
+          quarto="$QUARTO_DEFAULT_VERSION"
+          engines=auto
+          apt=''
+          if [ -f "$cfg" ]; then
+            command -v yq >/dev/null || { echo "::error::yq is needed to read $cfg"; exit 1; }
+            v=$(yq -r '.quarto // ""' "$cfg")
+            [ -n "$v" ] && quarto="$v"
+            engines=$(yq -r 'if has("engines") then (.engines // [] | join(" ")) else "auto" end' "$cfg")
+            apt=$(yq -r '(.apt // []) | join(" ")' "$cfg")
+          fi
+          echo "quarto=$quarto" >> "$GITHUB_OUTPUT"
+          echo "apt=$apt" >> "$GITHUB_OUTPUT"
+          echo "Quarto: $quarto"
+
+          # Executable chunks only: the fence must start the line, so a
+          # chunk header quoted in prose or inline code does not count.
+          has_chunk() {
+            grep -rqsE '^```\{'"$1"'[ ,}]' \
+              --include='*.qmd' --include='*.Rmd' analysis/report
+          }
+
           if [ -f Dockerfile ]; then
             echo "backend=docker" >> "$GITHUB_OUTPUT"
             echo "Backend: Docker (Dockerfile present)"
+            exit 0
+          fi
+          echo "backend=host" >> "$GITHUB_OUTPUT"
+          echo "Backend: host runner"
+
+          r=false; python=false
+          if [ "$engines" = auto ]; then
+            { has_chunk r || [ -f renv.lock ]; } && r=true
+            { has_chunk python || [ -n "$(find analysis/report -name '*.ipynb' -not -path '*/_book/*' -print -quit 2>/dev/null)" ]; } && python=true
+            echo "Engines: detected"
           else
-            echo "backend=host" >> "$GITHUB_OUTPUT"
-            echo "Backend: host runner"
-            # Provision R when the book uses the knitr engine ({r} cells) or
-            # ships a renv.lock; provision Python when it uses the Jupyter
-            # engine ({python} cells). A pure-prose book needs neither, even
-            # when cells are eval: false, since the engine still processes them.
-            if grep -rqF '```{r}' analysis/report 2>/dev/null || [ -f renv.lock ]; then
-              echo "r=true" >> "$GITHUB_OUTPUT"
-              echo "Engine: knitr (R)"
-            fi
-            if grep -rqF '```{python}' analysis/report 2>/dev/null; then
-              echo "python=true" >> "$GITHUB_OUTPUT"
-              echo "Engine: Jupyter (Python)"
-            fi
+            case " $engines " in *" r "*) r=true ;; esac
+            case " $engines " in *" python "*) python=true ;; esac
+            echo "Engines: declared in $cfg ($engines)"
+          fi
+          echo "r=$r" >> "$GITHUB_OUTPUT"
+          echo "python=$python" >> "$GITHUB_OUTPUT"
+          echo "R: $r  Python: $python"
+
+          if [ "$r" = true ] && [ -f renv.lock ]; then
+            echo "renv=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -f DESCRIPTION ]; then
+            echo "r_pkgs=deps::., any::knitr, any::rmarkdown" >> "$GITHUB_OUTPUT"
+          else
+            echo "r_pkgs=any::knitr, any::rmarkdown" >> "$GITHUB_OUTPUT"
           fi
 
-      # --- Host backend: quarto, plus the engine the book actually uses ---
+          pdf=false
+          if grep -qsE '^[[:space:]]+pdf:|format:[[:space:]]*pdf' analysis/report/_quarto*.yml; then
+            pdf=true
+          fi
+          echo "pdf=$pdf" >> "$GITHUB_OUTPUT"
+          echo "PDF format: $pdf"
+
+          mermaid=false
+          has_chunk mermaid && mermaid=true
+          echo "mermaid=$mermaid" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: ${{ steps.mode.outputs.quarto }}
+
+      # --- Host backend: quarto, plus the engines the book executes ---
+      - name: Install declared system libraries (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.apt != ''
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ${{ steps.mode.outputs.apt }}
+
+      # use-public-rspm points R at Posit's prebuilt Linux binaries and sets
+      # RSPM. Every install below must use that repository: an explicit CRAN
+      # repos argument forces source builds, and fs then fails to compile
+      # for want of libuv headers, which takes rmarkdown down with it.
       - name: Set up R (host)
+        id: setup-r
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
         uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
-      - name: Provide R packages (host)
+      # No renv.lock: knitr, rmarkdown, and any DESCRIPTION dependencies,
+      # with their system libraries, resolved and installed by pak.
+      - name: Install R packages (host, DESCRIPTION)
+        if: >-
+          steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
+          && steps.mode.outputs.renv != 'true'
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: ${{ steps.mode.outputs.r_pkgs }}
+
+      - name: Cache R library (host, renv.lock)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: r-lib-${{ runner.os }}-${{ steps.setup-r.outputs.installed-r-version }}-${{ hashFiles('renv.lock') }}
+          restore-keys: r-lib-${{ runner.os }}-${{ steps.setup-r.outputs.installed-r-version }}-
+
+      # Restore into the runner library (R_LIBS_USER, set by setup-r) rather
+      # than renv's project library: the zzcollab .Rprofile does not activate
+      # renv outside a container, so packages restored into renv/library
+      # would be invisible to the R session Quarto starts. --no-init-file
+      # keeps that .Rprofile out of these install sessions altogether.
+      - name: Install R packages (host, renv.lock)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
+        run: |
+          set -euo pipefail
+          Rscript --no-init-file -e 'install.packages(c("renv", "pak"), repos = Sys.getenv("RSPM"))'
+          Rscript --no-init-file -e '
+            pkgs <- names(renv::lockfile_read("renv.lock")[["Packages"]])
+            sr <- tryCatch(
+              pak::pkg_sysreqs(pkgs, upgrade = FALSE),
+              error = function(e) {
+                message("::warning::System requirement lookup failed: ",
+                        conditionMessage(e))
+                NULL
+              }
+            )
+            cmds <- c(sr[["pre_install"]], sr[["install_scripts"]],
+                      sr[["post_install"]])
+            writeLines(cmds, file.path(Sys.getenv("RUNNER_TEMP"), "sysreqs.sh"))'
+          if [ -s "$RUNNER_TEMP/sysreqs.sh" ]; then
+            cat "$RUNNER_TEMP/sysreqs.sh"
+            sudo sh -e "$RUNNER_TEMP/sysreqs.sh"
+          fi
+          export RENV_CONFIG_REPOS_OVERRIDE="$RSPM"
+          Rscript --no-init-file -e '
+            renv::restore(lockfile = "renv.lock",
+                          library = Sys.getenv("R_LIBS_USER"),
+                          prompt = FALSE)
+            need <- setdiff(c("knitr", "rmarkdown"),
+                            rownames(installed.packages()))
+            if (length(need)) install.packages(need, repos = Sys.getenv("RSPM"))'
+
+      # install.packages() only warns when a package fails, so the install
+      # steps can pass with rmarkdown missing; fail here, by name, instead.
+      - name: Verify R packages (host)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
         run: |
-          if [ -f renv.lock ]; then
-            Rscript -e "install.packages('renv', repos = 'https://cloud.r-project.org')"
-            Rscript -e "renv::restore(prompt = FALSE)"
-          else
-            Rscript -e "install.packages(c('knitr', 'rmarkdown'), repos = 'https://cloud.r-project.org')"
-          fi
+          Rscript --no-init-file -e '
+            for (p in c("knitr", "rmarkdown"))
+              if (!requireNamespace(p, quietly = TRUE))
+                stop("R package not installed: ", p)'
 
       - name: Set up Python (host)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.python == 'true'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - name: Provide Jupyter (host)
+      - name: Install Jupyter (host)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.python == 'true'
-        run: pip install jupyter
+        run: |
+          pip install jupyter
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+      # TeX for the PDF edition; Quarto installs any missing LaTeX packages
+      # on demand during the render.
+      - name: Install TinyTeX (host)
+        if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.pdf == 'true'
+        run: quarto install tinytex --no-prompt
+
+      # Mermaid diagrams become images in the PDF through a headless Chrome;
+      # without it the render waits on Chrome and never finishes.
+      - name: Install Chrome Headless Shell (host)
+        if: >-
+          steps.mode.outputs.backend == 'host' && steps.mode.outputs.pdf == 'true'
+          && steps.mode.outputs.mermaid == 'true'
+        run: quarto install chrome-headless-shell --no-prompt
+
+      - name: Pre-render hook (host)
+        if: steps.mode.outputs.backend == 'host' && hashFiles('tools/ci/pre-render') != ''
+        timeout-minutes: 45
+        run: bash tools/ci/pre-render
+
+      # One render for all formats: separate --to html and --to pdf runs each
+      # clear _book, and Quarto adds the sidebar 'Download PDF' link only when
+      # it builds the PDF in the same run.
       - name: Render book (host)
         if: steps.mode.outputs.backend == 'host'
-        run: quarto render analysis/report --to html
+        timeout-minutes: 30
+        run: quarto render analysis/report
 
       # --- Container backend: build the project image and render inside it ---
       - name: Set up Buildx
         if: steps.mode.outputs.backend == 'docker'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build project image
         if: steps.mode.outputs.backend == 'docker'
@@ -100,6 +270,7 @@ jobs:
 
       - name: Render book (container)
         if: steps.mode.outputs.backend == 'docker'
+        timeout-minutes: 30
         run: |
           docker run --rm --user root -e CI=true \
             -v ${{ github.workspace }}:/project -w /project compendium-env \
@@ -107,7 +278,7 @@ jobs:
 
       - name: Upload rendered book
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: book
           path: analysis/report/_book
@@ -117,7 +288,7 @@ jobs:
       # --- Deploy: only on a push to main ---
       - name: Deploy to Netlify
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: nwtgck/actions-netlify@v3
+        uses: nwtgck/actions-netlify@v4
         with:
           publish-dir: ./analysis/report/_book
           production-branch: main
@@ -129,3 +300,35 @@ jobs:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         timeout-minutes: 5
+
+      # One rolling release holds the current PDF, so the download link on
+      # the repository page never changes.
+      - name: Publish PDF to the 'Latest PDF' release
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main'
+          && steps.mode.outputs.backend == 'host' && steps.mode.outputs.pdf == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pdf=$(find analysis/report/_book -maxdepth 1 -name '*.pdf' -print -quit 2>/dev/null)
+          if [ -z "$pdf" ]; then echo "::error::A pdf format is declared but no PDF was built"; exit 1; fi
+          repo="$GITHUB_REPOSITORY"
+          if ! gh release view latest-pdf --repo "$repo" >/dev/null 2>&1; then
+            gh release create latest-pdf --repo "$repo" --target main \
+              --title 'Latest PDF' --prerelease --notes 'Created by CI.'
+          fi
+          gh release upload latest-pdf "$pdf" --repo "$repo" --clobber
+          gh release edit latest-pdf --repo "$repo" --notes \
+            "Draft PDF built from ${GITHUB_SHA::7} on $(date -u +%Y-%m-%d). The same file is served at the book's website."
+
+      # Runs after the site and the full PDF are published, so a failure here
+      # marks the run red without holding either back.
+      - name: Post-deploy hook (host)
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main'
+          && steps.mode.outputs.backend == 'host'
+          && hashFiles('tools/ci/post-deploy') != ''
+        timeout-minutes: 45
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/ci/post-deploy

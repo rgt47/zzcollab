@@ -10,6 +10,26 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Fixed
 
+- `render-book.yml` (book archetype) consolidates the fixes that had been
+  applied piecemeal across downstream books, so one unedited workflow
+  serves every book. R packages now install only from Posit's binary
+  repository (an explicit CRAN `repos` forced source builds, and `fs`
+  failed to compile for want of libuv headers, leaving `rmarkdown`
+  uninstalled); a verify step fails the job by name when `knitr` or
+  `rmarkdown` is missing, since `install.packages()` only warns. renv
+  books restore into the runner library with system requirements
+  resolved by pak, rather than into a project library the host
+  `.Rprofile` never activates, and every CI R session runs with
+  `--no-init-file`. Engine detection matches only chunk fences at the
+  start of a line, so a chunk header quoted in prose no longer
+  provisions R. The workflow also gains the PDF edition (TinyTeX, a
+  single all-format render, the 'Latest PDF' release) when a `pdf`
+  format is declared, Chrome Headless Shell for Mermaid in PDF, a job
+  timeout (90 min) and render timeout (30 min) in place of GitHub's
+  360-minute default, a concurrency group, full-history checkout, a
+  weekly scheduled run, and current action majors. Per-book differences
+  move to an optional `.github/book-ci.yml` (`quarto`, `engines`, `apt`)
+  and optional `tools/ci/pre-render` and `tools/ci/post-deploy` hooks.
 - Test targets are gates. `make test`, `make docker-test`, and the cached
   `.make/tests-passed` target now exit nonzero when any tinytest assertion
   fails; `tinytest::run_test_dir()` returns results rather than signalling,
