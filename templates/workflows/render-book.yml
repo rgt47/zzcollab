@@ -179,10 +179,16 @@ jobs:
       # renv outside a container, so packages restored into renv/library
       # would be invisible to the R session Quarto starts. --no-init-file
       # keeps that .Rprofile out of these install sessions altogether.
+      # Conversely, a plain renv .Rprofile (source("renv/activate.R"))
+      # would switch every later session to the empty project library, so
+      # the autoloader is disabled for the rest of the job; both variable
+      # names are set because older activate.R scripts read only the second.
       - name: Install R packages (host, renv.lock)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
         run: |
           set -euo pipefail
+          echo "RENV_CONFIG_AUTOLOADER_ENABLED=false" >> "$GITHUB_ENV"
+          echo "RENV_ACTIVATE_PROJECT=false" >> "$GITHUB_ENV"
           Rscript --no-init-file -e 'install.packages(c("renv", "pak"), repos = Sys.getenv("RSPM"))'
           # The lockfile is already the full dependency closure, so look up
           # system requirements without re-solving it. Solving fails on
@@ -222,10 +228,13 @@ jobs:
 
       # install.packages() only warns when a package fails, so the install
       # steps can pass with rmarkdown missing; fail here, by name, instead.
+      # This session deliberately loads the project .Rprofile, as the R
+      # session Quarto starts does, so library-path changes made there
+      # are caught here rather than mid-render.
       - name: Verify R packages (host)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
         run: |
-          Rscript --no-init-file -e '
+          Rscript -e '
             for (p in c("knitr", "rmarkdown"))
               if (!requireNamespace(p, quietly = TRUE))
                 stop("R package not installed: ", p)'
