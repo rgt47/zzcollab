@@ -184,18 +184,28 @@ jobs:
         run: |
           set -euo pipefail
           Rscript --no-init-file -e 'install.packages(c("renv", "pak"), repos = Sys.getenv("RSPM"))'
+          # The lockfile is already the full dependency closure, so look up
+          # system requirements without re-solving it. Solving fails on
+          # packages from GitHub (not on the repository) and on R's
+          # recommended packages, which are pinned to the R installation.
           Rscript --no-init-file -e '
-            pkgs <- names(renv::lockfile_read("renv.lock")[["Packages"]])
+            lock <- renv::lockfile_read("renv.lock")[["Packages"]]
+            from_repo <- vapply(lock, function(p)
+              identical(p[["Source"]], "Repository"), logical(1))
+            bundled <- rownames(installed.packages(
+              priority = c("base", "recommended")))
+            pkgs <- setdiff(names(lock)[from_repo], bundled)
             sr <- tryCatch(
-              pak::pkg_sysreqs(pkgs, upgrade = FALSE),
+              pak::pkg_sysreqs(pkgs, dependencies = FALSE),
               error = function(e) {
                 message("::warning::System requirement lookup failed: ",
                         conditionMessage(e))
                 NULL
               }
             )
-            cmds <- c(sr[["pre_install"]], sr[["install_scripts"]],
-                      sr[["post_install"]])
+            cmds <- as.character(c(sr[["pre_install"]],
+                                   sr[["install_scripts"]],
+                                   sr[["post_install"]]))
             writeLines(cmds, file.path(Sys.getenv("RUNNER_TEMP"), "sysreqs.sh"))'
           if [ -s "$RUNNER_TEMP/sysreqs.sh" ]; then
             cat "$RUNNER_TEMP/sysreqs.sh"
