@@ -18,6 +18,8 @@
 #   quarto: '1.10.18'      # Quarto version (default below)
 #   engines: [r, python]   # replaces detection; [] means prose only
 #   apt: [libglpk-dev]     # extra system libraries for the host render
+#   backend: host          # auto (default), host, or docker; host keeps a
+#                          # book with a Dockerfile on the PDF-capable path
 #
 # Optional per-book hooks, run with bash on the host backend:
 #   tools/ci/pre-render    # before the render (generate data, run tests)
@@ -73,13 +75,18 @@ jobs:
           quarto="$QUARTO_DEFAULT_VERSION"
           engines=auto
           apt=''
+          backend=auto
           if [ -f "$cfg" ]; then
             command -v yq >/dev/null || { echo "::error::yq is needed to read $cfg"; exit 1; }
             v=$(yq -r '.quarto // ""' "$cfg")
             [ -n "$v" ] && quarto="$v"
             engines=$(yq -r 'if has("engines") then (.engines // [] | join(" ")) else "auto" end' "$cfg")
             apt=$(yq -r '(.apt // []) | join(" ")' "$cfg")
+            backend=$(yq -r '.backend // "auto"' "$cfg")
           fi
+          case "$backend" in auto|host|docker) ;; *)
+            echo "::error::backend in $cfg must be auto, host, or docker"; exit 1 ;;
+          esac
           echo "quarto=$quarto" >> "$GITHUB_OUTPUT"
           echo "apt=$apt" >> "$GITHUB_OUTPUT"
           echo "Quarto: $quarto"
@@ -91,9 +98,9 @@ jobs:
               --include='*.qmd' --include='*.Rmd' analysis/report
           }
 
-          if [ -f Dockerfile ]; then
+          if [ "$backend" = docker ] || { [ "$backend" = auto ] && [ -f Dockerfile ]; }; then
             echo "backend=docker" >> "$GITHUB_OUTPUT"
-            echo "Backend: Docker (Dockerfile present)"
+            echo "Backend: Docker"
             exit 0
           fi
           echo "backend=host" >> "$GITHUB_OUTPUT"
@@ -116,11 +123,13 @@ jobs:
           if [ "$r" = true ] && [ -f renv.lock ]; then
             echo "renv=true" >> "$GITHUB_OUTPUT"
           fi
-          if [ -f DESCRIPTION ]; then
-            echo "r_pkgs=deps::., any::knitr, any::rmarkdown" >> "$GITHUB_OUTPUT"
-          else
-            echo "r_pkgs=any::knitr, any::rmarkdown" >> "$GITHUB_OUTPUT"
+          # Quarto's code-link needs downlit and xml2 in the R session.
+          r_pkgs="knitr rmarkdown"
+          if grep -qsE '^[[:space:]]*code-link:[[:space:]]*true' analysis/report/_quarto*.yml; then
+            r_pkgs="$r_pkgs downlit xml2"
           fi
+          echo "r_pkgs=$r_pkgs" >> "$GITHUB_OUTPUT"
+          echo "R packages required by Quarto: $r_pkgs"
 
           pdf=false
           if grep -qsE '^[[:space:]]+pdf:|format:[[:space:]]*pdf' analysis/report/_quarto*.yml; then
@@ -156,15 +165,24 @@ jobs:
         with:
           use-public-rspm: true
 
-      # No renv.lock: knitr, rmarkdown, and any DESCRIPTION dependencies,
-      # with their system libraries, resolved and installed by pak.
+      # No renv.lock: the packages Quarto needs plus any DESCRIPTION
+      # dependencies, with their system libraries, installed by pak from the
+      # binary repository. --no-init-file matters here: the zzcollab
+      # .Rprofile sets CRAN source as the repository on a host session.
       - name: Install R packages (host, DESCRIPTION)
         if: >-
           steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
           && steps.mode.outputs.renv != 'true'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: ${{ steps.mode.outputs.r_pkgs }}
+        env:
+          R_PKGS: ${{ steps.mode.outputs.r_pkgs }}
+        run: |
+          set -euo pipefail
+          Rscript --no-init-file -e 'install.packages("pak", repos = Sys.getenv("RSPM"))'
+          Rscript --no-init-file -e '
+            options(repos = c(CRAN = Sys.getenv("RSPM")), pkg.sysreqs = TRUE)
+            pkgs <- strsplit(Sys.getenv("R_PKGS"), " ")[[1]]
+            if (file.exists("DESCRIPTION")) pkgs <- c("deps::.", pkgs)
+            pak::pkg_install(pkgs, dependencies = TRUE, ask = FALSE)'
 
       - name: Cache R library (host, renv.lock)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
@@ -185,6 +203,8 @@ jobs:
       # names are set because older activate.R scripts read only the second.
       - name: Install R packages (host, renv.lock)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
+        env:
+          R_PKGS: ${{ steps.mode.outputs.r_pkgs }}
         run: |
           set -euo pipefail
           echo "RENV_CONFIG_AUTOLOADER_ENABLED=false" >> "$GITHUB_ENV"
@@ -222,7 +242,7 @@ jobs:
             renv::restore(lockfile = "renv.lock",
                           library = Sys.getenv("R_LIBS_USER"),
                           prompt = FALSE)
-            need <- setdiff(c("knitr", "rmarkdown"),
+            need <- setdiff(strsplit(Sys.getenv("R_PKGS"), " ")[[1]],
                             rownames(installed.packages()))
             if (length(need)) install.packages(need, repos = Sys.getenv("RSPM"))'
 
@@ -233,9 +253,11 @@ jobs:
       # are caught here rather than mid-render.
       - name: Verify R packages (host)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.r == 'true'
+        env:
+          R_PKGS: ${{ steps.mode.outputs.r_pkgs }}
         run: |
           Rscript -e '
-            for (p in c("knitr", "rmarkdown"))
+            for (p in strsplit(Sys.getenv("R_PKGS"), " ")[[1]])
               if (!requireNamespace(p, quietly = TRUE))
                 stop("R package not installed: ", p)'
 
