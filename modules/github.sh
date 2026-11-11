@@ -54,44 +54,19 @@ create_github_workflows() {
 
     local archetype="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-analysis}}"
 
-    # R9: a bare/prose compendium has no package to check, so skip the
-    # R-package validation workflow (it would fail with no DESCRIPTION). A book
-    # is prose by default and is rendered by render-book.yml, so skip it too; a
-    # book that ships R helpers can add r-package.yml back.
-    if [[ "${ZZCOLLAB_BARE:-false}" == "true" || "$archetype" == "book" ]]; then
-        log_info "  - Skipping R package validation workflow (bare or book archetype)"
-    elif install_template "workflows/r-package.yml" ".github/workflows/r-package.yml" \
-        "R package validation workflow" "Created R package workflow"; then
-        log_info "  - Triggers: push/PR to main"
-        log_info "  - Actions: R CMD check, tests"
-    else
-        log_error "Failed to create R package workflow"
-        return 1
-    fi
-
-    if [[ "$archetype" == "book" ]]; then
-        # Book archetype: a project-level `quarto render analysis/report`, so it
-        # gets a dedicated render+deploy workflow rather than render-report.yml
-        # (which is shaped for report/manuscript/blog projects).
-        if install_template "workflows/render-book.yml" ".github/workflows/render-book.yml" \
-            "Book render/deploy workflow" "Created book render/deploy workflow"; then
-            log_info "  - Renders analysis/report --to html; deploys to Netlify on main"
-        else
-            log_error "Failed to create book workflow"
+    # One workflow set per archetype (zzc_workflow_pairs): a book gets
+    # render-book.yml, a blog post blog-render.yml, and every other
+    # compendium r-package.yml (omitted for --bare, which has no package)
+    # plus render-report.yml.
+    local pair tmpl dest
+    while IFS= read -r pair; do
+        tmpl="${pair%%|*}"; dest="${pair##*|}"
+        if ! install_template "$tmpl" "$dest" \
+            "$(basename "$dest") workflow" "Created $(basename "$dest")"; then
+            log_error "Failed to create $dest"
             return 1
         fi
-    else
-        local paper_workflow_template
-        paper_workflow_template=$(get_workflow_template 2>/dev/null || echo "workflows/render-report.yml")
-        if install_template "$paper_workflow_template" ".github/workflows/render-report.yml" \
-            "Report rendering workflow" "Created report rendering workflow"; then
-            log_info "  - Triggers: changes to analysis/, R/"
-            log_info "  - Output: PDF artifacts"
-        else
-            log_error "Failed to create report workflow"
-            return 1
-        fi
-    fi
+    done < <(zzc_workflow_pairs "$archetype")
 
     log_success "GitHub Actions workflows created"
 }

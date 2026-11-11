@@ -451,7 +451,8 @@ check_version_stamps() {
                 fi
             fi
         fi
-    elif [[ -d "$dir/.github/workflows" ]]; then
+    elif [[ -d "$dir/.github/workflows" ]] && \
+         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" r-package.yml; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "r-package.yml"
         issues=$((issues + 1))
 
@@ -495,7 +496,8 @@ check_version_stamps() {
                 fi
             fi
         fi
-    elif [[ -d "$dir/.github/workflows" ]]; then
+    elif [[ -d "$dir/.github/workflows" ]] && \
+         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" render-report.yml; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "render-report.yml"
         issues=$((issues + 1))
 
@@ -760,6 +762,7 @@ force_refresh_workspace() {
         ".Rprofile:.Rprofile"
         "workflows/r-package.yml:.github/workflows/r-package.yml"
         "workflows/render-report.yml:.github/workflows/render-report.yml"
+        "workflows/blog-render.yml:.github/workflows/blog-render.yml"
     )
     (
         cd "$dir" || return 1

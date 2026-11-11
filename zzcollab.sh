@@ -1263,6 +1263,7 @@ _ZZC_UPDATE_MANAGED=(
     ".Rprofile|.Rprofile"
     "workflows/r-package.yml|.github/workflows/r-package.yml"
     "workflows/render-report.yml|.github/workflows/render-report.yml"
+    "workflows/blog-render.yml|.github/workflows/blog-render.yml"
     "gitlab/.gitlab-ci.yml|.gitlab-ci.yml"
     "ZZCOLLAB_USER_GUIDE.md|docs/ZZCOLLAB_USER_GUIDE.md"
 )

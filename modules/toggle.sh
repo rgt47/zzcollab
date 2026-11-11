@@ -20,8 +20,9 @@
 ##############################################################################
 
 # Install the CI workflow(s) for the configured forge (CI toggle -> on).
-# GitHub gets the two Actions workflows; GitLab gets the single .gitlab-ci.yml.
-# Forge comes from config (CONFIG_FORGE), defaulting to github.
+# GitHub gets the archetype's workflow set (zzc_workflow_pairs); GitLab gets
+# the single .gitlab-ci.yml. Forge comes from config (CONFIG_FORGE),
+# defaulting to github.
 _toggle_add_ci() {
     load_config 2>/dev/null || true
     if [[ "${CONFIG_FORGE:-github}" == gitlab ]]; then
@@ -29,10 +30,11 @@ _toggle_add_ci() {
             ".gitlab-ci.yml" "GitLab CI" >/dev/null 2>&1
     else
         mkdir -p .github/workflows
-        regenerate_template_file "workflows/r-package.yml" \
-            ".github/workflows/r-package.yml" "check workflow" >/dev/null 2>&1
-        regenerate_template_file "workflows/render-report.yml" \
-            ".github/workflows/render-report.yml" "render workflow" >/dev/null 2>&1
+        local pair
+        while IFS= read -r pair; do
+            regenerate_template_file "${pair%%|*}" "${pair##*|}" \
+                "CI workflow" >/dev/null 2>&1
+        done < <(zzc_workflow_pairs "$(zzc_workflow_archetype .)")
     fi
 }
 

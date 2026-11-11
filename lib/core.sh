@@ -549,19 +549,70 @@ TOGGLE
 # CI FORGE DETECTION
 #=============================================================================
 
+# zzc_workflow_archetype [DIR]
+# The archetype that decides a workspace's GitHub workflow set: the configured
+# archetype when one is recorded, otherwise inferred from the workflow already
+# present (older workspaces record no archetype): render-book.yml -> book,
+# blog-render.yml -> blog, anything else -> analysis.
+zzc_workflow_archetype() {
+    local d="${1:-.}"
+    local a="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-}}"
+    if [[ -z "$a" ]]; then
+        if [[ -f "$d/.github/workflows/render-book.yml" ]]; then
+            a=book
+        elif [[ -f "$d/.github/workflows/blog-render.yml" ]]; then
+            a=blog
+        else
+            a=analysis
+        fi
+    fi
+    echo "$a"
+}
+
+# zzc_workflow_pairs ARCHETYPE
+# The GitHub workflows an archetype carries, one "template|destination" pair
+# per line. Every repository of an archetype gets exactly this set, so CI is
+# identical across the category:
+#   book     -> render-book.yml
+#   blog     -> blog-render.yml
+#   other    -> r-package.yml (omitted for --bare) and render-report.yml
+zzc_workflow_pairs() {
+    case "$1" in
+        book) echo "workflows/render-book.yml|.github/workflows/render-book.yml" ;;
+        blog) echo "workflows/blog-render.yml|.github/workflows/blog-render.yml" ;;
+        *)
+            [[ "${ZZCOLLAB_BARE:-false}" == "true" ]] || \
+                echo "workflows/r-package.yml|.github/workflows/r-package.yml"
+            echo "workflows/render-report.yml|.github/workflows/render-report.yml"
+            ;;
+    esac
+}
+
+# zzc_workflow_expected ARCHETYPE NAME
+# Succeeds when workflow file NAME (e.g. r-package.yml) belongs to the set for
+# ARCHETYPE, so doctor does not offer to add a workflow the archetype omits.
+zzc_workflow_expected() {
+    zzc_workflow_pairs "$1" | grep -q "|.github/workflows/$2\$"
+}
+
 # zzc_ci_forge [DIR]
 # Which CI forge a project carries, by artifact presence:
-#   .github/workflows/r-package.yml -> github
-#   .gitlab-ci.yml                  -> gitlab
-#   neither                         -> none
+#   a zzcollab GitHub workflow (r-package.yml, render-report.yml,
+#   render-book.yml, or blog-render.yml) -> github
+#   .gitlab-ci.yml                       -> gitlab
+#   neither                              -> none
 # A project uses a single forge; if both somehow exist, github wins. Shared by
 # status, the toggle wizard, and doctor so the notion of "CI present" stays
 # consistent across GitHub and GitLab.
 zzc_ci_forge() {
-    local d="${1:-.}"
-    if [[ -f "$d/.github/workflows/r-package.yml" ]]; then
-        echo github
-    elif [[ -f "$d/.gitlab-ci.yml" ]]; then
+    local d="${1:-.}" w
+    for w in r-package.yml render-report.yml render-book.yml blog-render.yml; do
+        if [[ -f "$d/.github/workflows/$w" ]]; then
+            echo github
+            return 0
+        fi
+    done
+    if [[ -f "$d/.gitlab-ci.yml" ]]; then
         echo gitlab
     else
         echo none
