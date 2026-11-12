@@ -42,6 +42,29 @@ is archived in `CHANGELOG-2.x.md`.
   books (prose, knitr with and without renv, Jupyter, Mermaid, and a
   Dockerfile book on the host backend): every pull request and deploy
   run passed.
+- One GitHub workflow set per archetype, defined once
+  (`zzc_workflow_pairs` in `lib/core.sh`) and used by `zzc init`, the CI
+  toggle, `zzc doctor`, and `zzc update`: a book carries
+  `render-book.yml`, a blog post `blog-render.yml`, and every other
+  compendium `r-package.yml` (omitted for `--bare`) and
+  `render-report.yml`. Blog posts previously received `r-package.yml`
+  and `render-report.yml` from `zzc init`, although 58 of 67 existing
+  posts ran `blog-render.yml` alone; `R CMD build` of a post followed
+  its dangling root `figures` symlink and failed. Workspaces that record
+  no archetype are classified by the workflow they already carry, and
+  `zzc_ci_forge` recognizes any of the four workflows, not only
+  `r-package.yml`.
+- `blog-render.yml` was invalid: its `check-deps` job called
+  `hashFiles()` in a job-level `if`, which GitHub rejects, so every push
+  failed at startup. The job is removed (the render already fails on a
+  missing package), and the workflow gains the template version header,
+  job and step timeouts, a concurrency group, and current action majors.
+- `render-report.yml` reads an optional `.github/report-ci.yml` for
+  reports whose data is not in git: `render: skip` skips every render
+  step, `skip:` lists reports (paths or globs) to leave out, and
+  `reason:` is shown in the run notice. The environment is still built
+  and checked, and each skip is reported as a notice and in the step
+  summary.
 - Test targets are gates. `make test`, `make docker-test`, and the
   cached `.make/tests-passed` target now exit nonzero when any tinytest
   assertion fails;
