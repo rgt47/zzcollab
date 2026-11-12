@@ -409,7 +409,8 @@ renv/library/
 renv/staging/
 .make/
 .zzcollab.log
-docker-build.log'
+docker-build.log
+**/.claude/settings.local.json'
     create_file_if_missing ".gitignore" "$gitignore_content" ".gitignore"
 
     # .Rbuildignore

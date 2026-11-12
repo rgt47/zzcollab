@@ -97,6 +97,7 @@ REQUIRED_GITIGNORE=(
     "renv/library/"
     "renv/staging/"
     ".make/"
+    "**/.claude/settings.local.json"
 )
 
 # Required .Rbuildignore entries (regex patterns)

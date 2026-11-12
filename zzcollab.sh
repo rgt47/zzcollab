@@ -1769,6 +1769,9 @@ Thumbs.db
 
 # zzcollab user files
 .zzcollab/
+
+# Claude Code machine-local settings
+**/.claude/settings.local.json
 EOF
         log_success "Created .gitignore"
     fi
