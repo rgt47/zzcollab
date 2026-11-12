@@ -121,12 +121,24 @@ jobs:
             rcmdcheck::rcmdcheck(args = c('--no-manual', '--no-vignettes'), \
               build_args = '--no-build-vignettes', error_on = 'error', libpath = libs)"
 
-      # No continue-on-error: a failing assertion must fail the job.
+      # No continue-on-error: a failing assertion must fail the job. The
+      # package is loaded first: run_test_dir() does not load it, so tests
+      # calling package functions would otherwise fail with 'could not find
+      # function'.
       - name: Run tests
         run: |
           Rscript -e "
             .libPaths(c(Sys.getenv('CI_TOOLS_LIB'), .libPaths()))
             if (dir.exists('inst/tinytest')) {
+              if (requireNamespace('pkgload', quietly = TRUE)) {
+                pkgload::load_all('.', quiet = TRUE)
+              } else {
+                lib <- tempfile('pkglib'); dir.create(lib)
+                install.packages('.', lib = lib, repos = NULL, type = 'source')
+                .libPaths(c(lib, .libPaths()))
+                library(read.dcf('DESCRIPTION', 'Package')[[1]],
+                        character.only = TRUE)
+              }
               out <- tinytest::run_test_dir('inst/tinytest')
               if (any(!as.logical(out))) quit(status = 1)
             } else {
@@ -167,6 +179,15 @@ jobs:
         run: |
           nix develop -c Rscript -e '
             if (dir.exists("inst/tinytest")) {
+              if (requireNamespace("pkgload", quietly = TRUE)) {
+                pkgload::load_all(".", quiet = TRUE)
+              } else {
+                lib <- tempfile("pkglib"); dir.create(lib)
+                install.packages(".", lib = lib, repos = NULL, type = "source")
+                .libPaths(c(lib, .libPaths()))
+                library(read.dcf("DESCRIPTION", "Package")[[1]],
+                        character.only = TRUE)
+              }
               out <- tinytest::run_test_dir("inst/tinytest")
               if (any(!as.logical(out))) quit(status = 1)
             } else {

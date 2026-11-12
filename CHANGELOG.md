@@ -62,6 +62,13 @@ archived in `CHANGELOG-2.x.md`.
   step, `skip:` lists reports (paths or globs) to leave out, and `reason:`
   is shown in the run notice. The environment is still built and checked,
   and each skip is reported as a notice and in the step summary.
+- The `r-package.yml` test step loads the package (`pkgload::load_all()`,
+  or a temporary-library install where pkgload is absent) before
+  `tinytest::run_test_dir()`, which does not load it. Without this, any
+  test calling a package function failed with 'could not find function'.
+  Deployed copies hid failures of this step behind `continue-on-error`:
+  on 2026-11-12 the latest run of 34 of 71 such repositories had failed
+  it (the one log examined, zzpower's, failed for this reason).
 - Test targets are gates. `make test`, `make docker-test`, and the cached
   `.make/tests-passed` target now exit nonzero when any tinytest assertion
   fails; `tinytest::run_test_dir()` returns results rather than signalling,
