@@ -22,7 +22,7 @@ jobs:
     outputs:
       nix: ${{ steps.d.outputs.nix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: d
         run: |
           if [ -f flake.nix ]; then
@@ -47,7 +47,7 @@ jobs:
       _R_CHECK_FORCE_SUGGESTS_: "false"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install system dependencies
         run: |
@@ -72,7 +72,7 @@ jobs:
       # --- renv backend: restore the pinned library ---
       - name: Cache renv packages
         if: steps.mode.outputs.renv == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/R/renv
           key: renv-${{ hashFiles('renv.lock') }}
@@ -149,7 +149,7 @@ jobs:
     if: needs.detect.outputs.nix == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main

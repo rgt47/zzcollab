@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Detect environment backend
         id: mode
@@ -151,7 +151,7 @@ jobs:
       # --- Containerised render: environment pinned by the project image ---
       - name: Set up Buildx
         if: steps.mode.outputs.backend == 'docker'
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker image
         if: steps.mode.outputs.backend == 'docker'
@@ -329,7 +329,7 @@ jobs:
 
       - name: Upload rendered reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rendered-reports
           path: |
