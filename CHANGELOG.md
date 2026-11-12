@@ -65,6 +65,21 @@ is archived in `CHANGELOG-2.x.md`.
   `reason:` is shown in the run notice. The environment is still built
   and checked, and each skip is reported as a notice and in the step
   summary.
+- The `r-package.yml` test step loads the package
+  (`pkgload::load_all()`, or a temporary-library install where pkgload
+  is absent) before
+  [`tinytest::run_test_dir()`](https://rdrr.io/pkg/tinytest/man/run_test_dir.html),
+  which does not load it. Without this, any test calling a package
+  function failed with ‘could not find function’. Deployed copies hid
+  failures of this step behind `continue-on-error`: on 2026-11-12 the
+  latest run of 34 of 71 such repositories had failed it (the one log
+  examined, zzpower’s, failed for this reason).
+- `r-package.yml` runs an optional `tools/ci/pre-check` script before
+  `R CMD check`, for per-repository setup (zzedc warms its DuckDB `icu`
+  extension there) that previously required editing the workflow.
+  `render-report.yml` installs libcurl, OpenSSL, and libxml2 headers on
+  the host backend, a fix three package repositories had applied to
+  their own copies.
 - Test targets are gates. `make test`, `make docker-test`, and the
   cached `.make/tests-passed` target now exit nonzero when any tinytest
   assertion fails;
