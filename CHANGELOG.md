@@ -69,6 +69,12 @@ archived in `CHANGELOG-2.x.md`.
   Deployed copies hid failures of this step behind `continue-on-error`:
   on 2026-11-12 the latest run of 34 of 71 such repositories had failed
   it (the one log examined, zzpower's, failed for this reason).
+- `r-package.yml` runs an optional `tools/ci/pre-check` script before
+  `R CMD check`, for per-repository setup (zzedc warms its DuckDB `icu`
+  extension there) that previously required editing the workflow.
+  `render-report.yml` installs libcurl, OpenSSL, and libxml2 headers on
+  the host backend, a fix three package repositories had applied to their
+  own copies.
 - Test targets are gates. `make test`, `make docker-test`, and the cached
   `.make/tests-passed` target now exit nonzero when any tinytest assertion
   fails; `tinytest::run_test_dir()` returns results rather than signalling,

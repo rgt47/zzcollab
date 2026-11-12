@@ -107,6 +107,14 @@ jobs:
                                        lib = Sys.getenv('CI_TOOLS_LIB'),
                                        repos = 'https://cloud.r-project.org')"
 
+      # Per-repository setup that must precede the check (warming a cache,
+      # fetching a test fixture) goes in an optional tools/ci/pre-check
+      # script rather than in an edited copy of this workflow, so every
+      # compendium runs the same workflow. It runs with CI_TOOLS_LIB set.
+      - name: Pre-check hook (tools/ci/pre-check)
+        if: hashFiles('tools/ci/pre-check') != ''
+        run: bash tools/ci/pre-check
+
       # CI_TOOLS_LIB now holds renv, the restored dependencies, and the check
       # tools; hand it to the check subprocess via libpath so every Import
       # resolves (not just those already in the container base image).
