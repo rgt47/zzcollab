@@ -52,6 +52,15 @@
 <hr><div class="section level2">
 <h2 id="unreleased">Unreleased<a class="anchor" aria-label="anchor" href="#unreleased"></a></h2>
 <div class="section level3">
+<h3 id="changed">Changed<a class="anchor" aria-label="anchor" href="#changed"></a></h3>
+<ul><li>
+<code>r-package.yml</code>, <code>render-report.yml</code>, and <code>render-book.yml</code> set <code>GITHUB_PAT</code> from the workflow’s <code>GITHUB_TOKEN</code>, so renv and pak resolve GitHub-hosted packages with the authenticated API rate limit rather than the 60-request hourly limit per runner IP. The token is not passed into <code>docker build</code>, so container image restores remain unauthenticated.</li>
+<li>
+<code>render-report.yml</code> reads an optional <code>timeout:</code> (minutes, default 120) from <code>.github/report-ci.yml</code> and applies it to every render step, so a hung render fails in bounded time instead of holding the runner for the 6-hour job limit. A non-integer value fails the job with an annotation.</li>
+<li>
+<code>render-book.yml</code> uses <code>actions/cache@v6</code> (v4 runs on the deprecated Node 20 runtime).</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fixed">Fixed<a class="anchor" aria-label="anchor" href="#fixed"></a></h3>
 <ul><li>
 <code>render-book.yml</code> (book archetype) consolidates the fixes that had been applied piecemeal across downstream books, so one unedited workflow serves every book. R packages now install only from Posit’s binary repository (an explicit CRAN <code>repos</code> forced source builds, and <code>fs</code> failed to compile for want of libuv headers, leaving <code>rmarkdown</code> uninstalled); a verify step, run with the project <code>.Rprofile</code> loaded as Quarto’s own R session is, fails the job by name when a required package is missing, since <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> only warns. Books without a <code>renv.lock</code> install <code>knitr</code>, <code>rmarkdown</code>, and any <code>DESCRIPTION</code> dependencies with pak (plus <code>downlit</code> and <code>xml2</code> when <code>code-link</code> is on). renv books restore into the runner library with system requirements looked up per lockfile package (without re-solving the lockfile, which failed on GitHub-sourced and recommended packages), and the renv autoloader is disabled for the rest of the job so a plain <code>source("renv/activate.R")</code> profile cannot switch the render session to an empty project library. Install sessions run with <code>--no-init-file</code>, since the zzcollab <code>.Rprofile</code> sets CRAN source as the repository on a host. Engine detection matches only chunk fences at the start of a line, so a chunk header quoted in prose no longer provisions R. The workflow also gains the PDF edition (TinyTeX, a single all-format render, the ‘Latest PDF’ release) when a <code>pdf</code> format is declared, Chrome Headless Shell for Mermaid in PDF, a job timeout (90 min) and render timeout (30 min) in place of GitHub’s 360-minute default, a concurrency group, full-history checkout, a weekly scheduled run, and current action majors. Per-book differences move to an optional <code>.github/book-ci.yml</code> (<code>quarto</code>, <code>engines</code>, <code>apt</code>, <code>backend</code>) and optional <code>tools/ci/pre-render</code> and <code>tools/ci/post-deploy</code> hooks. Verified on 2026-11-11 across 13 Quarto books (prose, knitr with and without renv, Jupyter, Mermaid, and a Dockerfile book on the host backend): every pull request and deploy run passed.</li>
@@ -97,7 +106,7 @@
 <code>docs/package-placement-whitepaper.md</code>: a comprehensive account of which packages belong in the Dockerfile versus <code>renv.lock</code> versus <code>DESCRIPTION</code>.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="changed">Changed<a class="anchor" aria-label="anchor" href="#changed"></a></h3>
+<h3 id="changed-1">Changed<a class="anchor" aria-label="anchor" href="#changed-1"></a></h3>
 <ul><li><p>Profile <code>analysis</code> renamed to <code>tidyverse</code>. <code>analysis</code> is retained as a deprecated alias.</p></li>
 <li><p><code>zzc init</code> identity step no longer silently re-prompts only when fields are absent. When name and email are already saved, it displays the stored identity and offers an optional update, pre-filling each prompt with the current value so a bare Enter keeps it. Because <code>zzc init</code> is run for every new repository, the default is to keep existing values (no prompt churn); only an explicit confirmation walks the fields.</p></li>
 </ul></div>
@@ -127,7 +136,7 @@
 <code>.zzcollab-state</code>: a generator-written provenance record, emitted by both the Dockerfile generator and <code>zzc init</code>.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="changed-1">Changed<a class="anchor" aria-label="anchor" href="#changed-1"></a></h3>
+<h3 id="changed-2">Changed<a class="anchor" aria-label="anchor" href="#changed-2"></a></h3>
 <ul><li>The <code>Dockerfile</code>, <code>.Rprofile</code>, and the CI workflows (<code>r-package.yml</code>, <code>render-report.yml</code>) self-adapt to artifact presence: install from <code>renv.lock</code> when present, otherwise from <code>DESCRIPTION</code>; the render and check workflows fall back to a host environment when no <code>Dockerfile</code> is present.</li>
 <li>The renv and Docker features toggle symmetrically. <code>zzc renv</code> / <code>zzc rm renv</code> and <code>zzc docker</code> / <code>zzc rm docker</code> regenerate the dependent files and reuse the remembered base image and R version from <code>.zzcollab-state</code>.</li>
 <li>

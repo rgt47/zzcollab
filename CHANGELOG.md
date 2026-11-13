@@ -8,6 +8,22 @@ is archived in `CHANGELOG-2.x.md`.
 
 ## Unreleased
 
+### Changed
+
+- `r-package.yml`, `render-report.yml`, and `render-book.yml` set
+  `GITHUB_PAT` from the workflow’s `GITHUB_TOKEN`, so renv and pak
+  resolve GitHub-hosted packages with the authenticated API rate limit
+  rather than the 60-request hourly limit per runner IP. The token is
+  not passed into `docker build`, so container image restores remain
+  unauthenticated.
+- `render-report.yml` reads an optional `timeout:` (minutes,
+  default 120) from `.github/report-ci.yml` and applies it to every
+  render step, so a hung render fails in bounded time instead of holding
+  the runner for the 6-hour job limit. A non-integer value fails the job
+  with an annotation.
+- `render-book.yml` uses `actions/cache@v6` (v4 runs on the deprecated
+  Node 20 runtime).
+
 ### Fixed
 
 - `render-book.yml` (book archetype) consolidates the fixes that had
