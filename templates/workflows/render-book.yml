@@ -60,6 +60,10 @@ jobs:
     # GitHub's default is 360 minutes; a hung render (for example, Mermaid
     # waiting on a missing Chrome) should fail fast instead.
     timeout-minutes: 90
+    env:
+      # Authenticates GitHub-hosted package lookups by renv and pak (60
+      # unauthenticated API requests an hour per runner IP).
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -186,7 +190,7 @@ jobs:
 
       - name: Cache R library (host, renv.lock)
         if: steps.mode.outputs.backend == 'host' && steps.mode.outputs.renv == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.R_LIBS_USER }}
           key: r-lib-${{ runner.os }}-${{ steps.setup-r.outputs.installed-r-version }}-${{ hashFiles('renv.lock') }}
