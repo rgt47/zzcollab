@@ -23,6 +23,20 @@ archived in `CHANGELOG-2.x.md`.
 - `render-book.yml` uses `actions/cache@v6` (v4 runs on the deprecated
   Node 20 runtime).
 
+### Fixed (r-package.yml package repository)
+
+- The container check job in `r-package.yml` restored packages from
+  Posit's `noble/latest` binaries even when the project's Dockerfile pins a
+  dated snapshot, so the check could run against a different library than
+  the image. Binaries are rebuilt against current dependencies: in
+  missforest, `Rfast 2.1.5.2` from `latest` is compiled against
+  `RcppParallel 6.2.1`, and failed to load (undefined TBB symbol) beside the
+  `RcppParallel 5.1.11-2` that the lockfile pins to match its 2026-06-29
+  image. The job now takes the snapshot date from the Dockerfile's Posit
+  URL and uses `noble/<date>`, falling back to `noble/latest` when the
+  Dockerfile pins none or is absent. The renv cache key includes the
+  repository, so a cache filled from one snapshot does not seed another.
+
 ### Fixed
 
 - `render-book.yml` (book archetype) consolidates the fixes that had been
