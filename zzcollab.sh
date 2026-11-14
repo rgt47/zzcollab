@@ -1374,6 +1374,22 @@ EOF
         fi
     fi
 
+    # Preserve the base image, R version, and PPM snapshot the project was
+    # generated with. Without this, generate_dockerfile falls back to the
+    # renv.lock R version, the config profile, and today's snapshot, so an
+    # update could silently swap rocker/verse for rocker/tidyverse, downgrade
+    # R, and re-pin packages. .zzcollab-state is authoritative; the .Rprofile
+    # pin above is the fallback for projects that predate the state record.
+    local _sb _sr _ss
+    _sb=$(_zzc_state_get base_image "$dir" 2>/dev/null)
+    _sr=$(_zzc_state_get r_version "$dir" 2>/dev/null)
+    _ss=$(_zzc_state_get ppm_snapshot "$dir" 2>/dev/null)
+    if [[ -n "$_sb" ]]; then
+        export BASE_IMAGE="${_sb%:*}"
+        export R_VERSION="${_sr:-${_sb##*:}}"
+    fi
+    [[ -n "$_ss" ]] && export PPM_SNAPSHOT="$_ss"
+
     local cur_ver="${ZZCOLLAB_TEMPLATE_VERSION:-unknown}"
     local n_changed=0 n_total=0 entry tmpl dest old
     for entry in "${_ZZC_UPDATE_MANAGED[@]}"; do

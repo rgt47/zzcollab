@@ -23,6 +23,16 @@ archived in `CHANGELOG-2.x.md`.
 - `render-book.yml` uses `actions/cache@v6` (v4 runs on the deprecated
   Node 20 runtime).
 
+### Fixed (zzc update pins)
+
+- `zzc update` regenerated the Dockerfile from the `renv.lock` R version,
+  the config profile, and today's Posit snapshot, ignoring the pins in
+  `.zzcollab-state`. On a publishing project it could swap `rocker/verse`
+  for `rocker/tidyverse` (dropping TeX Live), downgrade R, and re-pin every
+  package, despite the help text promising to keep the snapshot. It now
+  takes the base image, R version, and snapshot from `.zzcollab-state`,
+  falling back to the `.Rprofile` snapshot for projects without one.
+
 ### Fixed (r-package.yml package repository)
 
 - The container check job in `r-package.yml` restored packages from
