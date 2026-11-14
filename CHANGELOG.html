@@ -61,6 +61,11 @@
 <code>render-book.yml</code> uses <code>actions/cache@v6</code> (v4 runs on the deprecated Node 20 runtime).</li>
 </ul></div>
 <div class="section level3">
+<h3 id="fixed-zzc-update-pins">Fixed (zzc update pins)<a class="anchor" aria-label="anchor" href="#fixed-zzc-update-pins"></a></h3>
+<ul><li>
+<code>zzc update</code> regenerated the Dockerfile from the <code>renv.lock</code> R version, the config profile, and today’s Posit snapshot, ignoring the pins in <code>.zzcollab-state</code>. On a publishing project it could swap <code>rocker/verse</code> for <code>rocker/tidyverse</code> (dropping TeX Live), downgrade R, and re-pin every package, despite the help text promising to keep the snapshot. It now takes the base image, R version, and snapshot from <code>.zzcollab-state</code>, falling back to the <code>.Rprofile</code> snapshot for projects without one.</li>
+</ul></div>
+<div class="section level3">
 <h3 id="fixed-r-packageyml-package-repository">Fixed (r-package.yml package repository)<a class="anchor" aria-label="anchor" href="#fixed-r-packageyml-package-repository"></a></h3>
 <ul><li>The container check job in <code>r-package.yml</code> restored packages from Posit’s <code>noble/latest</code> binaries even when the project’s Dockerfile pins a dated snapshot, so the check could run against a different library than the image. Binaries are rebuilt against current dependencies: in missforest, <code>Rfast 2.1.5.2</code> from <code>latest</code> is compiled against <code>RcppParallel 6.2.1</code>, and failed to load (undefined TBB symbol) beside the <code>RcppParallel 5.1.11-2</code> that the lockfile pins to match its 2026-06-29 image. The job now takes the snapshot date from the Dockerfile’s Posit URL and uses <code>noble/&lt;date&gt;</code>, falling back to <code>noble/latest</code> when the Dockerfile pins none or is absent. The renv cache key includes the repository, so a cache filled from one snapshot does not seed another.</li>
 </ul></div>
