@@ -1,10 +1,11 @@
 # Initialize a new zzcollab team project
 
-Creates a research compendium in the current working directory and
-records the team's DockerHub and GitHub accounts in the zzcollab
-configuration so that the `dockerhub` and `github` commands can publish
-under them. Intended for team leads setting up a new collaborative
-research project.
+Creates a research compendium in a new directory `project_name` under
+the current working directory and, once the compendium has been created,
+records the team's DockerHub and GitHub accounts in the user-level
+zzcollab configuration so that the `dockerhub` and `github` commands can
+publish under them. Intended for team leads setting up a new
+collaborative research project.
 
 ## Usage
 
@@ -13,7 +14,7 @@ init_project(
   team_name = NULL,
   project_name = NULL,
   github_account = NULL,
-  profile = "analysis"
+  profile = "tidyverse"
 )
 ```
 
@@ -29,9 +30,10 @@ init_project(
 - project_name:
 
   Character string specifying the project name. The compendium is
-  created in the current working directory (which should be named
-  accordingly); the value is validated and used in status messages. Must
-  be a valid Docker repository name (lowercase, no spaces).
+  created in the directory `file.path(getwd(), project_name)`, which is
+  created if absent and must be empty if it already exists; the CLI
+  names the compendium after that directory. Must be a valid Docker
+  repository name (lowercase, no spaces).
 
 - github_account:
 
@@ -42,8 +44,11 @@ init_project(
 - profile:
 
   Character string naming the Docker profile / quickstart bundle to
-  scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to
-  "analysis".
+  scaffold, matching the CLI's profiles in `templates/bundles.yaml`:
+  "minimal" (rocker/r-ver), "tidyverse" (rocker/tidyverse), "rstudio"
+  (rocker/rstudio), or "publishing" (rocker/verse). "analysis" is
+  accepted as a deprecated alias for "tidyverse". Defaults to
+  "tidyverse".
 
 ## Value
 
@@ -52,15 +57,22 @@ scaffolding step.
 
 ## Details
 
-This function performs two steps using the current zzcollab CLI:
+This function performs three steps using the current zzcollab CLI:
 
-1.  **Configuration**: Records the DockerHub account (and GitHub
-    account, if given) via `zzcollab config set` so that later
-    `dockerhub` and `github` commands publish under the correct
-    accounts.
+1.  **Directory**: Creates `project_name` under the current working
+    directory, or uses it if it exists and is empty. A non-empty
+    directory is an error. The R session's working directory is not
+    changed.
 
-2.  **Scaffolding**: Runs the profile quickstart (`zzcollab <profile>`),
-    which creates the R package structure, renv.lock, and Dockerfile.
+2.  **Scaffolding**: Runs the profile quickstart (`zzcollab <profile>`)
+    inside that directory, which creates the R package structure,
+    renv.lock, and Dockerfile. If it fails, a directory created by this
+    call is removed when it is still empty, and step 3 is skipped.
+
+3.  **Configuration**: Records the DockerHub account (and GitHub
+    account, if given) via `zzcollab config set` in the user-level
+    zzcollab configuration, so that later `dockerhub` and `github`
+    commands publish under the correct accounts.
 
 To publish the team image and repository afterwards, run
 `zzcollab dockerhub` and `zzcollab github` in the project directory.

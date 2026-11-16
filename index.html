@@ -431,7 +431,7 @@
 <li>
 <code><a href="reference/setup_project.html">setup_project()</a></code> - Setup individual project (config-aware)</li>
 </ul>
-<p>Current limitations of the R wrappers: <code><a href="reference/init_project.html">init_project()</a></code> scaffolds the current working directory (it does not create a <code>project_name</code> directory) and accepts only the profiles <code>minimal</code>, <code>analysis</code> (the deprecated alias for <code>tidyverse</code>), and <code>rstudio</code>, not <code>tidyverse</code> or <code>publishing</code>. <code><a href="reference/setup_project.html">setup_project()</a></code> issues only <code>zzcollab docker</code>, so it does not initialize a new project by itself.</p>
+<p><code><a href="reference/init_project.html">init_project()</a></code> creates the compendium in a new (or empty) <code>project_name</code> directory under the current working directory and accepts the same profiles as the CLI (<code>minimal</code>, <code>tidyverse</code>, <code>rstudio</code>, <code>publishing</code>, and the deprecated alias <code>analysis</code>). Current limitation of the R wrappers: <code><a href="reference/setup_project.html">setup_project()</a></code> issues only <code>zzcollab docker</code>, so it does not initialize a new project by itself.</p>
 </div>
 <div class="section level3">
 <h3 id="docker-management">Docker Management<a class="anchor" aria-label="anchor" href="#docker-management"></a>
@@ -491,7 +491,7 @@
 <code class="sourceCode R"><span><span class="co"># 0. One-time setup (configure your defaults)</span></span>
 <span><span class="fu"><a href="reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"datascience"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Initialize project in the current directory (uses config defaults)</span></span>
+<span><span class="co"># 1. Initialize project in ./covid-analysis (uses config defaults)</span></span>
 <span><span class="fu"><a href="reference/init_project.html">init_project</a></span><span class="op">(</span>project_name <span class="op">=</span> <span class="st">"covid-analysis"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Add required packages (inside container via make r)</span></span>

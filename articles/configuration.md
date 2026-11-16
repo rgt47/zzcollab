@@ -744,16 +744,13 @@ if you hit this on an older checkout, update the framework.
 ## R Interface Configuration
 
 The R interface wraps the same shell commands documented above; it does
-not add configuration capability the CLI lacks, and in one place
-([`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)’s
-`profile` argument) it is currently **narrower** than the CLI:
-[`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)
-validates `profile` against only `c("minimal", "analysis", "rstudio")` —
-it does not currently accept `"tidyverse"` or `"publishing"` even though
-the shell CLI and `bundles.yaml` both support them. Use the shell CLI
-(`zzc tidyverse`, `zzc publishing`) directly if you need those profiles;
-[`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)
-will reject them.
+not add configuration capability the CLI lacks.
+[`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)’s
+`profile` argument accepts the same profiles as the CLI and
+`bundles.yaml`: `"minimal"`, `"tidyverse"`, `"rstudio"`, and
+`"publishing"`, plus `"analysis"` as a deprecated alias for
+`"tidyverse"`. It creates the compendium in a new (or empty)
+`project_name` directory under the current working directory.
 
 ``` r
 
@@ -774,12 +771,11 @@ valid <- validate_config()
 
 ``` r
 
-# init_project()'s profile argument accepts only "minimal", "analysis",
-# or "rstudio" (narrower than the CLI; see note above)
+# Creates ./cancer-study and scaffolds it with the tidyverse profile
 init_project(
   team_name = "genomicslab",
   project_name = "cancer-study",
-  profile = "analysis"
+  profile = "tidyverse"
 )
 ```
 
@@ -856,9 +852,9 @@ the two YAML files directly for provenance) is the only way to answer
 4.  **Two-layer package architecture**: Docker image (shared) + renv
     (flexible), with `renv.lock` as the actual reproducibility source of
     truth — conditional on dependencies actually being declared there.
-5.  **R interface**: thinner than the CLI in at least one place
-    ([`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)’s
-    profile set); prefer the CLI when in doubt.
+5.  **R interface**: wraps the CLI and adds no configuration of its own;
+    [`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)
+    accepts the CLI’s profile set.
 
 ### Quick Reference
 

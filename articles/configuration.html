@@ -971,16 +971,15 @@ update the framework.</p>
 <h2 id="r-interface-configuration">R Interface Configuration<a class="anchor" aria-label="anchor" href="#r-interface-configuration"></a>
 </h2>
 <p>The R interface wraps the same shell commands documented above; it
-does not add configuration capability the CLI lacks, and in one place
-(<code><a href="../reference/init_project.html">init_project()</a></code>’s <code>profile</code> argument) it is
-currently <strong>narrower</strong> than the CLI:
-<code><a href="../reference/init_project.html">init_project()</a></code> validates <code>profile</code> against only
-<code>c("minimal", "analysis", "rstudio")</code> — it does not currently
-accept <code>"tidyverse"</code> or <code>"publishing"</code> even though
-the shell CLI and <code>bundles.yaml</code> both support them. Use the
-shell CLI (<code>zzc tidyverse</code>, <code>zzc publishing</code>)
-directly if you need those profiles; <code><a href="../reference/init_project.html">init_project()</a></code> will
-reject them.</p>
+does not add configuration capability the CLI lacks.
+<code><a href="../reference/init_project.html">init_project()</a></code>’s <code>profile</code> argument accepts the
+same profiles as the CLI and <code>bundles.yaml</code>:
+<code>"minimal"</code>, <code>"tidyverse"</code>,
+<code>"rstudio"</code>, and <code>"publishing"</code>, plus
+<code>"analysis"</code> as a deprecated alias for
+<code>"tidyverse"</code>. It creates the compendium in a new (or empty)
+<code>project_name</code> directory under the current working
+directory.</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/rgt47/zzcollab" class="external-link">zzcollab</a></span><span class="op">)</span></span>
 <span></span>
@@ -996,12 +995,11 @@ reject them.</p>
 <span></span>
 <span><span class="va">valid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_config.html">validate_config</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># init_project()'s profile argument accepts only "minimal", "analysis",</span></span>
-<span><span class="co"># or "rstudio" (narrower than the CLI; see note above)</span></span>
+<code class="sourceCode R"><span><span class="co"># Creates ./cancer-study and scaffolds it with the tidyverse profile</span></span>
 <span><span class="fu"><a href="../reference/init_project.html">init_project</a></span><span class="op">(</span></span>
 <span>  team_name <span class="op">=</span> <span class="st">"genomicslab"</span>,</span>
 <span>  project_name <span class="op">=</span> <span class="st">"cancer-study"</span>,</span>
-<span>  profile <span class="op">=</span> <span class="st">"analysis"</span></span>
+<span>  profile <span class="op">=</span> <span class="st">"tidyverse"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code>get_config_default(key, default)</code> is the internal
 null-coalescing helper other package functions use; it is documented
@@ -1114,9 +1112,9 @@ for the full logic.</li>
 reproducibility source of truth — conditional on dependencies actually
 being declared there.</li>
 <li>
-<strong>R interface</strong>: thinner than the CLI in at least one
-place (<code><a href="../reference/init_project.html">init_project()</a></code>’s profile set); prefer the CLI when
-in doubt.</li>
+<strong>R interface</strong>: wraps the CLI and adds no
+configuration of its own; <code><a href="../reference/init_project.html">init_project()</a></code> accepts the CLI’s
+profile set.</li>
 </ol>
 </div>
 <div class="section level3">

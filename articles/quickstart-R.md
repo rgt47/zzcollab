@@ -231,9 +231,9 @@ set_config("team_name", "genomicslab")
 set_config("profile_name", "tidyverse")
 set_config("github_account", "genomicslab")
 
-# Navigate to project directory
-dir.create("~/projects/cancer-study")
-setwd("~/projects/cancer-study")
+# Navigate to the parent directory; init_project() creates
+# ~/projects/cancer-study itself
+setwd("~/projects")
 
 # Initialize team project
 init_project(
