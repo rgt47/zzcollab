@@ -317,11 +317,11 @@ zzcollab config validate               # Validate YAML syntax
 - `join_project()` - Join existing project (config-aware)
 - `setup_project()` - Setup individual project (config-aware)
 
-Current limitations of the R wrappers: `init_project()` scaffolds the
-current working directory (it does not create a `project_name`
-directory) and accepts only the profiles `minimal`, `analysis`
-(the deprecated alias for `tidyverse`), and `rstudio`, not
-`tidyverse` or `publishing`. `setup_project()` issues only
+`init_project()` creates the compendium in a new (or empty)
+`project_name` directory under the current working directory and
+accepts the same profiles as the CLI (`minimal`, `tidyverse`,
+`rstudio`, `publishing`, and the deprecated alias `analysis`).
+Current limitation of the R wrappers: `setup_project()` issues only
 `zzcollab docker`, so it does not initialize a new project by itself.
 
 ### Docker Management
@@ -355,7 +355,7 @@ directory) and accepts only the profiles `minimal`, `analysis`
 # 0. One-time setup (configure your defaults)
 set_config("team_name", "datascience")
 
-# 1. Initialize project in the current directory (uses config defaults)
+# 1. Initialize project in ./covid-analysis (uses config defaults)
 init_project(project_name = "covid-analysis")
 
 # 2. Add required packages (inside container via make r)

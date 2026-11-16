@@ -226,40 +226,70 @@ team_images <- function() {
   df
 }
 
+#' Profiles accepted by the zzcollab CLI
+#'
+#' \code{zzcollab_profiles} lists the canonical profiles defined in
+#' \code{templates/bundles.yaml}; \code{zzcollab_profile_aliases} maps
+#' deprecated profile names to their canonical replacement (see
+#' \code{get_profile_base_image()} in \code{modules/profiles.sh}).
+#' \code{templates/} is excluded from the built package, so these cannot be
+#' read from \code{bundles.yaml} at run time; \code{inst/tinytest/
+#' test-init-project-profiles-dir.R} checks them against that file and the
+#' CLI dispatcher in a source checkout.
+#'
+#' @keywords internal
+#' @noRd
+zzcollab_profiles <- c('minimal', 'tidyverse', 'rstudio', 'publishing')
+
+zzcollab_profile_aliases <- c(analysis = 'tidyverse')
+
 #' Initialize a new zzcollab team project
 #'
-#' Creates a research compendium in the current working directory and records the
-#' team's DockerHub and GitHub accounts in the zzcollab configuration so that the
-#' \code{dockerhub} and \code{github} commands can publish under them. Intended for
-#' team leads setting up a new collaborative research project.
+#' Creates a research compendium in a new directory \code{project_name} under
+#' the current working directory and, once the compendium has been created,
+#' records the team's DockerHub and GitHub accounts in the user-level zzcollab
+#' configuration so that the \code{dockerhub} and \code{github} commands can
+#' publish under them. Intended for team leads setting up a new collaborative
+#' research project.
 #'
 #' @param team_name Character string specifying the Docker Hub team/organization name.
 #'   This becomes part of the Docker image names (e.g., "myteam/projectcore").
 #'   If NULL, uses value from configuration file via \code{get_config("team_name")}.
-#'   
+#'
 #' @param project_name Character string specifying the project name. The
-#'   compendium is created in the current working directory (which should be
-#'   named accordingly); the value is validated and used in status messages.
+#'   compendium is created in the directory \code{file.path(getwd(),
+#'   project_name)}, which is created if absent and must be empty if it
+#'   already exists; the CLI names the compendium after that directory.
 #'   Must be a valid Docker repository name (lowercase, no spaces).
 #'
 #' @param github_account Character string specifying GitHub account for repository creation.
 #'   If NULL, uses config default or falls back to \code{team_name}.
 #'   Used with GitHub CLI to create private repositories.
 #'
-#' @param profile Character string naming the Docker profile / quickstart bundle
-#'   to scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to "analysis".
+#' @param profile Character string naming the Docker profile / quickstart
+#'   bundle to scaffold, matching the CLI's profiles in
+#'   \code{templates/bundles.yaml}: "minimal" (rocker/r-ver), "tidyverse"
+#'   (rocker/tidyverse), "rstudio" (rocker/rstudio), or "publishing"
+#'   (rocker/verse). "analysis" is accepted as a deprecated alias for
+#'   "tidyverse". Defaults to "tidyverse".
 #'
 #' @return Logical value indicating success (TRUE) or failure (FALSE) of the
 #'   scaffolding step.
 #'
 #' @details
-#' This function performs two steps using the current zzcollab CLI:
+#' This function performs three steps using the current zzcollab CLI:
 #'
-#' 1. **Configuration**: Records the DockerHub account (and GitHub account, if
-#'    given) via \code{zzcollab config set} so that later \code{dockerhub} and
-#'    \code{github} commands publish under the correct accounts.
-#' 2. **Scaffolding**: Runs the profile quickstart (\code{zzcollab <profile>}),
-#'    which creates the R package structure, renv.lock, and Dockerfile.
+#' 1. **Directory**: Creates \code{project_name} under the current working
+#'    directory, or uses it if it exists and is empty. A non-empty directory
+#'    is an error. The R session's working directory is not changed.
+#' 2. **Scaffolding**: Runs the profile quickstart (\code{zzcollab <profile>})
+#'    inside that directory, which creates the R package structure,
+#'    renv.lock, and Dockerfile. If it fails, a directory created by this
+#'    call is removed when it is still empty, and step 3 is skipped.
+#' 3. **Configuration**: Records the DockerHub account (and GitHub account,
+#'    if given) via \code{zzcollab config set} in the user-level zzcollab
+#'    configuration, so that later \code{dockerhub} and \code{github}
+#'    commands publish under the correct accounts.
 #'
 #' To publish the team image and repository afterwards, run
 #' \code{zzcollab dockerhub} and \code{zzcollab github} in the project directory.
@@ -304,7 +334,7 @@ team_images <- function() {
 #'
 #' @export
 init_project <- function(team_name = NULL, project_name = NULL,
-                         github_account = NULL, profile = 'analysis') {
+                         github_account = NULL, profile = 'tidyverse') {
 
   # Validate the init-only parameters first (before resolving config defaults),
   # so tests can check error messages without needing the zzcollab script.
@@ -314,21 +344,63 @@ init_project <- function(team_name = NULL, project_name = NULL,
 
   # Profile flows to the shell as a bare command; constrain it to the known
   # set so an arbitrary string cannot reach the shell.
-  valid_profiles <- c('minimal', 'analysis', 'rstudio')
-  if (!profile %in% valid_profiles) {
-    stop("Invalid profile '", profile, "'. Must be one of: ",
-         paste(valid_profiles, collapse = ', '), call. = FALSE)
+  valid_profiles <- c(zzcollab_profiles, names(zzcollab_profile_aliases))
+  if (!is.character(profile) || length(profile) != 1 ||
+      !profile %in% valid_profiles) {
+    stop("Invalid profile '", paste(profile, collapse = ' '),
+         "'. Must be one of: ", paste(zzcollab_profiles, collapse = ', '),
+         " ('analysis' is accepted as a deprecated alias for 'tidyverse')",
+         call. = FALSE)
   }
 
   # Shared project/team validation and team_name resolution.
   team_name <- resolve_team_project(team_name, project_name)
   github_account <- github_account %||% get_config_default('github_account') %||% team_name
 
-  # Find zzcollab script
+  # The CLI names the compendium after the directory it runs in, so the
+  # scaffold must run inside ./<project_name>. Refuse a non-empty target so
+  # an existing project is never overwritten or merged into.
+  project_dir <- file.path(getwd(), project_name)
+  if (file.exists(project_dir) && !dir.exists(project_dir)) {
+    stop("'", project_name, "' exists and is not a directory", call. = FALSE)
+  }
+  created_dir <- !dir.exists(project_dir)
+  if (!created_dir &&
+      length(list.files(project_dir, all.files = TRUE, no.. = TRUE)) > 0) {
+    stop("Directory '", project_name, "' already exists and is not empty",
+         call. = FALSE)
+  }
+
   zzcollab_path <- find_zzcollab_script()
 
-  # Persist team/GitHub accounts so later 'dockerhub' and 'github' commands can
-  # push the team image and create the repository under the correct accounts.
+  if (created_dir) {
+    dir.create(project_dir)
+  }
+  cmd <- paste(zzcollab_path, profile)
+  message("Initializing project '", project_name, "' in ", project_dir,
+          ' (profile: ', profile, '): ', cmd)
+  old_wd <- setwd(project_dir)
+  status <- tryCatch(
+    safe_system(cmd, error_msg = 'Failed to initialize project'),
+    error = function(e) e,
+    finally = setwd(old_wd)
+  )
+
+  failed <- inherits(status, 'error') || status != 0
+  if (failed && created_dir &&
+      length(list.files(project_dir, all.files = TRUE, no.. = TRUE)) == 0) {
+    unlink(project_dir, recursive = TRUE)
+  }
+  if (inherits(status, 'error')) {
+    stop(status)
+  }
+  if (failed) {
+    return(FALSE)
+  }
+
+  # Account settings are written to the user-level config only after a
+  # successful scaffold, so a failed init leaves the user's config untouched.
+  # They are consumed later by the 'dockerhub' and 'github' commands.
   safe_system(paste(zzcollab_path, 'config set dockerhub-account', shQuote(team_name)),
               ignore.stdout = TRUE, ignore.stderr = TRUE,
               error_msg = 'Failed to set dockerhub-account')
@@ -337,14 +409,7 @@ init_project <- function(team_name = NULL, project_name = NULL,
                 ignore.stdout = TRUE, ignore.stderr = TRUE,
                 error_msg = 'Failed to set github-account')
   }
-
-  # Scaffold the research compendium in the current working directory using the
-  # chosen profile (init + renv + docker). The compendium is named after the
-  # directory; project_name is validated and recorded for messaging.
-  cmd <- paste(zzcollab_path, profile)
-  message("Initializing project '", project_name, "' (profile: ", profile, '): ', cmd)
-  result <- safe_system(cmd, error_msg = 'Failed to initialize project')
-  result == 0
+  TRUE
 }
 
 #' Join an existing zzcollab team project
