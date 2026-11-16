@@ -1,4 +1,4 @@
-# zzcollab: Docker-based Research Collaboration Framework <a href="https://rgt47.github.io/zzcollab/"><img src="man/figures/logo.png" align="right" height="138" alt="zzcollab hex sticker" /></a>
+# zzcollab: Docker-based Research Collaboration Framework <a href="https://github.com/rgt47/zzcollab"><img src="man/figures/logo.png" align="right" height="138" alt="zzcollab hex sticker" /></a>
 
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/zzcollab)](https://CRAN.R-project.org/package=zzcollab)
@@ -7,7 +7,6 @@
 [![Codecov test coverage](https://codecov.io/gh/rgt47/zzcollab/branch/main/graph/badge.svg)](https://app.codecov.io/gh/rgt47/zzcollab)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?logo=docker)](https://www.docker.com/)
-[![R](https://img.shields.io/badge/R-4.0+-276DC3?logo=r)](https://www.r-project.org/)
 <!-- badges: end -->
 
 A systematic framework for reproducible research collaboration using Docker
@@ -318,6 +317,13 @@ zzcollab config validate               # Validate YAML syntax
 - `join_project()` - Join existing project (config-aware)
 - `setup_project()` - Setup individual project (config-aware)
 
+Current limitations of the R wrappers: `init_project()` scaffolds the
+current working directory (it does not create a `project_name`
+directory) and accepts only the profiles `minimal`, `analysis`
+(the deprecated alias for `tidyverse`), and `rstudio`, not
+`tidyverse` or `publishing`. `setup_project()` issues only
+`zzcollab docker`, so it does not initialize a new project by itself.
+
 ### Docker Management
 
 - `status()` - Check container status
@@ -349,7 +355,7 @@ zzcollab config validate               # Validate YAML syntax
 # 0. One-time setup (configure your defaults)
 set_config("team_name", "datascience")
 
-# 1. Initialize project (uses config defaults)
+# 1. Initialize project in the current directory (uses config defaults)
 init_project(project_name = "covid-analysis")
 
 # 2. Add required packages (inside container via make r)
@@ -379,14 +385,14 @@ git_push()
 ### Method 1: Automatic Installation
 
 ```bash
-git clone https://github.com/yourusername/zzcollab.git && \
+git clone https://github.com/rgt47/zzcollab.git && \
   cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 
 ```bash
-git clone https://github.com/yourusername/zzcollab.git
+git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab
 ln -s "$(pwd)/zzcollab.sh" ~/bin/zzcollab
 ```
@@ -526,14 +532,10 @@ zzcollab docker --base-image rgt47/r-pluspackages
 
 ### Custom Base Images
 
-```bash
-# Build custom base image with organization packages
-cd zzcollab
-docker build -f templates/Dockerfile.pluspackages \
-  -t myorg/r-base:latest .
-docker push myorg/r-base:latest
+An organization can build and push its own base image (the repository
+does not ship a Dockerfile for this) and use it in projects:
 
-# Use in projects
+```bash
 zzcollab docker --base-image myorg/r-base
 ```
 
@@ -667,8 +669,9 @@ zzcollab
 **Platform warnings on ARM64 (Apple Silicon):**
 
 ```bash
-# Already handled automatically with --platform linux/amd64
-# Or set environment variable:
+# The generated Makefile sets PLATFORM for its docker run targets:
+# linux/arm64 on arm64 hosts, linux/amd64 otherwise. For an
+# amd64-only base image, Docker's own setting also applies:
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
 ```
 
@@ -730,8 +733,9 @@ mkdir test-project && cd test-project
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see
-the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License, version 3
+or later (`License: GPL (>= 3)` in `DESCRIPTION`); see
+<https://www.gnu.org/licenses/gpl-3.0>.
 
 - Free to use for any purpose
 - Modify and distribute with same license
