@@ -431,6 +431,7 @@
 <li>
 <code><a href="reference/setup_project.html">setup_project()</a></code> - Setup individual project (config-aware)</li>
 </ul>
+<p>Current limitations of the R wrappers: <code><a href="reference/init_project.html">init_project()</a></code> scaffolds the current working directory (it does not create a <code>project_name</code> directory) and accepts only the profiles <code>minimal</code>, <code>analysis</code> (the deprecated alias for <code>tidyverse</code>), and <code>rstudio</code>, not <code>tidyverse</code> or <code>publishing</code>. <code><a href="reference/setup_project.html">setup_project()</a></code> issues only <code>zzcollab docker</code>, so it does not initialize a new project by itself.</p>
 </div>
 <div class="section level3">
 <h3 id="docker-management">Docker Management<a class="anchor" aria-label="anchor" href="#docker-management"></a>
@@ -490,7 +491,7 @@
 <code class="sourceCode R"><span><span class="co"># 0. One-time setup (configure your defaults)</span></span>
 <span><span class="fu"><a href="reference/set_config.html">set_config</a></span><span class="op">(</span><span class="st">"team_name"</span>, <span class="st">"datascience"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 1. Initialize project (uses config defaults)</span></span>
+<span><span class="co"># 1. Initialize project in the current directory (uses config defaults)</span></span>
 <span><span class="fu"><a href="reference/init_project.html">init_project</a></span><span class="op">(</span>project_name <span class="op">=</span> <span class="st">"covid-analysis"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Add required packages (inside container via make r)</span></span>
@@ -520,13 +521,13 @@
 <div class="section level3">
 <h3 id="method-1-automatic-installation">Method 1: Automatic Installation<a class="anchor" aria-label="anchor" href="#method-1-automatic-installation"></a>
 </h3>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/zzcollab.git <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/rgt47/zzcollab.git <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="bu">cd</span> zzcollab <span class="kw">&amp;&amp;</span> <span class="ex">./install.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="method-2-manual-installation">Method 2: Manual Installation<a class="anchor" aria-label="anchor" href="#method-2-manual-installation"></a>
 </h3>
-<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/yourusername/zzcollab.git</span>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/rgt47/zzcollab.git</span>
 <span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="bu">cd</span> zzcollab</span>
 <span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> <span class="st">"</span><span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span><span class="st">/zzcollab.sh"</span> ~/bin/zzcollab</span></code></pre></div>
 </div>
@@ -663,14 +664,8 @@
 <div class="section level3">
 <h3 id="custom-base-images">Custom Base Images<a class="anchor" aria-label="anchor" href="#custom-base-images"></a>
 </h3>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Build custom base image with organization packages</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="bu">cd</span> zzcollab</span>
-<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-f</span> templates/Dockerfile.pluspackages <span class="dt">\</span></span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a>  <span class="at">-t</span> myorg/r-base:latest .</span>
-<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">docker</span> push myorg/r-base:latest</span>
-<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a></span>
-<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a><span class="co"># Use in projects</span></span>
-<span id="cb23-8"><a href="#cb23-8" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> myorg/r-base</span></code></pre></div>
+<p>An organization can build and push its own base image (the repository does not ship a Dockerfile for this) and use it in projects:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="ex">zzcollab</span> docker <span class="at">--base-image</span> myorg/r-base</span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -836,9 +831,10 @@
 <span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_BUILDKIT</span><span class="op">=</span>0</span>
 <span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="ex">zzcollab</span></span></code></pre></div>
 <p><strong>Platform warnings on ARM64 (Apple Silicon):</strong></p>
-<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Already handled automatically with --platform linux/amd64</span></span>
-<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="co"># Or set environment variable:</span></span>
-<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span></code></pre></div>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># The generated Makefile sets PLATFORM for its docker run targets:</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a><span class="co"># linux/arm64 on arm64 hosts, linux/amd64 otherwise. For an</span></span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a><span class="co"># amd64-only base image, Docker's own setting also applies:</span></span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_DEFAULT_PLATFORM</span><span class="op">=</span>linux/amd64</span></code></pre></div>
 <p><strong>Package name errors:</strong></p>
 <div class="sourceCode" id="cb30"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># Ensure directory name contains only letters, numbers, and periods</span></span>
 <span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a><span class="co"># Avoid underscores and special characters</span></span>
@@ -904,7 +900,7 @@
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p>This project is licensed under the GNU General Public License v3.0 - see the <a href="LICENSE">LICENSE</a> file for details.</p>
+<p>This project is licensed under the GNU General Public License, version 3 or later (<code>License: GPL (&gt;= 3)</code> in <code>DESCRIPTION</code>); see <a href="https://www.gnu.org/licenses/gpl-3.0" class="external-link uri">https://www.gnu.org/licenses/gpl-3.0</a>.</p>
 <ul>
 <li>Free to use for any purpose</li>
 <li>Modify and distribute with same license</li>

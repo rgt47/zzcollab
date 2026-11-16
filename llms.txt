@@ -342,6 +342,16 @@ zzcollab config validate               # Validate YAML syntax
 - [`setup_project()`](https://rgt47.github.io/zzcollab/reference/setup_project.md) -
   Setup individual project (config-aware)
 
+Current limitations of the R wrappers:
+[`init_project()`](https://rgt47.github.io/zzcollab/reference/init_project.md)
+scaffolds the current working directory (it does not create a
+`project_name` directory) and accepts only the profiles `minimal`,
+`analysis` (the deprecated alias for `tidyverse`), and `rstudio`, not
+`tidyverse` or `publishing`.
+[`setup_project()`](https://rgt47.github.io/zzcollab/reference/setup_project.md)
+issues only `zzcollab docker`, so it does not initialize a new project
+by itself.
+
 ### Docker Management
 
 - [`status()`](https://rgt47.github.io/zzcollab/reference/status.md) -
@@ -387,7 +397,7 @@ zzcollab config validate               # Validate YAML syntax
 # 0. One-time setup (configure your defaults)
 set_config("team_name", "datascience")
 
-# 1. Initialize project (uses config defaults)
+# 1. Initialize project in the current directory (uses config defaults)
 init_project(project_name = "covid-analysis")
 
 # 2. Add required packages (inside container via make r)
@@ -417,14 +427,14 @@ git_push()
 ### Method 1: Automatic Installation
 
 ``` bash
-git clone https://github.com/yourusername/zzcollab.git && \
+git clone https://github.com/rgt47/zzcollab.git && \
   cd zzcollab && ./install.sh
 ```
 
 ### Method 2: Manual Installation
 
 ``` bash
-git clone https://github.com/yourusername/zzcollab.git
+git clone https://github.com/rgt47/zzcollab.git
 cd zzcollab
 ln -s "$(pwd)/zzcollab.sh" ~/bin/zzcollab
 ```
@@ -562,14 +572,10 @@ zzcollab docker --base-image rgt47/r-pluspackages
 
 ### Custom Base Images
 
-``` bash
-# Build custom base image with organization packages
-cd zzcollab
-docker build -f templates/Dockerfile.pluspackages \
-  -t myorg/r-base:latest .
-docker push myorg/r-base:latest
+An organization can build and push its own base image (the repository
+does not ship a Dockerfile for this) and use it in projects:
 
-# Use in projects
+``` bash
 zzcollab docker --base-image myorg/r-base
 ```
 
@@ -713,8 +719,9 @@ zzcollab
 **Platform warnings on ARM64 (Apple Silicon):**
 
 ``` bash
-# Already handled automatically with --platform linux/amd64
-# Or set environment variable:
+# The generated Makefile sets PLATFORM for its docker run targets:
+# linux/arm64 on arm64 hosts, linux/amd64 otherwise. For an
+# amd64-only base image, Docker's own setting also applies:
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
 ```
 
@@ -777,9 +784,9 @@ mkdir test-project && cd test-project
 
 ## License
 
-This project is licensed under the GNU General Public License v3.0 - see
-the [LICENSE](https://rgt47.github.io/zzcollab/LICENSE) file for
-details.
+This project is licensed under the GNU General Public License, version 3
+or later (`License: GPL (>= 3)` in `DESCRIPTION`); see
+<https://www.gnu.org/licenses/gpl-3.0>.
 
 - Free to use for any purpose
 - Modify and distribute with same license
