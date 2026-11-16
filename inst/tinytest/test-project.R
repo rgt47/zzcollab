@@ -42,6 +42,12 @@ testthat::test_that("init_project constructs current-model commands", {
     .package = "zzcollab"
   )
 
+  # init_project creates ./myproj, so run it in a throwaway directory.
+  tmp <- tempfile("init_cmds")
+  dir.create(tmp)
+  old <- setwd(tmp)
+  on.exit(setwd(old), add = TRUE)
+
   result <- init_project(team_name = "myteam", project_name = "myproj",
                          profile = "analysis")
   testthat::expect_true(result)
@@ -68,6 +74,11 @@ testthat::test_that("init_project sets github account when provided", {
     },
     .package = "zzcollab"
   )
+
+  tmp <- tempfile("init_gh")
+  dir.create(tmp)
+  old <- setwd(tmp)
+  on.exit(setwd(old), add = TRUE)
 
   init_project(team_name = "myteam", project_name = "myproj",
                github_account = "myuni")

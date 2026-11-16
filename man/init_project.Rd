@@ -8,7 +8,7 @@ init_project(
   team_name = NULL,
   project_name = NULL,
   github_account = NULL,
-  profile = "analysis"
+  profile = "tidyverse"
 )
 }
 \arguments{
@@ -17,35 +17,48 @@ This becomes part of the Docker image names (e.g., "myteam/projectcore").
 If NULL, uses value from configuration file via \code{get_config("team_name")}.}
 
 \item{project_name}{Character string specifying the project name. The
-compendium is created in the current working directory (which should be
-named accordingly); the value is validated and used in status messages.
+compendium is created in the directory \code{file.path(getwd(),
+project_name)}, which is created if absent and must be empty if it
+already exists; the CLI names the compendium after that directory.
 Must be a valid Docker repository name (lowercase, no spaces).}
 
 \item{github_account}{Character string specifying GitHub account for repository creation.
 If NULL, uses config default or falls back to \code{team_name}.
 Used with GitHub CLI to create private repositories.}
 
-\item{profile}{Character string naming the Docker profile / quickstart bundle
-to scaffold (e.g. "analysis", "minimal", "rstudio"). Defaults to "analysis".}
+\item{profile}{Character string naming the Docker profile / quickstart
+bundle to scaffold, matching the CLI's profiles in
+\code{templates/bundles.yaml}: "minimal" (rocker/r-ver), "tidyverse"
+(rocker/tidyverse), "rstudio" (rocker/rstudio), or "publishing"
+(rocker/verse). "analysis" is accepted as a deprecated alias for
+"tidyverse". Defaults to "tidyverse".}
 }
 \value{
 Logical value indicating success (TRUE) or failure (FALSE) of the
 scaffolding step.
 }
 \description{
-Creates a research compendium in the current working directory and records the
-team's DockerHub and GitHub accounts in the zzcollab configuration so that the
-\code{dockerhub} and \code{github} commands can publish under them. Intended for
-team leads setting up a new collaborative research project.
+Creates a research compendium in a new directory \code{project_name} under
+the current working directory and, once the compendium has been created,
+records the team's DockerHub and GitHub accounts in the user-level zzcollab
+configuration so that the \code{dockerhub} and \code{github} commands can
+publish under them. Intended for team leads setting up a new collaborative
+research project.
 }
 \details{
-This function performs two steps using the current zzcollab CLI:
+This function performs three steps using the current zzcollab CLI:
 \enumerate{
-\item \strong{Configuration}: Records the DockerHub account (and GitHub account, if
-given) via \code{zzcollab config set} so that later \code{dockerhub} and
-\code{github} commands publish under the correct accounts.
-\item \strong{Scaffolding}: Runs the profile quickstart (\code{zzcollab <profile>}),
-which creates the R package structure, renv.lock, and Dockerfile.
+\item \strong{Directory}: Creates \code{project_name} under the current working
+directory, or uses it if it exists and is empty. A non-empty directory
+is an error. The R session's working directory is not changed.
+\item \strong{Scaffolding}: Runs the profile quickstart (\code{zzcollab <profile>})
+inside that directory, which creates the R package structure,
+renv.lock, and Dockerfile. If it fails, a directory created by this
+call is removed when it is still empty, and step 3 is skipped.
+\item \strong{Configuration}: Records the DockerHub account (and GitHub account,
+if given) via \code{zzcollab config set} in the user-level zzcollab
+configuration, so that later \code{dockerhub} and \code{github}
+commands publish under the correct accounts.
 }
 
 To publish the team image and repository afterwards, run

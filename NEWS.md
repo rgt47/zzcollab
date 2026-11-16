@@ -32,6 +32,24 @@
   pull, which happens offline or with no upstream, warns: the base is
   still main, only possibly not the newest main.
 
+* **`init_project()` now creates the project in `project_name` and
+  accepts the CLI's profiles.** It ran the quickstart in the session
+  working directory, so `project_name` only appeared in a message and
+  the compendium was named after whatever directory R happened to be
+  in. It now creates `./<project_name>` (or uses it if it exists and is
+  empty; a non-empty directory is an error) and runs the scaffold
+  there, without changing the session's working directory. The
+  DockerHub and GitHub accounts are now written to the user config
+  only after the scaffold succeeds; previously they were written first,
+  so a failed init still rewrote the user's config. If the scaffold
+  fails, a directory created by the call is removed when still empty.
+
+  The `profile` whitelist was `minimal`, `analysis`, `rstudio`, which
+  rejected the CLI's `tidyverse` and `publishing` profiles. It now
+  matches `templates/bundles.yaml` (`minimal`, `tidyverse`, `rstudio`,
+  `publishing`) plus the deprecated alias `analysis`, and the default
+  is `tidyverse` instead of the alias (the same base image).
+
 ## Tests
 
 * `test-git.R` called `git_commit()`, `git_push()` and
@@ -43,6 +61,9 @@
   The file now builds a throwaway repository under the temp directory
   and makes assertions that can fail.
 * New `test-arg-quoting.R` covers the quoting and injection fixes.
+* New `test-init-project-profiles-dir.R` drives `init_project()`
+  against a stub CLI on `PATH`, and in a source checkout checks the R
+  profile set against `templates/bundles.yaml` and the CLI dispatcher.
 
 # zzcollab 0.1.0
 
