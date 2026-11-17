@@ -11,6 +11,7 @@
 #   - Test assertion functions
 #   - Temporary directory management
 #   - Output capture utilities
+#   - HOME / user-config sandbox (test_isolation.sh), applied on source
 ##############################################################################
 
 set -euo pipefail
@@ -18,6 +19,11 @@ set -euo pipefail
 # Resolve test directory (where this file lives)
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ZZCOLLAB_ROOT="${TEST_DIR}/../.."
+
+# Sandbox HOME and the user config before anything else runs, so no test can
+# reach the owner's ~/.zzcollab/config.yaml (or ~/.gitconfig, XDG dirs).
+# shellcheck source=tests/shell/test_isolation.sh
+source "$TEST_DIR/test_isolation.sh"
 
 # Export paths for modules
 export ZZCOLLAB_HOME="$ZZCOLLAB_ROOT"

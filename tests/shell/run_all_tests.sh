@@ -41,6 +41,17 @@ while [[ $# -gt 0 ]]; do
 done
 
 ##############################################################################
+# Isolation and guard
+##############################################################################
+# Sandbox HOME / ZZCOLLAB_CONFIG_USER* / XDG_* / GIT_CONFIG_GLOBAL for the
+# runner and, by inheritance, every suite (each suite also builds its own
+# sandbox through test_helpers.sh). test_isolation.sh records the real user
+# config's checksum and mtime from the pre-isolation HOME now, and its EXIT
+# trap fails the run (exit 3) if the file changed.
+# shellcheck source=tests/shell/test_isolation.sh
+source "$SCRIPT_DIR/test_isolation.sh"
+
+##############################################################################
 # Run tests
 ##############################################################################
 
@@ -77,8 +88,10 @@ for test_file in "${test_files[@]}"; do
             echo ""
         fi
     else
-        output=$(bash "$test_file" 2>&1)
-        exit_code=$?
+        # `|| exit_code=$?` keeps `set -e` from aborting the whole runner at
+        # the first failing suite (which also skipped the summary).
+        exit_code=0
+        output=$(bash "$test_file" 2>&1) || exit_code=$?
 
         # Extract results line
         results=$(echo "$output" | grep "Results:" || true)
@@ -105,6 +118,10 @@ echo "=============================================="
 echo "SUMMARY"
 echo "=============================================="
 echo "Total: $total_pass passed, $total_fail failed"
+
+if zzc_test_check_real_config; then
+    echo "Real user config unchanged: $ZZCOLLAB_TEST_REAL_CONFIG"
+fi
 
 if [[ ${#failed_suites[@]} -gt 0 ]]; then
     echo ""
