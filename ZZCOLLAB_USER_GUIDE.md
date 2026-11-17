@@ -630,6 +630,14 @@ requests:
 The workflow tests across a matrix of R versions and platforms (Ubuntu,
 macOS, Windows).
 
+A second workflow, `render-report.yml`, renders the project’s reports.
+It is installed only when the project has a report: an `.Rmd` or `.qmd`
+file in `analysis/report/`, a `report.Rmd` anywhere under `analysis/`,
+or an `.Rmd` in `analysis/posts/`. A project with nothing to render (for
+example the `package` archetype) does not carry it; `zzc status` shows
+`CI render off (no report)`, and `zzc doctor` reports a copy found
+without a report as unneeded.
+
 ### Repository Secrets
 
 For automated Docker Hub publishing, add these secrets in GitHub

@@ -267,7 +267,13 @@ Apply these changes? [y/N]: y</code></pre>
 <p>The wizard also catches a few common mismatches for you:</p>
 <ul>
 <li>Turning on <strong>CI</strong> when there is no report offers to
-scaffold one, since the render workflow needs something to render.</li>
+scaffold one. The render workflow (<code>render-report.yml</code>) is
+installed only when the project has a report: an <code>.Rmd</code> or
+<code>.qmd</code> file in <code>analysis/report/</code>, a
+<code>report.Rmd</code> anywhere under <code>analysis/</code>, or an
+<code>.Rmd</code> in <code>analysis/posts/</code>. Without one, CI gets
+the package check alone, and <code>zzc status</code> shows
+<code>CI render off (no report)</code>.</li>
 <li>Choosing <strong>renv</strong> with <strong>Docker</strong> off
 notes that renv alone reaches level L1, while Docker reaches L2 (levels
 are explained below).</li>

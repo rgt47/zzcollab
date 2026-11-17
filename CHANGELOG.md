@@ -10,6 +10,29 @@ is archived in `CHANGELOG-2.x.md`.
 
 ### Changed
 
+- `render-report.yml` is part of a workspace’s expected workflow set
+  only when the workspace has a report, defined once in `zzc_has_report`
+  (`lib/core.sh`): an `.Rmd` or `.qmd` file in `analysis/report/`, a
+  `report.Rmd` anywhere under `analysis/`, or an `.Rmd` in
+  `analysis/posts/`. Previously every non-book, non-blog workspace
+  received it; five R-package repositories with no report spent about
+  three minutes per CI run installing R and dependencies to log ‘Found 0
+  manuscripts to render’. `zzc_workflow_pairs` and
+  `zzc_workflow_expected` take an optional workspace directory.
+  `zzc init` scaffolds the archetype’s report before installing
+  workflows, so a manuscript or analysis workspace still gets the render
+  workflow and a `package` or `simulation` workspace does not.
+  `zzc toggle` and `zzc add cicd` follow the same rule; enabling CI
+  without a report offers to scaffold `report.Rmd` before the workflows
+  are installed, so accepting it also installs the render workflow.
+  `zzc doctor` no longer reports `render-report.yml` as missing when
+  there is no report, and reports a copy found without a report as
+  unneeded (informational, not counted as an issue, and not deleted).
+  `zzc status` shows `CI render off (no report)` or
+  `on (no report: unneeded)` in those cases, distinct from `off` when a
+  report exists but the workflow is missing. When neither an R package
+  nor a report applies, no empty `.github/workflows/` directory is
+  created.
 - `r-package.yml`, `render-report.yml`, and `render-book.yml` set
   `GITHUB_PAT` from the workflow’s `GITHUB_TOKEN`, so renv and pak
   resolve GitHub-hosted packages with the authenticated API rate limit
@@ -52,6 +75,21 @@ is archived in `CHANGELOG-2.x.md`.
 
 ### Fixed
 
+- The shell test suite can no longer write to the owner’s real
+  `~/.zzcollab/config.yaml`. A new `tests/shell/test_isolation.sh`,
+  sourced by `test_helpers.sh` (so every `test-*.sh` run on its own) and
+  by `run_all_tests.sh`, points `HOME`, `ZZCOLLAB_CONFIG_USER_DIR`,
+  `ZZCOLLAB_CONFIG_USER`, the `XDG_*` directories, and
+  `GIT_CONFIG_GLOBAL` into a per-process temp dir before any module
+  loads, and removes it on exit. It also records the real config’s
+  checksum and mtime (from the pre-isolation `HOME`) and fails the run
+  with exit 3 if either changed. The leak was in `test-config.sh`:
+  `CONFIG_USER` is readonly once `modules/config.sh` loads, so its
+  `export CONFIG_USER=<temp>` lines failed and the fixtures and
+  `config_set` calls wrote the real config. Those tests now write to the
+  sandboxed `$CONFIG_USER`. `run_all_tests.sh` no longer aborts under
+  `set -e` at the first failing suite, so it reports every suite and its
+  summary.
 - `render-book.yml` (book archetype) consolidates the fixes that had
   been applied piecemeal across downstream books, so one unedited
   workflow serves every book. R packages now install only from Posit’s
