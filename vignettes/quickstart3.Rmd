@@ -216,8 +216,12 @@ Apply these changes? [y/N]: y
 
 The wizard also catches a few common mismatches for you:
 
-- Turning on **CI** when there is no report offers to scaffold one, since
-  the render workflow needs something to render.
+- Turning on **CI** when there is no report offers to scaffold one. The
+  render workflow (`render-report.yml`) is installed only when the
+  project has a report: an `.Rmd` or `.qmd` file in `analysis/report/`,
+  a `report.Rmd` anywhere under `analysis/`, or an `.Rmd` in
+  `analysis/posts/`. Without one, CI gets the package check alone, and
+  `zzc status` shows `CI render off (no report)`.
 - Choosing **renv** with **Docker** off notes that renv alone reaches
   level L1, while Docker reaches L2 (levels are explained below).
 - Choosing the **Nix** backend turns Docker off by default, because Nix

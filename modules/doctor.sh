@@ -453,7 +453,7 @@ check_version_stamps() {
             fi
         fi
     elif [[ -d "$dir/.github/workflows" ]] && \
-         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" r-package.yml; then
+         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" r-package.yml "$dir"; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "r-package.yml"
         issues=$((issues + 1))
 
@@ -474,10 +474,17 @@ check_version_stamps() {
     fi
 
     # .github/workflows/render-report.yml
+    # Expected only when the workspace has a report (zzc_has_report). Present
+    # without a report, it is reported as unneeded: informational only (not
+    # counted as an issue, since --fix cannot resolve it), and never deleted,
+    # because the owner may be about to add a report.
     local render_workflow_file="$dir/.github/workflows/render-report.yml"
     local template_render_workflow="${ZZCOLLAB_TEMPLATES_DIR}/workflows/render-report.yml"
 
-    if [[ -f "$render_workflow_file" ]]; then
+    if [[ -f "$render_workflow_file" ]] && ! zzc_has_report "$dir"; then
+        printf "    %-18s ${COL_DIM}unneeded (no report to render; safe to delete)${COL_RESET}\n" \
+            "render-report.yml"
+    elif [[ -f "$render_workflow_file" ]]; then
         local render_workflow_ver
         render_workflow_ver=$(extract_version "$render_workflow_file" "render-report.yml")
         if ! print_version_status "render-report.yml" "$render_workflow_ver"; then
@@ -498,7 +505,7 @@ check_version_stamps() {
             fi
         fi
     elif [[ -d "$dir/.github/workflows" ]] && \
-         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" render-report.yml; then
+         zzc_workflow_expected "$(zzc_workflow_archetype "$dir")" render-report.yml "$dir"; then
         printf "    %-18s ${COL_YELLOW}missing${COL_RESET}\n" "render-report.yml"
         issues=$((issues + 1))
 
@@ -815,7 +822,8 @@ main() {
                 echo "  - Ignore files      .gitignore, .Rbuildignore entries"
                 echo "  - Version stamps    Makefile, .Rprofile, Dockerfile,"
                 echo "                      docs/USER_GUIDE.md, r-package.yml,"
-                echo "                      render-report.yml"
+                echo "                      render-report.yml (expected only"
+                echo "                      when the workspace has a report)"
                 echo ""
                 echo "Options:"
                 echo "  DIR            One or more workspace directories (default: .)"

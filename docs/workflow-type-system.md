@@ -33,7 +33,10 @@ layer:
 
 - `r-package.yml`, which builds the image, restores packages from
   `renv.lock`, validates dependencies, and runs the test suite.
-- `render-report.yml`, which renders the manuscript or report.
+- `render-report.yml`, which renders the manuscript or report. It is
+  installed only when the project has a report (`zzc_has_report` in
+  `lib/core.sh`), so a project with nothing to render does not spend CI
+  time installing R to render zero documents.
 
 Environment selection is handled by the Docker profile system rather than
 by a workflow-type field. There are four built-in profiles: `minimal`

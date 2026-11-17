@@ -49,15 +49,24 @@ create_gitlab_ci() {
 create_github_workflows() {
     log_debug "Creating GitHub Actions workflows..."
 
-    local workflows_dir=".github/workflows"
-    safe_mkdir "$workflows_dir" "GitHub workflows directory" || return 1
-
     local archetype="${ZZCOLLAB_ARCHETYPE:-${CONFIG_ARCHETYPE:-analysis}}"
 
     # One workflow set per archetype (zzc_workflow_pairs): a book gets
     # render-book.yml, a blog post blog-render.yml, and every other
     # compendium r-package.yml (omitted for --bare, which has no package)
-    # plus render-report.yml.
+    # plus render-report.yml when it has a report (zzc_has_report). The
+    # report scaffold runs before this (create_analysis_files precedes
+    # create_ci_workflows in setup_project), so a scaffolded report counts.
+    local pairs
+    pairs=$(zzc_workflow_pairs "$archetype" .)
+    if [[ -z "$pairs" ]]; then
+        log_info "No GitHub workflows apply (no R package and no report)"
+        return 0
+    fi
+
+    local workflows_dir=".github/workflows"
+    safe_mkdir "$workflows_dir" "GitHub workflows directory" || return 1
+
     local pair tmpl dest
     while IFS= read -r pair; do
         tmpl="${pair%%|*}"; dest="${pair##*|}"
@@ -66,7 +75,7 @@ create_github_workflows() {
             log_error "Failed to create $dest"
             return 1
         fi
-    done < <(zzc_workflow_pairs "$archetype")
+    done <<< "$pairs"
 
     log_success "GitHub Actions workflows created"
 }

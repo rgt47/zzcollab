@@ -494,15 +494,23 @@ test_coupling_render_scaffolds_report() {
     cd proj
     _zzc init --force || { echo "FAIL: init"; teardown_test; return 1; }
     rm -rf .github/workflows
+    # Default init scaffolds analysis/report/index.qmd, which zzc_has_report
+    # counts as a report; clear the whole report directory.
+    rm -rf analysis/report
     find analysis -name 'report.Rmd' -delete 2>/dev/null
     assert_false "[[ -n \"\$(find analysis -name report.Rmd)\" ]]" "coupling: no report to start"
 
-    # backend keep, docker keep, ci ON, data/code-quality/tests/cloud keep,
-    # validate-strict/validate-fix keep, confirm y, scaffold-report y.
-    printf '\n\non\n\n\n\n\n\n\ny\ny\n' \
+    # backend keep, forge keep, docker keep, ci ON, data/code-quality/tests/
+    # cloud/languageserver/validate-strict/validate-fix keep, confirm y,
+    # scaffold-report y.
+    printf '\n\n\non\n\n\n\n\n\n\n\ny\ny\n' \
         | ZZCOLLAB_NO_BUILD=true bash "$ZZCOLLAB_SH" toggle > /dev/null 2>&1
 
     assert_file_exists "analysis/report/report.Rmd" "coupling: report scaffolded on CI enable"
+    # The scaffold runs before the workflows are installed, so the render
+    # workflow is included.
+    assert_file_exists ".github/workflows/render-report.yml" \
+        "coupling: render workflow installed with the scaffolded report"
 
     teardown_test
 }

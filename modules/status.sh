@@ -153,6 +153,18 @@ cmd_status() {
         [[ -f "$d/.github/workflows/r-package.yml" ]]     && ci_check=true  || ci_check=false
         [[ -f "$d/.github/workflows/render-report.yml" ]] && ci_render=true || ci_render=false
     fi
+    # render-report.yml is expected only when a report exists (zzc_has_report),
+    # so "off" with no report is the intended state, distinct from a report
+    # whose render workflow is missing. GitLab's single pipeline is left as is.
+    local ci_render_label
+    ci_render_label=$(_zzc_onoff "$ci_render")
+    if [[ "$(zzc_ci_forge "$d")" != gitlab ]] && ! zzc_has_report "$d"; then
+        if [[ "$ci_render" == true ]]; then
+            ci_render_label="on  (no report: unneeded)"
+        else
+            ci_render_label="off (no report)"
+        fi
+    fi
     [[ -d "$d/inst/tinytest" ]]        && tests=true  || tests=false
     [[ -f "$d/data-manifest.sha256" ]] && data=true   || data=false
     [[ -f "$d/.pre-commit-config.yaml" ]] && quality=true || quality=false
@@ -203,7 +215,7 @@ cmd_status() {
     printf "  %-14s %s\n" "environment" "docker $docker_on  (capture)${env_detail}"
     # Validation layer
     printf "  %-14s %s\n" "CI check"   "$(_zzc_onoff "$ci_check")  (validation)   r-package.yml"
-    printf "  %-14s %s\n" "CI render"  "$(_zzc_onoff "$ci_render")  (validation)   render-report.yml"
+    printf "  %-14s %s\n" "CI render"  "$ci_render_label  (validation)   render-report.yml"
     printf "  %-14s %s\n" "unit tests" "$(_zzc_onoff "$tests")  (validation)   inst/tinytest/"
     printf "  %-14s %s\n" "code quality" "$(_zzc_onoff "$quality")  (validation)   .pre-commit-config.yaml"
     printf "  %-14s %s\n" "data hash"  "$(_zzc_onoff "$data")  (capture)      data-manifest.sha256"
