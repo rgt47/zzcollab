@@ -20,8 +20,8 @@
 ##############################################################################
 
 # Install the CI workflow(s) for the configured forge (CI toggle -> on).
-# GitHub gets the archetype's workflow set (zzc_workflow_pairs); GitLab gets
-# the single .gitlab-ci.yml. Forge comes from config (CONFIG_FORGE),
+# GitHub gets the archetype's workflow set (zzc_workflow_pairs; render-report.yml
+# only when the workspace has a report); GitLab gets the single .gitlab-ci.yml. Forge comes from config (CONFIG_FORGE),
 # defaulting to github.
 _toggle_add_ci() {
     load_config 2>/dev/null || true
@@ -29,12 +29,17 @@ _toggle_add_ci() {
         regenerate_template_file "gitlab/.gitlab-ci.yml" \
             ".gitlab-ci.yml" "GitLab CI" >/dev/null 2>&1
     else
+        local pairs pair
+        pairs=$(zzc_workflow_pairs "$(zzc_workflow_archetype .)" .)
+        if [[ -z "$pairs" ]]; then
+            log_info "No GitHub workflows apply (no R package and no report)"
+            return 0
+        fi
         mkdir -p .github/workflows
-        local pair
         while IFS= read -r pair; do
             regenerate_template_file "${pair%%|*}" "${pair##*|}" \
                 "CI workflow" >/dev/null 2>&1
-        done < <(zzc_workflow_pairs "$(zzc_workflow_archetype .)")
+        done <<< "$pairs"
     fi
 }
 
@@ -624,17 +629,20 @@ run_feature_wizard() {
 
     if [[ "$want_ci" != "$cur_ci" ]]; then
         if [[ "$want_ci" == on ]]; then
-            _toggle_add_ci && log_success "Installed CI workflows"
-            # Coupling: the render workflow renders analysis/**/report.Rmd. With
-            # no report it has nothing to render, so offer to scaffold one.
-            if [[ -z "$(find analysis -name 'report.Rmd' 2>/dev/null | head -1)" ]] \
+            # Coupling: render-report.yml is installed only when a report
+            # exists (zzc_has_report). With none, offer to scaffold one first,
+            # so that _toggle_add_ci below includes the render workflow.
+            # Book and blog archetypes carry their own render workflow.
+            local _arch
+            _arch=$(zzc_workflow_archetype .)
+            if [[ "$_arch" != book && "$_arch" != blog ]] && ! zzc_has_report . \
                && [[ -f "$ZZCOLLAB_TEMPLATES_DIR/report.Rmd" ]]; then
                 local _scaffold=false
                 if [[ "$use_gum" == true ]]; then
-                    gum_confirm "Render CI is on but no report exists. Scaffold analysis/report/report.Rmd?" && _scaffold=true
+                    gum_confirm "No report exists, so render CI (render-report.yml) will not be installed. Scaffold analysis/report/report.Rmd?" && _scaffold=true
                 else
                     local _a
-                    zzc_read -r -p "  Render CI is on but no report exists. Scaffold analysis/report/report.Rmd? [y/N]: " _a
+                    zzc_read -r -p "  No report exists, so render CI (render-report.yml) will not be installed. Scaffold analysis/report/report.Rmd? [y/N]: " _a
                     [[ "$_a" =~ ^[Yy]$ ]] && _scaffold=true
                 fi
                 if [[ "$_scaffold" == true ]]; then
@@ -643,6 +651,7 @@ run_feature_wizard() {
                         && log_success "Scaffolded analysis/report/report.Rmd"
                 fi
             fi
+            _toggle_add_ci && log_success "Installed CI workflows"
         else
             cmd_rm_cicd
         fi

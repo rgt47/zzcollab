@@ -13,6 +13,19 @@ source "$SCRIPT_DIR/test_helpers.sh"
 load_module_for_testing "core.sh"
 load_module_for_testing "config.sh"
 
+# CONFIG_USER and CONFIG_PROJECT are readonly once config.sh is loaded, so a
+# test cannot redirect them (an `export CONFIG_USER=...` fails and the write
+# then lands on whatever path was resolved at load time; before the sandbox
+# existed that was the owner's real ~/.zzcollab/config.yaml). Tests write
+# their fixtures to "$CONFIG_USER", which test_isolation.sh has pointed into
+# the per-run sandbox, and CONFIG_PROJECT is ./zzcollab.yaml in the test's
+# temp dir (setup_test cd's there).
+if [[ "$CONFIG_USER" != "${ZZCOLLAB_CONFIG_USER:?}" \
+      || "$CONFIG_USER" == "${ZZCOLLAB_TEST_REAL_CONFIG:?}" ]]; then
+  echo "ERROR: CONFIG_USER is not the sandboxed path: $CONFIG_USER" >&2
+  exit 3
+fi
+
 ##############################################################################
 # TEST: validate_email
 ##############################################################################
@@ -112,8 +125,6 @@ test_config_set_and_get() {
   fi
 
   setup_test
-  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
-  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
 
   cat > "$CONFIG_USER" << 'EOF'
 defaults:
@@ -139,8 +150,6 @@ test_config_set_kebab_to_snake() {
   fi
 
   setup_test
-  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
-  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
 
   cat > "$CONFIG_USER" << 'EOF'
 defaults:
@@ -164,8 +173,6 @@ test_config_validate_keys_roundtrip() {
   fi
 
   setup_test
-  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
-  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
 
   cat > "$CONFIG_USER" << 'EOF'
 defaults:
@@ -196,8 +203,6 @@ test_config_set_local_overrides_user() {
   fi
 
   setup_test
-  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
-  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
 
   cat > "$CONFIG_USER" << 'EOF'
 validate:
@@ -224,8 +229,6 @@ test_config_key_mapping_author() {
   fi
 
   setup_test
-  export CONFIG_USER="$TEST_TEMP_DIR/config.yaml"
-  export CONFIG_PROJECT="$TEST_TEMP_DIR/zzcollab.yaml"
 
   cat > "$CONFIG_USER" << 'EOF'
 author:
@@ -349,12 +352,11 @@ test_config_set_rejects_bad_email() {
   setup_test
   cd "$TEST_TEMP_DIR"
 
-  local cfg="$TEST_TEMP_DIR/user.yaml"
+  local cfg="$CONFIG_USER"
   printf 'author:\n  email: ""\n' > "$cfg"
-  CONFIG_USER_OVERRIDE="$cfg"
 
   local rc=0
-  ZZCOLLAB_CONFIG_USER="$cfg" config_set "author_email" "not-an-email" 2>/dev/null || rc=$?
+  config_set "author_email" "not-an-email" 2>/dev/null || rc=$?
 
   if [[ "$rc" -eq 0 ]]; then
     echo "FAIL: config set should reject an invalid email" >&2
@@ -368,11 +370,11 @@ test_config_set_rejects_unknown_profile() {
   setup_test
   cd "$TEST_TEMP_DIR"
 
-  local cfg="$TEST_TEMP_DIR/user.yaml"
+  local cfg="$CONFIG_USER"
   printf 'defaults:\n  profile_name: ""\n' > "$cfg"
 
   local rc=0
-  ZZCOLLAB_CONFIG_USER="$cfg" config_set "profile_name" "shiny" 2>/dev/null || rc=$?
+  config_set "profile_name" "shiny" 2>/dev/null || rc=$?
 
   if [[ "$rc" -eq 0 ]]; then
     echo "FAIL: config set should reject unknown profile 'shiny'" >&2
@@ -386,10 +388,10 @@ test_config_set_accepts_valid_profile() {
   setup_test
   cd "$TEST_TEMP_DIR"
 
-  local cfg="$TEST_TEMP_DIR/user.yaml"
+  local cfg="$CONFIG_USER"
   printf 'defaults:\n  profile_name: ""\n' > "$cfg"
 
-  if ! ZZCOLLAB_CONFIG_USER="$cfg" config_set "profile_name" "analysis" 2>/dev/null; then
+  if ! config_set "profile_name" "analysis" 2>/dev/null; then
     echo "FAIL: config set should accept valid profile 'analysis'" >&2
     teardown_test
     return 1

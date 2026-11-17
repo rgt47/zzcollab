@@ -101,6 +101,10 @@ test_scaffold_build_and_run_r() {
     }
 
     # --- 4. Run assertions inside the container ---
+    # HOME is the test sandbox (test_isolation.sh), so this renv cache mount
+    # starts empty and is discarded on exit; it never touches the real cache.
+    # Created here so a Linux daemon does not create it root-owned.
+    mkdir -p "$HOME/.cache/R/renv"
     local output
     output=$(docker run --rm --platform linux/amd64 \
         -v "$(pwd)":/home/analyst/project \

@@ -569,13 +569,40 @@ zzc_workflow_archetype() {
     echo "$a"
 }
 
-# zzc_workflow_pairs ARCHETYPE
+# zzc_has_report [DIR]
+# Succeeds when the workspace in DIR (default .) has a report for
+# render-report.yml to render. The single definition shared by init, toggle,
+# doctor, and status. A report is any of:
+#   analysis/report/*.Rmd or analysis/report/*.qmd  (the report directory,
+#                                   including a Quarto index.qmd or book)
+#   analysis/**/report.Rmd           (the workflow's recursive report glob)
+#   analysis/posts/*.Rmd             (the workflow's blog-post glob)
+# The last two mirror the list.files() patterns in
+# templates/workflows/render-report.yml; keep them in step with it. The test
+# is file-based and independent of the Docker/Nix backend, so toggling the
+# backend never changes the expected workflow set.
+zzc_has_report() {
+    local d="${1:-.}" f
+    [[ -d "$d/analysis" ]] || return 1
+    for f in "$d"/analysis/report/*.Rmd "$d"/analysis/report/*.qmd \
+             "$d"/analysis/posts/*.Rmd; do
+        [[ -f "$f" ]] && return 0
+    done
+    # -print -quit stops at the first match, so no pipe is needed (a
+    # 'find | head' pipeline can fail under pipefail).
+    [[ -n "$(find "$d/analysis" -name report.Rmd -print -quit 2>/dev/null)" ]]
+}
+
+# zzc_workflow_pairs ARCHETYPE [DIR]
 # The GitHub workflows an archetype carries, one "template|destination" pair
-# per line. Every repository of an archetype gets exactly this set, so CI is
-# identical across the category:
+# per line. The set is fixed per archetype except for render-report.yml, which
+# is included only when the workspace in DIR (default .) has a report
+# (zzc_has_report); a workspace with nothing to render would otherwise spend
+# each CI run installing R and its dependencies to render zero documents.
 #   book     -> render-book.yml
 #   blog     -> blog-render.yml
-#   other    -> r-package.yml (omitted for --bare) and render-report.yml
+#   other    -> r-package.yml (omitted for --bare), plus render-report.yml
+#               when DIR has a report
 zzc_workflow_pairs() {
     case "$1" in
         book) echo "workflows/render-book.yml|.github/workflows/render-book.yml" ;;
@@ -583,16 +610,20 @@ zzc_workflow_pairs() {
         *)
             [[ "${ZZCOLLAB_BARE:-false}" == "true" ]] || \
                 echo "workflows/r-package.yml|.github/workflows/r-package.yml"
-            echo "workflows/render-report.yml|.github/workflows/render-report.yml"
+            if zzc_has_report "${2:-.}"; then
+                echo "workflows/render-report.yml|.github/workflows/render-report.yml"
+            fi
             ;;
     esac
+    return 0
 }
 
-# zzc_workflow_expected ARCHETYPE NAME
+# zzc_workflow_expected ARCHETYPE NAME [DIR]
 # Succeeds when workflow file NAME (e.g. r-package.yml) belongs to the set for
-# ARCHETYPE, so doctor does not offer to add a workflow the archetype omits.
+# ARCHETYPE in the workspace DIR (default .), so doctor does not offer to add
+# a workflow the workspace omits.
 zzc_workflow_expected() {
-    zzc_workflow_pairs "$1" | grep -q "|.github/workflows/$2\$"
+    zzc_workflow_pairs "$1" "${3:-.}" | grep -q "|.github/workflows/$2\$"
 }
 
 # zzc_ci_forge [DIR]

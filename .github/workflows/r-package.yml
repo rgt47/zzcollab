@@ -50,12 +50,9 @@ jobs:
         with:
           upload-snapshots: true
 
-      - name: Test coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.r-version == '4.4'
-        run: |
-          covr::codecov(quiet = FALSE)
-        shell: Rscript {0}
-
+      # Coverage is uploaded to Codecov by test-coverage.yaml, which
+      # tolerates a refused upload. An unguarded covr::codecov() here
+      # failed this job whenever Codecov rejected a tokenless upload.
       - name: Calculate and enforce coverage threshold
         if: matrix.os == 'ubuntu-latest' && matrix.r-version == '4.4'
         run: |
