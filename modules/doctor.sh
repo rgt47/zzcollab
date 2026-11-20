@@ -98,6 +98,10 @@ REQUIRED_GITIGNORE=(
     "renv/staging/"
     ".make/"
     "**/.claude/settings.local.json"
+    ".zz.*"
+    ".zzc.R"
+    ".zzo.txt"
+    ".zzhud_*"
 )
 
 # Required .Rbuildignore entries (regex patterns)

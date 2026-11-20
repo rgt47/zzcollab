@@ -410,7 +410,11 @@ renv/staging/
 .make/
 .zzcollab.log
 docker-build.log
-**/.claude/settings.local.json'
+**/.claude/settings.local.json
+.zz.*
+.zzc.R
+.zzo.txt
+.zzhud_*'
     create_file_if_missing ".gitignore" "$gitignore_content" ".gitignore"
 
     # .Rbuildignore

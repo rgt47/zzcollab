@@ -1788,6 +1788,12 @@ Thumbs.db
 
 # Claude Code machine-local settings
 **/.claude/settings.local.json
+
+# zzvim-R scratch files (normally deleted after use)
+.zz.*
+.zzc.R
+.zzo.txt
+.zzhud_*
 EOF
         log_success "Created .gitignore"
     fi
