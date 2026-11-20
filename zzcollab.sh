@@ -2179,6 +2179,8 @@ install_zzvimr_graphics_template() {
         "$HOME/.vim/pack/plugins/start/zzvim-R/templates/.Rprofile.local"
         "$HOME/.vim/bundle/zzvim-R/templates/.Rprofile.local"
         "$HOME/.local/share/nvim/site/pack/plugins/start/zzvim-R/templates/.Rprofile.local"
+        "$HOME/.local/share/vim/plugged/zzvim-R/templates/.Rprofile.local"
+        "$HOME/.vim/plugged/zzvim-R/templates/.Rprofile.local"
         "$HOME/vimplugins/zzvim-R/templates/.Rprofile.local"
         "$HOME/prj/sfw/04-zzvim-r/zzvim-R/templates/.Rprofile.local"
     )
