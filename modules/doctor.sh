@@ -102,6 +102,7 @@ REQUIRED_GITIGNORE=(
     ".zzc.R"
     ".zzo.txt"
     ".zzhud_*"
+    ".graphics/"
 )
 
 # Required .Rbuildignore entries (regex patterns)

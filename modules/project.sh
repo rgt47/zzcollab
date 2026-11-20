@@ -414,7 +414,8 @@ docker-build.log
 .zz.*
 .zzc.R
 .zzo.txt
-.zzhud_*'
+.zzhud_*
+.graphics/'
     create_file_if_missing ".gitignore" "$gitignore_content" ".gitignore"
 
     # .Rbuildignore

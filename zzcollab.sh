@@ -1794,6 +1794,9 @@ Thumbs.db
 .zzc.R
 .zzo.txt
 .zzhud_*
+
+# zzvim-R terminal graphics: plot pane state and show_plot() history
+.graphics/
 EOF
         log_success "Created .gitignore"
     fi
