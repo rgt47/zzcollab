@@ -428,7 +428,8 @@ docker-build.log
 ^renv\.lock$
 ^Makefile$
 ^Dockerfile$
-^\.dockerignore$'
+^\.dockerignore$
+^\.graphics$'
     create_file_if_missing ".Rbuildignore" "$rbuildignore_content" ".Rbuildignore"
 
     log_success "Development tools created"

@@ -113,6 +113,7 @@ REQUIRED_RBUILDIGNORE=(
     "^renv"
     "^Makefile"
     "^Dockerfile"
+    "^\\.graphics"
 )
 
 #=============================================================================
