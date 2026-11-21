@@ -105,15 +105,18 @@ REQUIRED_GITIGNORE=(
     ".graphics/"
 )
 
-# Required .Rbuildignore entries (regex patterns)
+# Required .Rbuildignore entries (regex patterns), as full lines: the
+# check matches whole lines (see has_rbuildignore_entry), and the fix
+# step appends these verbatim.
 REQUIRED_RBUILDIGNORE=(
-    "^analysis"
-    "^docs"
-    "^\\.github"
-    "^renv"
-    "^Makefile"
-    "^Dockerfile"
-    "^\\.graphics"
+    "^analysis\$"
+    "^docs\$"
+    "^\\.github\$"
+    "^renv\$"
+    "^Makefile\$"
+    "^Dockerfile\$"
+    "^\\.graphics\$"
+    "^\\.zz"
 )
 
 #=============================================================================
@@ -286,6 +289,54 @@ check_required_dirs() {
     return $missing
 }
 
+# Ignore-file entries are matched against whole lines. A substring match
+# (the earlier grep -qF) let ^\.zz pass on a ^\.zzcollab$ line and let a
+# corrupted line such as '^.*\.Rproj$^docs' pass for ^docs.
+
+# Normalize a .gitignore line for comparison: drop CR and trailing
+# blanks, then one leading '/', one leading '*', and one trailing '/'.
+# '/.make/', '*.Rhistory' and '.Rproj.user/' then count as the required
+# entry. This is lenient, not exact: '/.make/' ignores only the root
+# copy, which is the only one zzcollab creates, so for these entries
+# the spellings are equivalent in practice.
+_norm_gitignore() {
+    sed -e 's/\r$//' -e 's/[[:space:]]*$//' -e 's#^/##' -e 's#^\*##' -e 's#/$##'
+}
+
+has_gitignore_entry() {
+    local entry="$1" file="$2" want
+    want=$(printf '%s\n' "$entry" | _norm_gitignore)
+    _norm_gitignore < "$file" | grep -qxF -- "$want"
+}
+
+# An .Rbuildignore line covers an entry when it equals it, or when the
+# entry ends in '$' and the line is the same pattern without '$' (the
+# unanchored prefix excludes everything the anchored one does).
+has_rbuildignore_entry() {
+    local entry="$1" file="$2" lines
+    lines=$(sed -e 's/\r$//' -e 's/[[:space:]]*$//' "$file")
+    if printf '%s\n' "$lines" | grep -qxF -- "$entry"; then
+        return 0
+    fi
+    if [[ "$entry" == *'$' ]] &&
+       printf '%s\n' "$lines" | grep -qxF -- "${entry%\$}"; then
+        return 0
+    fi
+    return 1
+}
+
+# Append lines to a file, first adding the final newline if it is
+# missing; otherwise the first appended entry is glued onto the last
+# line (the '^.*\.Rproj$^docs' corruption).
+_append_lines() {
+    local file="$1"
+    shift
+    if [[ -s "$file" ]] && [[ -n "$(tail -c 1 "$file")" ]]; then
+        printf '\n' >> "$file"
+    fi
+    printf '%s\n' "$@" >> "$file"
+}
+
 # Check .gitignore and .Rbuildignore contain required entries
 # Returns number of missing entries
 check_ignore_files() {
@@ -297,7 +348,7 @@ check_ignore_files() {
     # Check .gitignore
     if [[ -f "$dir/.gitignore" ]]; then
         for entry in "${REQUIRED_GITIGNORE[@]}"; do
-            if ! grep -qF "$entry" "$dir/.gitignore" 2>/dev/null; then
+            if ! has_gitignore_entry "$entry" "$dir/.gitignore"; then
                 missing_gitignore+=("$entry")
             fi
         done
@@ -306,7 +357,7 @@ check_ignore_files() {
     # Check .Rbuildignore
     if [[ -f "$dir/.Rbuildignore" ]]; then
         for entry in "${REQUIRED_RBUILDIGNORE[@]}"; do
-            if ! grep -qF "$entry" "$dir/.Rbuildignore" 2>/dev/null; then
+            if ! has_rbuildignore_entry "$entry" "$dir/.Rbuildignore"; then
                 missing_rbuildignore+=("$entry")
             fi
         done
@@ -338,14 +389,14 @@ check_ignore_files() {
             read -r -p "    Add missing entries? [Y/n]: " fix_choice
             if [[ ! "$fix_choice" =~ ^[Nn]$ ]]; then
                 local fixed=0
-                for entry in "${missing_gitignore[@]}"; do
-                    echo "$entry" >> "$dir/.gitignore"
-                    fixed=$((fixed + 1))
-                done
-                for entry in "${missing_rbuildignore[@]}"; do
-                    echo "$entry" >> "$dir/.Rbuildignore"
-                    fixed=$((fixed + 1))
-                done
+                if [[ ${#missing_gitignore[@]} -gt 0 ]]; then
+                    _append_lines "$dir/.gitignore" "${missing_gitignore[@]}"
+                    fixed=$((fixed + ${#missing_gitignore[@]}))
+                fi
+                if [[ ${#missing_rbuildignore[@]} -gt 0 ]]; then
+                    _append_lines "$dir/.Rbuildignore" "${missing_rbuildignore[@]}"
+                    fixed=$((fixed + ${#missing_rbuildignore[@]}))
+                fi
                 printf "    ${COL_GREEN}✓ Added %d entries${COL_RESET}\n" "$fixed"
                 issues=0
             fi
