@@ -1304,26 +1304,62 @@ EOF
 # If found, we simply tag the existing image with the new project name.
 # This avoids redundant builds when multiple projects use identical configs.
 
-# Compute SHA256 hash of Dockerfile and renv.lock combined
+# Platform the local build produces, as os/arch. On macOS arm64 hosts the
+# build passes --platform explicitly (see build_docker_image); elsewhere
+# Docker builds for the host architecture. The cache key must include this:
+# the same Dockerfile and renv.lock built for amd64 and for arm64 are
+# different images, and reusing one for the other leaves 'make r' (which
+# runs --platform $(PLATFORM)) without a matching local image.
+_build_platform() {
+    case "$(uname -m)" in
+        arm64)
+            if [[ "${BASE_IMAGE##*/}" == "verse" ]]; then
+                echo "linux/amd64"
+            else
+                echo "linux/arm64"
+            fi
+            ;;
+        aarch64) echo "linux/arm64" ;;
+        *)       echo "linux/amd64" ;;
+    esac
+}
+
+# Compute SHA256 hash of Dockerfile and renv.lock combined, plus the
+# target platform when given ($1, e.g. linux/arm64). Without a platform
+# the hash is the content hash alone.
 compute_dockerfile_hash() {
+    local platform="${1:-}"
     local hash=""
     if [[ -f "Dockerfile" ]] && [[ -f "renv.lock" ]]; then
         # Combine Dockerfile and renv.lock content for hash
-        hash=$(cat Dockerfile renv.lock | shasum -a 256 | cut -d' ' -f1)
+        hash=$( { [[ -n "$platform" ]] && printf 'platform=%s\n' "$platform"
+                  cat Dockerfile renv.lock; } | shasum -a 256 | cut -d' ' -f1)
     elif [[ -f "Dockerfile" ]]; then
-        hash=$(shasum -a 256 Dockerfile | cut -d' ' -f1)
+        hash=$( { [[ -n "$platform" ]] && printf 'platform=%s\n' "$platform"
+                  cat Dockerfile; } | shasum -a 256 | cut -d' ' -f1)
     fi
     echo "$hash"
 }
 
-# Find existing image with matching Dockerfile hash
+# Find existing image with matching Dockerfile hash. When a platform is
+# given ($2), an image is accepted only if its os/arch matches, which also
+# guards against an image carrying a label it was not built with.
 find_cached_image() {
     local target_hash="$1"
+    local platform="${2:-}"
     [[ -z "$target_hash" ]] && return 1
 
-    local image_id
-    image_id=$(docker images --filter "label=zzcollab.dockerfile.hash=$target_hash" \
-        --format '{{.ID}}' | head -1)
+    local image_id="" id
+    while IFS= read -r id; do
+        [[ -z "$id" ]] && continue
+        if [[ -n "$platform" ]]; then
+            [[ "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' \
+                "$id" 2>/dev/null)" == "$platform" ]] || continue
+        fi
+        image_id="$id"
+        break
+    done < <(docker images --filter "label=zzcollab.dockerfile.hash=$target_hash" \
+        --format '{{.ID}}')
 
     [[ -n "$image_id" ]] && echo "$image_id"
     # A "no cached image" result is not an error. Without this explicit success,
@@ -1350,17 +1386,18 @@ build_docker_image() {
 
     [[ ! -f "Dockerfile" ]] && { log_error "Dockerfile not found. Run generate_dockerfile first."; return 1; }
 
-    # Compute hash of current Dockerfile + renv.lock
-    local dockerfile_hash
-    dockerfile_hash=$(compute_dockerfile_hash)
+    # Compute hash of current Dockerfile + renv.lock + target platform
+    local build_platform dockerfile_hash
+    build_platform=$(_build_platform)
+    dockerfile_hash=$(compute_dockerfile_hash "$build_platform")
 
     # Skip cache check when --no-cache
     if [[ "$no_cache" == "false" ]] && [[ -n "$dockerfile_hash" ]]; then
         local cached_image
-        cached_image=$(find_cached_image "$dockerfile_hash")
+        cached_image=$(find_cached_image "$dockerfile_hash" "$build_platform")
 
         if [[ -n "$cached_image" ]]; then
-            log_success "Found cached image with identical configuration"
+            log_success "Found cached $build_platform image with identical configuration"
             docker tag "$cached_image" "$project_name:latest"
             log_success "Tagged as: $project_name:latest"
             log_info "Run: docker run -it --rm -v \$(pwd):/home/analyst/project $project_name"
@@ -1392,6 +1429,7 @@ build_docker_image() {
 
     # Build with hash label for future cache lookups
     [[ -n "$dockerfile_hash" ]] && build_args+=(--label "zzcollab.dockerfile.hash=$dockerfile_hash")
+    build_args+=(--label "zzcollab.platform=$build_platform")
     build_args+=(--label "org.opencontainers.image.created=$(date -u +%Y-%m-%dT%H:%M:%SZ)")
     [[ "$no_cache" == "true" ]] && build_args+=(--no-cache)
 

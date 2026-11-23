@@ -237,6 +237,97 @@ test_find_cached_image_empty_hash_returns_failure() {
 }
 
 ##############################################################################
+# TEST: image cache keyed by target platform
+##############################################################################
+
+# Regression: an amd64 image and an arm64 image built from the same
+# Dockerfile and renv.lock shared one cache key, so after a platform
+# change 'zzc rebuild' retagged the wrong-architecture image and reported
+# success, and 'make r' (--platform linux/arm64) then failed to find it.
+
+test_compute_dockerfile_hash_differs_by_platform() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  printf 'FROM rocker/tidyverse:4.4.0\n' > Dockerfile
+  printf '{"R": {"Version": "4.4.0"}, "Packages": {}}\n' > renv.lock
+  local h_arm h_amd
+  h_arm=$(compute_dockerfile_hash "linux/arm64")
+  h_amd=$(compute_dockerfile_hash "linux/amd64")
+  teardown_test
+  if [[ -z "$h_arm" || "$h_arm" == "$h_amd" ]]; then
+    echo "FAIL: arm64 and amd64 must hash differently ($h_arm vs $h_amd)" >&2
+    return 1
+  fi
+}
+
+test_compute_dockerfile_hash_platform_stable() {
+  setup_test
+  cd "$TEST_TEMP_DIR"
+  printf 'FROM rocker/tidyverse:4.4.0\n' > Dockerfile
+  local h1 h2
+  h1=$(compute_dockerfile_hash "linux/arm64")
+  h2=$(compute_dockerfile_hash "linux/arm64")
+  teardown_test
+  assert_equals "$h1" "$h2" \
+    "Same content and platform must give the same hash (Dockerfile only)"
+}
+
+test_find_cached_image_rejects_wrong_arch() {
+  docker() {
+    case "$1" in
+      images) echo "sha256:amd" ;;
+      image)  echo "linux/amd64" ;;
+    esac
+  }
+  local out rc
+  out=$(find_cached_image "deadbeef" "linux/arm64") && rc=0 || rc=$?
+  unset -f docker
+  assert_equals "0" "$rc" "architecture mismatch is a miss, not an error"
+  assert_equals "" "$out" "an amd64 image must not satisfy an arm64 lookup"
+}
+
+test_find_cached_image_picks_matching_arch() {
+  docker() {
+    case "$1" in
+      images) printf 'sha256:amd\nsha256:arm\n' ;;
+      image)
+        if [[ "${*: -1}" == "sha256:arm" ]]; then
+          echo "linux/arm64"
+        else
+          echo "linux/amd64"
+        fi
+        ;;
+    esac
+  }
+  local out
+  out=$(find_cached_image "deadbeef" "linux/arm64")
+  unset -f docker
+  assert_equals "sha256:arm" "$out" \
+    "with several labeled images, the one matching the platform is chosen"
+}
+
+test_build_platform_arm64_mac() {
+  uname() { echo arm64; }
+  local p_tidy p_verse
+  p_tidy=$(BASE_IMAGE=rocker/tidyverse _build_platform)
+  p_verse=$(BASE_IMAGE=rocker/verse _build_platform)
+  unset -f uname
+  assert_equals "linux/arm64" "$p_tidy" "arm64 host builds multi-arch bases natively"
+  assert_equals "linux/amd64" "$p_verse" "verse is amd64-only, so it builds for amd64"
+}
+
+test_build_platform_other_hosts() {
+  local p_x86 p_aarch
+  uname() { echo x86_64; }
+  p_x86=$(BASE_IMAGE=rocker/tidyverse _build_platform)
+  uname() { echo aarch64; }
+  p_aarch=$(BASE_IMAGE=rocker/tidyverse _build_platform)
+  unset -f uname
+  assert_equals "linux/amd64" "$p_x86" "x86_64 host builds amd64"
+  assert_equals "linux/arm64" "$p_aarch" "Linux aarch64 host builds arm64"
+}
+
+##############################################################################
 # TEST: Dockerfile generation determinism (T-2)
 ##############################################################################
 
