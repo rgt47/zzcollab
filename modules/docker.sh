@@ -1310,7 +1310,15 @@ EOF
 # the same Dockerfile and renv.lock built for amd64 and for arm64 are
 # different images, and reusing one for the other leaves 'make r' (which
 # runs --platform $(PLATFORM)) without a matching local image.
+#
+# ZZCOLLAB_PLATFORM (set by the Makefile when the user passes PLATFORM=...)
+# overrides the host-based choice, so 'make docker-build PLATFORM=linux/amd64'
+# builds the CI-matching image on an arm64 Mac.
 _build_platform() {
+    if [[ -n "${ZZCOLLAB_PLATFORM:-}" ]]; then
+        echo "$ZZCOLLAB_PLATFORM"
+        return 0
+    fi
     case "$(uname -m)" in
         arm64)
             if [[ "${BASE_IMAGE##*/}" == "verse" ]]; then
@@ -1416,15 +1424,30 @@ build_docker_image() {
     # avoiding QEMU emulation that kills Haskell binaries such as pandoc. For
     # verse (amd64-only; no arm64 image variant) we force linux/amd64 on both
     # arm64 and x86_64 hosts so the build and run always agree.
+    # An explicit ZZCOLLAB_PLATFORM (make docker-build PLATFORM=...) takes
+    # precedence and is passed through on any host; build_platform already
+    # reflects it, so the cache key and the build agree.
     local build_base_name="${BASE_IMAGE##*/}"
-    if [[ "$(uname -m)" == "arm64" ]]; then
+    if [[ -n "${ZZCOLLAB_PLATFORM:-}" ]]; then
+        if [[ "$build_base_name" == "verse" && "$build_platform" != "linux/amd64" ]]; then
+            log_error "rocker/verse publishes linux/amd64 only; cannot build for $build_platform"
+            return 1
+        fi
+        build_args+=(--platform "$build_platform")
+        log_info "Building for $build_platform (requested via PLATFORM)"
+    elif [[ "$(uname -m)" == "arm64" ]]; then
+        build_args+=(--platform "$build_platform")
         if [[ "$build_base_name" == "verse" ]]; then
-            build_args+=(--platform linux/amd64)
             log_info "arm64 host + amd64-only base (verse): building for linux/amd64"
         else
-            build_args+=(--platform linux/arm64)
             log_info "arm64 host: building for linux/arm64 (native)"
         fi
+    fi
+    # CI runners build linux/amd64. A native arm64 image can resolve
+    # different binaries (BLAS, compiled packages), so results may differ.
+    if [[ "$build_platform" == "linux/arm64" ]]; then
+        log_warn "Building linux/arm64 (native); CI builds linux/amd64, so results can differ."
+        log_warn "For a CI-matching image: make docker-build PLATFORM=linux/amd64"
     fi
 
     # Build with hash label for future cache lookups

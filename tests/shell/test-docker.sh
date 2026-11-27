@@ -316,6 +316,75 @@ test_build_platform_arm64_mac() {
   assert_equals "linux/amd64" "$p_verse" "verse is amd64-only, so it builds for amd64"
 }
 
+test_build_platform_honors_explicit_platform() {
+  uname() { echo arm64; }
+  local p
+  p=$(ZZCOLLAB_PLATFORM=linux/amd64 BASE_IMAGE=rocker/tidyverse _build_platform)
+  unset -f uname
+  assert_equals "linux/amd64" "$p" \
+    "ZZCOLLAB_PLATFORM overrides the arm64 host default (and the cache key)"
+}
+
+# Run build_docker_image with docker and uname stubbed; echo the recorded
+# build arguments (or BUILD_REFUSED when it returns nonzero), then the log.
+_stubbed_build() {
+  local host="$1" base="$2" req="${3:-}"
+  setup_test
+  printf 'FROM %s:4.5.0\n' "$base" > Dockerfile
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  local rec="$TEST_TEMP_DIR/args.txt"
+  : > "$rec"
+  uname() { echo "$host"; }
+  docker() {
+    case "$1" in
+      build) shift; printf '%s\n' "$*" >> "$rec" ;;
+    esac
+    return 0
+  }
+  local rc=0 out
+  # VERBOSITY_LEVEL=1 is the user's default level, at which warnings show.
+  out=$(VERBOSITY_LEVEL=1 CONFIG_DOCKER_RUNTIME=docker BASE_IMAGE="$base" ZZCOLLAB_PLATFORM="$req" \
+        build_docker_image testimg false true 2>&1) || rc=$?
+  unset -f uname docker
+  [[ "$rc" -ne 0 ]] && echo BUILD_REFUSED
+  cat "$rec"
+  echo "$out"
+  teardown_test
+}
+
+test_build_passes_explicit_platform() {
+  local out
+  out=$(_stubbed_build arm64 rocker/tidyverse linux/amd64)
+  assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+    "PLATFORM=linux/amd64 on an arm64 Mac builds amd64"
+  assert_false "grep -q 'BUILD_REFUSED' <<< \"\$out\"" "the build ran"
+  assert_false "grep -q 'CI builds linux/amd64' <<< \"\$out\"" \
+    "no arm64 warning for an amd64 build"
+
+  out=$(_stubbed_build x86_64 rocker/tidyverse linux/arm64)
+  assert_true "grep -q -- '--platform linux/arm64' <<< \"\$out\"" \
+    "an explicit platform is passed on an x86_64 host too"
+}
+
+test_build_native_arm64_warns() {
+  local out
+  out=$(_stubbed_build arm64 rocker/tidyverse)
+  assert_true "grep -q -- '--platform linux/arm64' <<< \"\$out\"" \
+    "default on an arm64 Mac is a native arm64 build"
+  assert_true "grep -q 'CI builds linux/amd64' <<< \"\$out\"" \
+    "a native arm64 build warns that CI builds amd64"
+  assert_true "grep -q 'PLATFORM=linux/amd64' <<< \"\$out\"" \
+    "the warning names the CI-matching command"
+}
+
+test_build_refuses_verse_arm64() {
+  local out
+  out=$(_stubbed_build arm64 rocker/verse linux/arm64)
+  assert_true "grep -q 'BUILD_REFUSED' <<< \"\$out\"" \
+    "verse cannot be built for arm64"
+  assert_false "grep -q -- '--platform' <<< \"\$out\"" "no build was attempted"
+}
+
 test_build_platform_other_hosts() {
   local p_x86 p_aarch
   uname() { echo x86_64; }

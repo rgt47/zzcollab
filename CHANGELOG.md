@@ -10,6 +10,23 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Fixed
 
+- **`make docker-build PLATFORM=...` now builds for that platform.** The
+  Makefile documented 'Override with make PLATFORM=linux/amd64', but the
+  build (`zzc rebuild`) chose `--platform` from `uname -m` and ignored
+  it, so an amd64 image could not be built through `make` on an arm64
+  Mac, and the build and later `make r` could disagree. An explicit
+  `PLATFORM` (command line or environment) is now passed to the build
+  as `ZZCOLLAB_PLATFORM`, honored by both the build and its cache key;
+  the auto-detected default is not passed, so the build still chooses
+  per base image. Requesting arm64 for `rocker/verse` (amd64 only) is
+  refused. A native arm64 build warns that CI builds `linux/amd64` and
+  names the CI-matching command.
+- **Run targets match a `rocker/verse` image on arm64 hosts.** The
+  `PLATFORM` default was `linux/arm64` on any arm64 host, while a verse
+  image is always built `linux/amd64`, so `make r` and the other run
+  targets requested a platform the local image did not have. The
+  default now follows the Dockerfile's base image.
+
 - **Test gates fail when no expectation ran.** `TINYTEST_RUN` (both
   Makefiles, so `make test`, `make docker-test`, `make test-container`,
   and `zzc verify --full`) and the test steps in `r-package.yml` and

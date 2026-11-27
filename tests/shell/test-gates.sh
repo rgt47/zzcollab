@@ -400,6 +400,35 @@ test_bare_verify_and_validate_skip() {
 }
 
 ##############################################################################
+# PLATFORM reaches the build; the run default follows the base image
+##############################################################################
+
+test_platform_override_reaches_build() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out t
+    printf 'FROM rocker/tidyverse:4.5.0\n' > Dockerfile
+    for t in docker-build docker-rebuild docker-build-log; do
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker PLATFORM=linux/amd64 "$t" 2>&1 || true)
+        assert_true "grep -q 'ZZCOLLAB_PLATFORM=\"linux/amd64\"' <<< \"\$out\"" \
+            "make $t PLATFORM=linux/amd64 passes the platform to the build"
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker "$t" 2>&1 || true)
+        assert_false "grep -q 'ZZCOLLAB_PLATFORM' <<< \"\$out\"" \
+            "make $t without PLATFORM leaves the choice to the build"
+    done
+    teardown_test
+}
+
+test_platform_default_follows_base() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out
+    printf 'FROM rocker/verse:4.5.0@sha256:abc\n' > Dockerfile
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker docker-test 2>&1 || true)
+    assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+        "a verse image runs as linux/amd64 on every host"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

@@ -48,8 +48,16 @@ RAW_DATA_DIR ?= analysis/data/raw_data
 # hosts use linux/arm64 (native; avoids QEMU emulation that breaks Haskell
 # binaries such as pandoc). Override with make PLATFORM=linux/amd64 when
 # cross-building for CI or comparing amd64-pinned results.
+# rocker/verse publishes linux/amd64 only, so a verse image is amd64 on every
+# host; the default follows the Dockerfile's base so run targets match the
+# image the build produced.
+# An explicit PLATFORM (command line or environment) is also passed to the
+# build as ZZCOLLAB_PLATFORM; the auto-detected default is not, so the build
+# keeps choosing per base image.
 _HOST_ARCH     := $(shell uname -m)
-PLATFORM       ?= $(if $(filter arm64,$(_HOST_ARCH)),linux/arm64,linux/amd64)
+_BASE_IS_VERSE := $(shell grep -m1 '^FROM ' Dockerfile 2>/dev/null | grep -c '/verse[:@]')
+PLATFORM       ?= $(if $(filter 1,$(_BASE_IS_VERSE)),linux/amd64,$(if $(filter arm64 aarch64,$(_HOST_ARCH)),linux/arm64,linux/amd64))
+BUILD_PLATFORM_ENV := $(if $(filter command line environment,$(origin PLATFORM)),ZZCOLLAB_PLATFORM="$(PLATFORM)",)
 # Container runtime: docker (default), podman (drop-in for `run`), or apptainer
 # (HPC; executes a SIF built from the project image, no --platform). The default
 # below is the configured zzcollab runtime; override per-invocation with
@@ -373,15 +381,15 @@ ZZCOLLAB_CHECK = @[ -n "$(ZZCOLLAB)" ] || \
 
 docker-build: check-binaries ## Pre-build audit then build image from renv.lock
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild
 
 docker-rebuild: ## Rebuild image without cache (force fresh build)
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild --no-cache
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild --no-cache
 
 docker-build-log: ## Build image with detailed logs (for debugging)
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild --log
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild --log
 
 ##@ Apptainer (HPC)
 
