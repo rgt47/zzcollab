@@ -664,8 +664,11 @@ the project image, and two targets run them inside the container:
 # Format R code with styler
 make style
 
-# Lint R code with lintr
+# Lint R code with lintr (exits nonzero if lintr reports anything)
 make lint
+
+# List lintr findings without failing
+make lint-report
 ```
 
 Both targets run in the container, so no host R installation is required.
@@ -673,6 +676,8 @@ They are gated on the code-quality feature: if it is not enabled, the
 tooling is absent from the image and the targets are unavailable. Running
 `make style` before committing keeps formatting consistent, and `make
 lint` surfaces style and correctness issues that tests may not catch.
+Because `make lint` fails when any lint remains, it can serve as a CI or
+pre-commit gate; `make lint-report` is the non-failing listing.
 
 ### Quality Gates
 

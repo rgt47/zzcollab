@@ -492,7 +492,8 @@ make docker-rstudio             # start RStudio Server
 
 ```bash
 make style                      # format R code with styler
-make lint                       # lint R code with lintr
+make lint                       # lint; nonzero if any lints remain
+make lint-report                # list lints without failing
 make snapshot                   # grow renv.lock + DESCRIPTION from image
 ```
 

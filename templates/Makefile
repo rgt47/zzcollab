@@ -153,8 +153,16 @@ reset-lock: ensure-zzrenvcheck ## Rebuild renv.lock from a fresh host code scan,
 style: ## Format R code with styler (in container; needs code-quality enabled)
 	$(DOCKER_RUN) Rscript -e "styler::style_dir('R'); if (dir.exists('analysis')) styler::style_dir('analysis')"
 
-lint: ## Lint R code with lintr (in container; needs code-quality enabled)
-	$(DOCKER_RUN) Rscript -e "print(lintr::lint_dir('R')); if (dir.exists('analysis')) print(lintr::lint_dir('analysis'))"
+# lint is a gate: it exits nonzero when lintr reports anything, so it can
+# stand in CI or a pre-commit hook. lint-report prints the same listing
+# without failing.
+LINT_COLLECT := l <- lintr::lint_dir('R'); if (dir.exists('analysis')) l <- c(l, lintr::lint_dir('analysis')); print(l)
+
+lint: ## Lint R code with lintr (in container; nonzero if any lints)
+	$(DOCKER_RUN) Rscript -e "$(LINT_COLLECT); if (length(l) > 0L) quit(status = 1)"
+
+lint-report: ## List lintr findings without failing (in container)
+	$(DOCKER_RUN) Rscript -e "$(LINT_COLLECT)"
 
 ##@ Main workflow (recommended)
 
@@ -521,4 +529,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint check-renv check-renv-no-fix check-renv-no-strict check-renv-slim check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-qmd-pdf docker-render-qmd-html docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint lint-report check-renv check-renv-no-fix check-renv-no-strict check-renv-slim check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-qmd-pdf docker-render-qmd-html docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

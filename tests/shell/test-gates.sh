@@ -94,6 +94,44 @@ test_ci_templates_fail_on_empty_suite() {
 }
 
 ##############################################################################
+# make lint
+##############################################################################
+
+test_lint_target_fails_on_lints() {
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" collect lint_line
+    collect=$(grep -m1 '^LINT_COLLECT := ' "$mk" | sed 's/^LINT_COLLECT := //')
+    lint_line=$(grep -A1 '^lint:' "$mk" | tail -1)
+    assert_not_empty "$collect" "template defines LINT_COLLECT"
+    assert_true "grep -q 'quit(status = 1)' <<< \"\$lint_line\"" \
+        "lint recipe exits nonzero on lints"
+    assert_true "grep -q '^lint-report:' '$mk'" "lint-report target exists"
+
+    if ! command -v Rscript >/dev/null 2>&1 ||
+        ! Rscript -e "quit(status = if (requireNamespace('lintr', quietly = TRUE)) 0L else 1L)" \
+            >/dev/null 2>&1; then
+        echo "SKIP: Rscript or lintr not available"
+        return 0
+    fi
+    setup_test
+    local expr="$collect; if (length(l) > 0L) quit(status = 1)" rc
+    mkdir -p R analysis
+    printf 'f <- function(x){x=1;x}\n' > R/a.R
+    printf 'y <- 2\n' > analysis/b.R
+    rc=0; Rscript -e "$expr" >/dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "lints in R/ fail the gate"
+
+    printf 'f <- function(x) {\n  x\n}\n' > R/a.R
+    printf 'y = 2\n' > analysis/b.R
+    rc=0; Rscript -e "$expr" >/dev/null 2>&1 || rc=$?
+    assert_equals "1" "$rc" "lints in analysis/ fail the gate"
+
+    printf 'y <- 2\n' > analysis/b.R
+    rc=0; Rscript -e "$expr" >/dev/null 2>&1 || rc=$?
+    assert_equals "0" "$rc" "clean code passes"
+    teardown_test
+}
+
+##############################################################################
 # _vrf_baseline_ran
 ##############################################################################
 

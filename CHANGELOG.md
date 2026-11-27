@@ -36,6 +36,12 @@ archived in `CHANGELOG-2.x.md`.
   (the `ARG` is still read for older Dockerfiles), so a Dockerfile whose
   R version disagrees with `renv.lock` fails coherence. `zzc doctor`
   reads the same tag when there is no `renv.lock`.
+- **`make lint` fails when lintr reports anything.** It printed the
+  lints and exited 0, so it could not serve as a gate. It now exits 1
+  when any lint remains in `R/` or `analysis/`; the new `make
+  lint-report` keeps the old print-only behavior. A project whose code
+  has outstanding lints will see `make lint` fail after `zzc doctor
+  --force` refreshes its Makefile.
 
 ### Changed
 
