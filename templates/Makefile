@@ -266,7 +266,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		echo "Run zzcollab to create a Docker environment:"; \
 		echo ""; \
 		echo "  zzcollab docker                            # default profile"; \
-		echo "  zzcollab docker --profile analysis         # tidyverse"; \
+		echo "  zzcollab docker --profile tidyverse        # tidyverse"; \
 		echo "  zzcollab docker --base-image rocker/verse  # LaTeX/Quarto via the rocker/verse base image"; \
 		echo ""; \
 		echo "See: zzcollab docker --help for all options"; \
@@ -275,7 +275,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	fi; \
 	echo "🔍 Checking workspace..."; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
-	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|rocker/verse|; s|r-ver|minimal|'); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|^verse$$|publishing|; s|^r-ver$$|minimal|'); \
 	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
 	USERNAME=$${USERNAME:-analyst}; \
 	HOME_DIR="/home/$$USERNAME"; \

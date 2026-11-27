@@ -12,7 +12,7 @@
 #   zzcollab help [TOPIC]            Show help
 #
 # PROFILES (quickstart in a new directory: init + renv + docker):
-#   zzcollab analysis                Tidyverse compendium (recommended)
+#   zzcollab tidyverse               Tidyverse compendium (recommended)
 #   zzcollab minimal | rstudio
 #
 #   zzcollab --help                  Show help
@@ -885,7 +885,7 @@ EOF
     echo "Next steps:"
     echo "  R                              # Start R (auto-restores packages)"
     echo "  install.packages('tidyverse')  # Add packages as needed"
-    echo "  # renv.lock auto-updates on exit"
+    echo "  renv::snapshot()               # Record them in renv.lock"
     echo ""
 
     # Offer to save R version to config. This is optional convenience and must
@@ -2266,6 +2266,14 @@ _quickstart_existing_project() {
     return 0
 }
 
+# Warn when the user types the deprecated 'analysis' profile name. Called at
+# the CLI parse sites (main shell), not in get_profile_base_image, which runs
+# in command substitutions and would repeat the warning.
+_warn_analysis_alias() {
+    [[ "${1:-}" == "analysis" ]] && log_warn "'analysis' is a deprecated alias for the 'tidyverse' profile and will be removed in the next release; use 'tidyverse'. (The 'analysis' archetype, zzc init --archetype analysis, is unaffected.)"
+    return 0
+}
+
 ##############################################################################
 # FUNCTION: cmd_quickstart
 # PURPOSE:  Smart profile command - quickstart for new, switch for existing
@@ -2790,10 +2798,13 @@ Commands (can be combined):
   gitlab     Initialize git + create GitLab repo (forge: gitlab)
   push       Push Docker image to the configured registry (alias: dockerhub)
 
-Profiles (new project: init+renv+docker, existing: switch profile):
+Profiles (create a new project: init + renv + docker; to switch an
+existing project, use 'zzcollab docker --profile NAME'):
   minimal       Base R, command-line only (~650MB)
-  analysis      Tidyverse data analysis (~1.2GB) - recommended
+  tidyverse     Tidyverse data analysis (~1.2GB) - recommended
   rstudio       RStudio Server (~980MB)
+  publishing    LaTeX/Quarto via rocker/verse
+  ('analysis' is a deprecated alias for 'tidyverse')
 
 Management:
   rebuild        Rebuild Docker image (uses content-addressable cache)
@@ -3181,6 +3192,7 @@ main() {
                 while [[ $# -gt 0 ]]; do
                     case "$1" in
                         -r|--profile)
+                            _warn_analysis_alias "${2:-}"
                             docker_args+=("--profile" "$2")
                             shift 2
                             ;;
@@ -3199,6 +3211,7 @@ main() {
                         # Profile names as implicit --profile ('analysis' is a
                         # deprecated alias for 'tidyverse').
                         minimal|tidyverse|analysis|rstudio|publishing)
+                            _warn_analysis_alias "$1"
                             docker_args+=("--profile" "$1")
                             shift
                             ;;
@@ -3280,6 +3293,7 @@ main() {
                     log_error "-r/--profile requires a name"
                     exit 1
                 fi
+                _warn_analysis_alias "$1"
                 local profile_name="$1"
                 shift
                 cmd_quickstart "$profile_name"
@@ -3317,6 +3331,7 @@ main() {
             # ('analysis' is a deprecated alias for 'tidyverse').
             minimal|tidyverse|analysis|rstudio|publishing)
                 local profile_name="$1"
+                _warn_analysis_alias "$profile_name"
                 shift
                 # The quickstart takes no flags. A trailing flag (e.g.
                 # --r-version) would otherwise be silently ignored after the

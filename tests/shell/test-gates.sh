@@ -688,6 +688,50 @@ test_auto_snapshot_passed_to_runs() {
 }
 
 ##############################################################################
+# The deprecated 'analysis' profile alias
+##############################################################################
+
+test_help_recommends_tidyverse_and_docker_profile() {
+    local out
+    out=$(bash "$ZZCOLLAB_ROOT/zzcollab.sh" --help 2>&1 || true)
+    assert_true "grep -q '^  tidyverse  *Tidyverse data analysis' <<< \"\$out\"" \
+        "help lists tidyverse as the recommended profile"
+    assert_false "grep -q '^  analysis  *Tidyverse' <<< \"\$out\"" \
+        "help no longer recommends the deprecated alias"
+    assert_true "grep -q \"zzcollab docker --profile NAME\" <<< \"\$out\"" \
+        "help says how to switch an existing project"
+    assert_false "grep -q 'existing: switch profile' <<< \"\$out\"" \
+        "help no longer claims a profile command switches a project"
+}
+
+test_config_set_analysis_profile_warns() {
+    setup_test
+    _seed_bare_config
+    local out
+    out=$(VERBOSITY_LEVEL=1 bash "$ZZCOLLAB_ROOT/zzcollab.sh" config set profile-name analysis \
+        < /dev/null 2>&1 || true)
+    assert_true "grep -q 'deprecated alias for the .tidyverse. profile' <<< \"\$out\"" \
+        "config set profile-name analysis warns"
+    out=$(VERBOSITY_LEVEL=1 bash "$ZZCOLLAB_ROOT/zzcollab.sh" config set profile-name tidyverse \
+        < /dev/null 2>&1 || true)
+    assert_false "grep -q 'deprecated' <<< \"\$out\"" "tidyverse does not warn"
+    teardown_test
+}
+
+test_make_r_profile_label() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" expr label
+    printf 'FROM rocker/r-ver:4.5.0\nARG BASE_IMAGE=rocker/tidyverse\n' > Dockerfile
+    expr=$(make -n -f "$mk" CONTAINER_RUNTIME=docker r 2>/dev/null \
+        | grep -o "sed 's|\.\*/||;[^']*'" | head -1 | sed "s/^sed '//; s/'\$//")
+    assert_not_empty "$expr" "make r derives a profile label with sed"
+    label=$(printf '%s\n' rocker/tidyverse rocker/verse rocker/r-ver | sed "$expr" | tr '\n' ' ')
+    assert_equals "tidyverse publishing minimal " "$label" \
+        "labels: tidyverse stays tidyverse (not 'analysis' or 'tidyrocker/verse')"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
