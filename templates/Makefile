@@ -128,8 +128,14 @@ else
 endif
 HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 
+# A bare compendium (zzc init --bare) has no DESCRIPTION by design, so there
+# is nothing for zzrenvcheck to validate. zzrenvcheck itself fails without a
+# DESCRIPTION; these targets skip instead, with a message, so a bare project
+# is neither failed nor silently passed.
+BARE_GUARD := if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION (bare compendium): dependency check skipped."; exit 0; fi;
+
 ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
-	@$(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
+	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
 
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
 # nonzero on any finding, so they are safe in CI and pre-commit hooks.
@@ -138,32 +144,32 @@ ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools libr
 fix_hint = { echo "Dependency check failed. To repair: make $(1) (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
 
 check-renv: ensure-zzrenvcheck ## Validate deps on host: strict, no edits; nonzero on failure
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv)
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv)
 
 check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host, skipping tests/ and vignettes/; no edits
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-no-strict)
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-no-strict)
 
 check-renv-slim: ensure-zzrenvcheck ## Validate deps, skipping packages already in the image; no edits
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, skip_image_pkgs = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-slim)
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, skip_image_pkgs = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-slim)
 
 check-renv-no-fix: check-renv ## Deprecated alias: check-renv no longer edits files
 	@echo "Note: check-renv-no-fix is deprecated; check-renv now validates without editing."
 
 fix-renv: ensure-zzrenvcheck ## Repair deps on host: strict auto-fix of DESCRIPTION and renv.lock
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
 fix-renv-no-strict: ensure-zzrenvcheck ## Repair deps on host, skipping tests/ and vignettes/
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
 fix-renv-slim: ensure-zzrenvcheck ## Repair deps, skipping packages already in the image
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
 
 snapshot: ensure-zzrenvcheck ## renv snapshot (container) then validate deps (host); run before commit
 	$(DOCKER_RUN) Rscript -e "renv::hydrate(); renv::snapshot(prompt = FALSE)"
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
 reset-lock: ensure-zzrenvcheck ## Rebuild renv.lock from a fresh host code scan, refreshing ALL versions
-	$(HOST_CHECK) "zzrenvcheck::check_packages(fresh = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
+	@$(BARE_GUARD) $(HOST_CHECK) "zzrenvcheck::check_packages(fresh = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
 
 style: ## Format R code with styler (in container; needs code-quality enabled)
 	$(DOCKER_RUN) Rscript -e "styler::style_dir('R'); if (dir.exists('analysis')) styler::style_dir('analysis')"
@@ -262,7 +268,10 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		$(PACKAGE_NAME) R || true; \
 	echo ""; \
 	echo "📋 Post-session validation..."; \
-	if [ -z "$(HOST_RSCRIPT)" ]; then \
+	if [ ! -f DESCRIPTION ]; then \
+		echo "No DESCRIPTION (bare compendium): dependency check skipped."; \
+		touch /tmp/zzvim-r-hook-ran; \
+	elif [ -z "$(HOST_RSCRIPT)" ]; then \
 		echo "No R on the host: validating in the project container."; \
 		$(MAKE) --no-print-directory fix-renv || echo "⚠️  Package validation failed"; \
 		touch /tmp/zzvim-r-hook-ran; \

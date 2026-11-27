@@ -64,6 +64,17 @@ archived in `CHANGELOG-2.x.md`.
   **Behavior change for existing projects:** after `zzc doctor --force`
   refreshes the Makefile, `make check-renv` fails where it used to
   repair silently; run `make fix-renv` instead.
+- **Dependency checks skip a bare compendium.** `zzc init --bare`
+  omits `DESCRIPTION` by design, and zzrenvcheck (from the release that
+  fails a project without `DESCRIPTION`) cannot validate one. The
+  `check-renv*`, `fix-renv*`, `snapshot` (its check step), and
+  `reset-lock` targets, `make r`'s post-session hook, `zzc validate`,
+  and `zzc verify` now detect a missing `DESCRIPTION` and report
+  'No DESCRIPTION (bare compendium): dependency check skipped' with
+  exit 0, instead of failing or passing silently. `ensure-zzrenvcheck`
+  does not install the tool for a bare project. `zzc verify` also now
+  runs the dependency check in the verified directory rather than the
+  caller's working directory.
 
 - `render-report.yml` is part of a workspace's expected workflow set only
   when the workspace has a report, defined once in `zzc_has_report`

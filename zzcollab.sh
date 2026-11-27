@@ -1229,6 +1229,13 @@ cmd_validate() {
         esac
     done
 
+    # A bare compendium has no DESCRIPTION by design; skip rather than fail.
+    if [[ ! -f DESCRIPTION ]]; then
+        # echo, not log_info: a skip must be visible at every verbosity.
+        echo "No DESCRIPTION (bare compendium): dependency check skipped."
+        return 0
+    fi
+
     if ! command -v Rscript >/dev/null 2>&1; then
         log_error "Rscript not found on host."
         log_info "Run validation inside the container: make check-renv"

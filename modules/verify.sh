@@ -267,9 +267,14 @@ EOF
 
     # 7. Dependency triad (Code subset of DESCRIPTION subset of renv.lock).
     # Delegated to zzrenvcheck; reported but not gating (advisory layer).
-    if command -v Rscript >/dev/null 2>&1 \
+    # A bare compendium has no DESCRIPTION by design; there is nothing for
+    # zzrenvcheck to validate, so the step is skipped, not failed.
+    if [[ ! -f "$d/DESCRIPTION" ]]; then
+        _vrf_skip "no DESCRIPTION (bare compendium); dependency check skipped"
+    elif command -v Rscript >/dev/null 2>&1 \
        && Rscript -e "quit(status = !requireNamespace('zzrenvcheck', quietly = TRUE))" >/dev/null 2>&1; then
-        if Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" >/dev/null 2>&1; then
+        # Run in the project being verified, not the caller's directory.
+        if ( cd "$d" && Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" ) >/dev/null 2>&1; then
             _vrf_pass "dependency triad consistent (zzrenvcheck)"
         else
             _vrf_warn "zzrenvcheck reported dependency issues; run 'zzc validate'"

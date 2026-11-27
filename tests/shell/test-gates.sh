@@ -321,6 +321,85 @@ test_doctor_backfill_reads_from_tag() {
 }
 
 ##############################################################################
+# Bare compendium: no DESCRIPTION, so dependency checks skip (not fail)
+##############################################################################
+
+# Every dependency target exits 0 with the skip message and never reaches R:
+# TOOL_RSCRIPT=false would fail any recipe that got past the guard.
+test_bare_make_targets_skip() {
+    setup_test
+    cp "$ZZCOLLAB_ROOT/templates/Makefile" Makefile
+    local t out rc
+    for t in check-renv check-renv-no-strict check-renv-slim check-renv-no-fix \
+             fix-renv fix-renv-no-strict fix-renv-slim reset-lock ensure-zzrenvcheck; do
+        rc=0
+        out=$(make --no-print-directory "$t" CONTAINER_RUNTIME=docker \
+            TOOL_RSCRIPT=false 2>&1) || rc=$?
+        assert_equals "0" "$rc" "bare: make $t exits 0"
+        if [[ "$t" != ensure-zzrenvcheck ]]; then
+            assert_true "grep -q 'bare compendium' <<< \"\$out\"" \
+                "bare: make $t says the check was skipped"
+        fi
+    done
+
+    printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
+    rc=0
+    make --no-print-directory check-renv CONTAINER_RUNTIME=docker \
+        TOOL_RSCRIPT=false >/dev/null 2>&1 || rc=$?
+    assert_false "[[ $rc -eq 0 ]]" \
+        "with DESCRIPTION the guard does not skip (the check runs)"
+    teardown_test
+}
+
+test_bare_hook_skips_and_writes_marker() {
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile"
+    assert_true "grep -A2 'if \[ ! -f DESCRIPTION \]; then' '$mk' | grep -q 'zzvim-r-hook-ran'" \
+        "post-session hook skips a bare project and still writes the marker"
+}
+
+_seed_bare_config() {
+    mkdir -p cfg proj
+    cat > cfg/config.yaml << 'EOF'
+author:
+  name: "Gate Tester"
+  email: "gate@example.com"
+  affiliation: "Test Institute"
+defaults:
+  profile_name: "analysis"
+  r_version: "4.6.0"
+license:
+  type: "GPL-3"
+EOF
+    export ZZCOLLAB_CONFIG_USER="$PWD/cfg/config.yaml"
+    export ZZCOLLAB_CONFIG_USER_DIR="$PWD/cfg"
+}
+
+test_bare_verify_and_validate_skip() {
+    setup_test
+    _seed_bare_config
+    cd proj
+    ZZCOLLAB_ACCEPT_DEFAULTS=true ZZCOLLAB_NO_BUILD=true \
+        bash "$ZZCOLLAB_ROOT/zzcollab.sh" init --force --bare \
+        < /dev/null > /dev/null 2>&1 || { echo "FAIL: bare init"; teardown_test; return 1; }
+    assert_false "[[ -f DESCRIPTION ]]" "bare init writes no DESCRIPTION"
+
+    local out rc=0
+    out=$(ZZCOLLAB_ACCEPT_DEFAULTS=true bash "$ZZCOLLAB_ROOT/zzcollab.sh" verify . \
+        < /dev/null 2>&1) || rc=$?
+    assert_true "grep -q 'bare compendium); dependency check skipped' <<< \"\$out\"" \
+        "verify reports the dependency step as skipped"
+    assert_false "grep -q 'zzrenvcheck reported dependency issues' <<< \"\$out\"" \
+        "verify does not warn about dependencies on a bare project"
+
+    rc=0
+    out=$(bash "$ZZCOLLAB_ROOT/zzcollab.sh" validate < /dev/null 2>&1) || rc=$?
+    assert_equals "0" "$rc" "validate exits 0 on a bare project"
+    assert_true "grep -q 'bare compendium' <<< \"\$out\"" \
+        "validate says the check was skipped"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
