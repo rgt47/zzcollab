@@ -46,15 +46,17 @@ zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE,
 ```
 
 This scans the project source files and adds any newly referenced packages
-to `DESCRIPTION`. Because the project uses `snapshot.type = "explicit"`,
-`renv::snapshot()` then reads `DESCRIPTION` as the authoritative dependency
-list and writes those packages to `renv.lock`. Packages already in the
+to `DESCRIPTION`, and records it in `renv.lock`. Packages already in the
 Docker image are skipped (so `tidyverse` and its dependencies are not
 written to `DESCRIPTION` or `renv.lock` redundantly).
 
-The chain is: code references package → `DESCRIPTION` updated → `renv.lock`
-updated via snapshot. A package does not reach `renv.lock` unless it first
-appears in `DESCRIPTION`.
+New projects use `snapshot.type = "implicit"`, so `renv::snapshot()`
+records every package the code uses, whether or not it appears in
+`DESCRIPTION`. That matters for a compendium: a package used only in
+`analysis/` belongs in `renv.lock` but not in `DESCRIPTION`. (Projects
+created before this change were initialized with `"explicit"`, which
+records only `DESCRIPTION`'s packages; switch one with
+`renv::settings$snapshot.type("implicit")`.)
 
 ### Step 3: Decide whether to rebuild
 
@@ -119,19 +121,27 @@ docker run --rm pp-eda Rscript -e \
      lib.loc = '/usr/local/lib/R/site-library')), sep = '\n')"
 ```
 
-## Auto-snapshot and the .Last hook
+## Auto-snapshot and the .Last hook (opt-in)
 
-The container `.Rprofile` defines a `.Last` hook that calls `renv::snapshot()`
-when R exits. This is intentionally disabled during `make r` sessions via
-`ZZCOLLAB_AUTO_SNAPSHOT=false`, because the host-side `zzrenvcheck`
-post-session validation is authoritative: it repairs `DESCRIPTION` before
-snapshotting, whereas a bare `renv::snapshot()` inside the container would
+The container `.Rprofile` defines a `.Last` hook that can call
+`renv::snapshot(prompt = FALSE)` when R exits. It is off unless opted in:
+`ZZCOLLAB_AUTO_SNAPSHOT` defaults to `false` in both the `.Rprofile` and the
+Makefile, which passes it to every container run (`make r`,
+`make docker-rstudio`, and the `DOCKER_RUN` targets). What enters
+`renv.lock` should be the analyst's decision (run `renv::snapshot()`, then
+review the lockfile diff), not a side effect of how R was started. Opt in
+with `make r ZZCOLLAB_AUTO_SNAPSHOT=true`, or export the variable before
+`make`.
+
+After `make r`, package capture comes from the `zzrenvcheck` post-session
+validation, not from the hook: it repairs `DESCRIPTION` and `renv.lock` from
+the code, whereas a bare `renv::snapshot()` inside the container would
 snapshot whatever is currently declared without first detecting gaps.
-
-The `.Last` hook remains active in other container contexts (e.g. ad hoc
-`docker run` invocations) as a fallback. A known renv defect where
-`snapshot()` raises "argument is of length zero" under explicit snapshot mode
-is caught silently.
+`make docker-rstudio` and ad hoc `docker run` invocations have no such
+step, so record packages from those sessions with `make snapshot`,
+`renv::snapshot()`, or `make fix-renv`. When the hook is opted in, a
+snapshot error containing "argument is of length zero" or "no packages" is
+caught silently; other errors produce a warning.
 
 The zzvim-R plugin provides a second fallback for `:qa!` exits: its
 `VimLeavePre` autocmd checks for the `/tmp/zzvim-r-hook-ran` sentinel written
@@ -162,10 +172,10 @@ With both settings in place, container R startup takes under 3 seconds.
 
 ## zzrenvcheck vs renv::snapshot
 
-`renv::snapshot()` is a write operation: it records whatever is declared in
-`DESCRIPTION` into `renv.lock` (under `snapshot.type = "explicit"`). It has
-no opinion on whether `DESCRIPTION` is complete or whether the code actually
-uses the declared packages.
+`renv::snapshot()` is a write operation: under `snapshot.type =
+"implicit"` it records the packages the code uses into `renv.lock`. It has
+no opinion on whether `DESCRIPTION` is complete, or on which packages
+belong in `Imports` and which in `Suggests`.
 
 `zzrenvcheck` is a validation and repair layer that runs upstream of the
 snapshot:

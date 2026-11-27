@@ -170,8 +170,9 @@ is inherited.
   `UBUNTU_CODENAME`/`PPM_SNAPSHOT` values, coherent with the Dockerfile. Note
   the active container hooks: auto-init recreates a bare renv when `renv.lock`
   is absent (which supports Phase 2), auto-restore runs on startup, and the
-  `.Last` hook auto-snapshots on exit. Drive Phase 3 through `make snapshot`
-  explicitly rather than relying on the exit hook.
+  `.Last` hook snapshots on exit only when opted in
+  (`ZZCOLLAB_AUTO_SNAPSHOT=true`; off by default). Drive Phase 3 through
+  `make snapshot` explicitly rather than relying on the exit hook.
 
 ## Phase 1. De-landmine analysis and render code
 

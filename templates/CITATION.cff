@@ -11,10 +11,14 @@ authors:
     orcid: ""
     email: $AUTHOR_EMAIL
     affiliation: $AUTHOR_AFFILIATION
+# Edit the abstract to describe this compendium. Say what it does and does
+# not contain: restricted or third-party data are often withheld, and the
+# data availability statement says how to obtain them.
 abstract: >
-  Reproducible research compendium created with zzcollab v$ZZCOLLAB_TEMPLATE_VERSION.
-  Contains all data, code, and computational environment needed to reproduce
-  the analyses.
+  Research compendium created with zzcollab v$ZZCOLLAB_TEMPLATE_VERSION:
+  the code and computational environment for the analyses. See the data
+  availability statement for which data are included and how to obtain
+  any that are not.
 keywords:
   - reproducible-research
   - research-compendium

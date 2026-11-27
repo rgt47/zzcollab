@@ -65,6 +65,11 @@ _IMAGE_PLATFORM := $(if $(filter apptainer,$(CONTAINER_RUNTIME)),,$(filter linux
 PLATFORM        ?= $(or $(_IMAGE_PLATFORM),$(if $(filter 1,$(_BASE_IS_VERSE)),linux/amd64,$(if $(filter arm64 aarch64,$(_HOST_ARCH)),linux/arm64,linux/amd64)))
 BUILD_PLATFORM_ENV := $(if $(filter command line environment,$(origin PLATFORM)),ZZCOLLAB_PLATFORM="$(PLATFORM)",)
 SIF ?= env.sif
+# The .Rprofile auto-snapshot-on-exit hook is off unless opted in
+# (make r ZZCOLLAB_AUTO_SNAPSHOT=true, or export it). Passed to every
+# container run, so a project whose .Rprofile predates the off default
+# also stays off.
+ZZCOLLAB_AUTO_SNAPSHOT ?= false
 # Backend-aware prefix for the host-style R targets (document, build, check,
 # test, ...). With a Nix flake present the environment is entered via
 # `nix develop -c`; otherwise the commands run on the host (renv) directly.
@@ -90,7 +95,7 @@ else
   DOCKER_RUN = $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
     -v "$(CURDIR)":$(CONTAINER_HOME)/project \
     -e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
-    -e ZZCOLLAB_AUTO_SNAPSHOT=false \
+    -e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
     -w $(CONTAINER_HOME)/project $(PACKAGE_NAME)
 endif
 
@@ -130,7 +135,7 @@ ifeq ($(HOST_RSCRIPT),)
     mkdir -p "$(ZZ_TOOLS_LIB)" && \
     $(CONTAINER_RUNTIME) run --rm --platform $(PLATFORM) \
       -v "$(CURDIR)":$(CONTAINER_HOME)/project -v "$(ZZ_TOOLS_LIB)":/opt/zztools \
-      -e R_LIBS=/opt/zztools -e ZZCOLLAB_AUTO_SNAPSHOT=false \
+      -e R_LIBS=/opt/zztools -e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
       -w $(CONTAINER_HOME)/project $(PACKAGE_NAME) Rscript --vanilla
 else
   TOOL_RSCRIPT = Rscript
@@ -261,7 +266,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		echo "Run zzcollab to create a Docker environment:"; \
 		echo ""; \
 		echo "  zzcollab docker                            # default profile"; \
-		echo "  zzcollab docker --profile analysis         # tidyverse"; \
+		echo "  zzcollab docker --profile tidyverse        # tidyverse"; \
 		echo "  zzcollab docker --base-image rocker/verse  # LaTeX/Quarto via the rocker/verse base image"; \
 		echo ""; \
 		echo "See: zzcollab docker --help for all options"; \
@@ -270,7 +275,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	fi; \
 	echo "🔍 Checking workspace..."; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
-	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|rocker/verse|; s|r-ver|minimal|'); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|^verse$$|publishing|; s|^r-ver$$|minimal|'); \
 	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
 	USERNAME=$${USERNAME:-analyst}; \
 	HOME_DIR="/home/$$USERNAME"; \
@@ -285,7 +290,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		-e TERM_PROGRAM="$${TERM_PROGRAM:-}" \
 		-e GHOSTTY_RESOURCES_DIR="$${GHOSTTY_RESOURCES_DIR:-}" \
 		-e WEZTERM_EXECUTABLE="$${WEZTERM_EXECUTABLE:-}" \
-		-e ZZCOLLAB_AUTO_SNAPSHOT=false \
+		-e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
 		-e ZZCOLLAB_AUTO_RESTORE=false \
 		$(PACKAGE_NAME) R || true; \
 	echo ""; \
@@ -334,13 +339,14 @@ sh: ## Interactive bash shell in the project container
 		-w "$(CONTAINER_HOME)/project$(if $(SUBDIR),/$(SUBDIR))" \
 		-e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
 		-e R_PROFILE_USER="$(CONTAINER_HOME)/project/.Rprofile" \
+		-e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
 		$(PACKAGE_NAME) bash
 
 docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
 	@echo "Terminal available for code editing with vim"
-	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) -p 8787:8787 -e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Alias for rstudio
 rstudio: docker-rstudio ## Alias for docker-rstudio
@@ -439,7 +445,7 @@ TEST_SOURCES := $(wildcard R/*.R) $(wildcard inst/tinytest/*.R)
 		-v "$(CURDIR)":$(CONTAINER_HOME)/project \
 		-w $(CONTAINER_HOME)/project \
 		-e ZZCOLLAB_CONTAINER=true \
-		-e ZZCOLLAB_AUTO_SNAPSHOT=false \
+		-e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
 		$(PACKAGE_NAME) \
 		Rscript -e "if (dir.exists('inst/tinytest')) { \
 		  $(TINYTEST_RUN) \

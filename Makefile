@@ -119,7 +119,8 @@ fix-renv-no-strict:
 # Docker-first workflow:
 #   1. Work in containers (make r)
 #   2. Install packages (renv::install("pkg"))
-#   3. Exit container (auto-snapshot on exit)
+#   3. Exit container (post-session check updates renv.lock;
+#      the .Rprofile exit snapshot is opt-in, off by default)
 #   4. Build new image (make docker-build)
 
 docker-build:
@@ -195,7 +196,7 @@ r:
 	fi; \
 	echo "🔍 Checking workspace..."; \
 	BASE_IMAGE=$$(grep '^ARG BASE_IMAGE=' Dockerfile | head -1 | cut -d= -f2); \
-	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|tidyverse|analysis|; s|verse|publishing|; s|r-ver|minimal|'); \
+	PROFILE=$$(echo "$$BASE_IMAGE" | sed 's|.*/||; s|^verse$$|publishing|; s|^r-ver$$|minimal|'); \
 	USERNAME=$$(grep '^ARG USERNAME=' Dockerfile | head -1 | cut -d= -f2); \
 	USERNAME=$${USERNAME:-analyst}; \
 	HOME_DIR="/home/$$USERNAME"; \

@@ -154,7 +154,11 @@ if (!in_container) {
   # Auto-Snapshot on R Exit (Container only)
   # ==========================================
   .Last <- function() {
-    auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "true")
+    # Off unless opted in (ZZCOLLAB_AUTO_SNAPSHOT=true, e.g. make r
+    # ZZCOLLAB_AUTO_SNAPSHOT=true): what enters renv.lock is a judgment
+    # for the analyst (renv::snapshot(), then review the diff), not a
+    # side effect of how R happened to be started.
+    auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "false")
 
     if (tolower(auto_snapshot) %in% c("true", "t", "1") && !in_ci) {
       if (file.exists("renv.lock") && file.exists("renv/activate.R")) {

@@ -564,7 +564,9 @@ EOF
             profile_name|profile)
                 # 'analysis' accepted as a deprecated alias for 'tidyverse'.
                 case "$value" in
-                    minimal|tidyverse|analysis|rstudio|publishing) ;;
+                    analysis)
+                        log_warn "'analysis' is a deprecated alias for the 'tidyverse' profile and will be removed in the next release; use 'tidyverse'. (The 'analysis' archetype, zzc init --archetype analysis, is unaffected.)" ;;
+                    minimal|tidyverse|rstudio|publishing) ;;
                     *) log_error "Unknown profile: $value (valid: minimal, tidyverse, rstudio, publishing)"
                        return 1 ;;
                 esac ;;

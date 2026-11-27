@@ -132,11 +132,15 @@ if (!renv_enabled) {
     }
   }
 
-  # Helper function for initializing renv without prompts
+  # Helper function for initializing renv without prompts.
+  # snapshot.type = "implicit" records every package the code uses. The
+  # "explicit" type records only DESCRIPTION's packages, which misses those
+  # a compendium uses only in analysis/ (they belong in renv.lock but not in
+  # DESCRIPTION), and makes a renv::status() check blind to that drift.
   renv_init_quiet <- function() {
     renv::init(
       bare = TRUE,
-      settings = list(snapshot.type = "explicit"),
+      settings = list(snapshot.type = "implicit"),
       force = TRUE,
       restart = FALSE,
       load = FALSE
@@ -220,7 +224,11 @@ if (!renv_enabled) {
   # Auto-Snapshot on R Exit (Container only)
   # ==========================================
   .Last <- function() {
-    auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "true")
+    # Off unless opted in (ZZCOLLAB_AUTO_SNAPSHOT=true, e.g. make r
+    # ZZCOLLAB_AUTO_SNAPSHOT=true): what enters renv.lock is a judgment
+    # for the analyst (renv::snapshot(), then review the diff), not a
+    # side effect of how R happened to be started.
+    auto_snapshot <- Sys.getenv("ZZCOLLAB_AUTO_SNAPSHOT", "false")
 
     if (tolower(auto_snapshot) %in% c("true", "t", "1") && !in_ci) {
       if (file.exists("renv.lock") && file.exists("renv/activate.R")) {
