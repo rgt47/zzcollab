@@ -418,6 +418,44 @@ test_platform_override_reaches_build() {
     teardown_test
 }
 
+# End to end through zzc rebuild, with a recording docker on PATH: an
+# explicit PLATFORM reaches docker build, and a later make r without
+# PLATFORM runs the platform the image was built for (its label).
+test_platform_end_to_end() {
+    setup_test
+    mkdir -p bin proj
+    cat > bin/docker <<'EOF'
+#!/bin/bash
+echo "docker $*" >> "$SEAM_LOG"
+case "$1 $2" in
+  "image inspect") [ -n "${SEAM_LABEL:-}" ] && { echo "$SEAM_LABEL"; exit 0; }; exit 1 ;;
+esac
+exit 0
+EOF
+    chmod +x bin/docker
+    local log="$PWD/docker.log" out
+    cd proj
+    cp "$ZZCOLLAB_ROOT/templates/Makefile" Makefile
+    printf 'Package: proj\nVersion: 0.1.0\n' > DESCRIPTION
+    printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+    printf 'FROM rocker/tidyverse:4.5.0@sha256:abc\nCOPY renv.lock renv.lock\n' > Dockerfile
+    touch .zzcollab
+
+    SEAM_LOG="$log" PATH="$PWD/../bin:$PATH" make --no-print-directory docker-build \
+        PLATFORM=linux/amd64 CONTAINER_RUNTIME=docker \
+        ZZCOLLAB="$ZZCOLLAB_ROOT/zzcollab.sh" >/dev/null 2>&1 || true
+    assert_true "grep '^docker build' '$log' | grep -q -- '--platform linux/amd64'" \
+        "make docker-build PLATFORM=linux/amd64 reaches docker build"
+    assert_true "grep '^docker build' '$log' | grep -q 'zzcollab.platform=linux/amd64'" \
+        "the image is labeled with the platform it was built for"
+
+    out=$(SEAM_LOG="$log" SEAM_LABEL=linux/amd64 PATH="$PWD/../bin:$PATH" \
+        make -n --no-print-directory r CONTAINER_RUNTIME=docker 2>&1 || true)
+    assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+        "make r without PLATFORM runs the platform the image was built for"
+    teardown_test
+}
+
 test_platform_default_follows_base() {
     setup_test
     local mk="$ZZCOLLAB_ROOT/templates/Makefile" out

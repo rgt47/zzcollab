@@ -25,7 +25,11 @@ archived in `CHANGELOG-2.x.md`.
   `PLATFORM` default was `linux/arm64` on any arm64 host, while a verse
   image is always built `linux/amd64`, so `make r` and the other run
   targets requested a platform the local image did not have. The
-  default now follows the Dockerfile's base image. `make docker-rstudio`,
+  default now comes, in order, from the local image's
+  `zzcollab.platform` label (so `make r` runs whatever `make
+  docker-build` produced, including an amd64 image built with
+  `PLATFORM=linux/amd64` on an arm64 Mac), then from the Dockerfile's
+  base image (verse is amd64), then from the host. `make docker-rstudio`,
   which omitted `--platform`, now passes it like the other run targets.
 - **An unresolved base-image digest stops Dockerfile generation.** When
   the pull failed (Docker absent, daemon down, no network),

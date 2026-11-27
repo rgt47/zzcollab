@@ -44,25 +44,26 @@ RAW_DATA_DIR ?= analysis/data/raw_data
 # Container execution. The mount and work path follow the Dockerfile's
 # ARG USERNAME (default analyst), matching what the `r` target resolves at
 # runtime, so a customised container user is honoured rather than hardcoded.
-# PLATFORM selects the container architecture. Auto-detects the host: arm64
-# hosts use linux/arm64 (native; avoids QEMU emulation that breaks Haskell
-# binaries such as pandoc). Override with make PLATFORM=linux/amd64 when
-# cross-building for CI or comparing amd64-pinned results.
-# rocker/verse publishes linux/amd64 only, so a verse image is amd64 on every
-# host; the default follows the Dockerfile's base so run targets match the
-# image the build produced.
-# An explicit PLATFORM (command line or environment) is also passed to the
-# build as ZZCOLLAB_PLATFORM; the auto-detected default is not, so the build
-# keeps choosing per base image.
-_HOST_ARCH     := $(shell uname -m)
-_BASE_IS_VERSE := $(shell grep -m1 '^FROM ' Dockerfile 2>/dev/null | grep -c '/verse[:@]')
-PLATFORM       ?= $(if $(filter 1,$(_BASE_IS_VERSE)),linux/amd64,$(if $(filter arm64 aarch64,$(_HOST_ARCH)),linux/arm64,linux/amd64))
-BUILD_PLATFORM_ENV := $(if $(filter command line environment,$(origin PLATFORM)),ZZCOLLAB_PLATFORM="$(PLATFORM)",)
 # Container runtime: docker (default), podman (drop-in for `run`), or apptainer
 # (HPC; executes a SIF built from the project image, no --platform). The default
 # below is the configured zzcollab runtime; override per-invocation with
 # `make CONTAINER_RUNTIME=podman r`.
 CONTAINER_RUNTIME ?= $CONTAINER_RUNTIME
+# PLATFORM selects the container architecture, in this order:
+#  1. an explicit PLATFORM (command line or environment), which is also
+#     passed to the build as ZZCOLLAB_PLATFORM, so
+#     make docker-build PLATFORM=linux/amd64 builds the CI-matching image;
+#  2. the platform the local image was built for (its zzcollab.platform
+#     label), so make r runs whatever make docker-build produced;
+#  3. linux/amd64 for a rocker/verse base, which publishes amd64 only;
+#  4. the host: arm64 hosts use linux/arm64 (native; avoids QEMU emulation
+#     that breaks Haskell binaries such as pandoc).
+# Only 1 is passed to the build; otherwise the build chooses per base image.
+_HOST_ARCH      := $(shell uname -m)
+_BASE_IS_VERSE  := $(shell grep -m1 '^FROM ' Dockerfile 2>/dev/null | grep -c '/verse[:@]')
+_IMAGE_PLATFORM := $(if $(filter apptainer,$(CONTAINER_RUNTIME)),,$(filter linux/%,$(shell $(CONTAINER_RUNTIME) image inspect -f '{{index .Config.Labels "zzcollab.platform"}}' $(PACKAGE_NAME) 2>/dev/null)))
+PLATFORM        ?= $(or $(_IMAGE_PLATFORM),$(if $(filter 1,$(_BASE_IS_VERSE)),linux/amd64,$(if $(filter arm64 aarch64,$(_HOST_ARCH)),linux/arm64,linux/amd64)))
+BUILD_PLATFORM_ENV := $(if $(filter command line environment,$(origin PLATFORM)),ZZCOLLAB_PLATFORM="$(PLATFORM)",)
 SIF ?= env.sif
 # Backend-aware prefix for the host-style R targets (document, build, check,
 # test, ...). With a Nix flake present the environment is entered via
