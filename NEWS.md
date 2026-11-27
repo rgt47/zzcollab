@@ -1,4 +1,8 @@
-# zzcollab 0.2.0
+# zzcollab 0.4.0
+
+The R package and the CLI share one version again. The package had
+reached 0.2.0 and the CLI 0.3.0, neither released; both are now 0.4.0.
+CLI and template changes are listed in `CHANGELOG.md`.
 
 ## Correctness and security fixes
 

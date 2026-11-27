@@ -58,7 +58,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 # Single source of truth for the zzcollab version. The CLI --version, the
 # template stamp, and the R package DESCRIPTION all track this number.
 # install.sh rewrites ZZCOLLAB_VERSION in the installed copy.
-readonly ZZCOLLAB_VERSION="0.3.0"
+readonly ZZCOLLAB_VERSION="0.4.0"
 readonly ZZCOLLAB_TEMPLATE_VERSION="$ZZCOLLAB_VERSION"
 # rocker/tidyverse rather than rocker/r-ver: it is the only rocker base that
 # ships pandoc, Quarto and the tidyverse while also publishing an arm64
