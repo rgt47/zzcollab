@@ -239,6 +239,12 @@ check_state_record() {
             base="${from%@*}"
             [[ "$from" == *@* ]] && digest="${from#*@}"
         fi
+        # Generated Dockerfiles carry the version in the FROM tag, not in
+        # an ARG; fall back to the ARG only for older Dockerfiles.
+        if [[ -z "$r_version" && "$base" == *:* ]]; then
+            local tag="${base##*:}"
+            [[ "$tag" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] && r_version="$tag"
+        fi
         if [[ -z "$r_version" ]]; then
             r_version=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
         fi

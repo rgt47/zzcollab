@@ -8,6 +8,35 @@ archived in `CHANGELOG-2.x.md`.
 
 ## Unreleased
 
+### Fixed
+
+- **Test gates fail when no expectation ran.** `TINYTEST_RUN` (both
+  Makefiles, so `make test`, `make docker-test`, `make test-container`,
+  and `zzc verify --full`) and the test steps in `r-package.yml` and
+  `.gitlab-ci.yml` exited 0 for a suite whose files ran no expectation,
+  because `all(logical(0))` is `TRUE`. They now print 'No expectations
+  ran' and exit 1. Scaffolded projects ship `inst/tinytest/test-basic.R`
+  with one unconditional expectation, so a new project still passes.
+- **GitLab test steps are blocking.** Both test steps in
+  `.gitlab-ci.yml` ended in `|| echo "tests reported failures
+  (non-blocking)"`, so a failing suite never failed the pipeline. The
+  suffix is removed.
+- **`zzc verify` credits a baseline only when it compared something.**
+  L3 was awarded when a `test-baseline*.R` file name appeared in the test
+  log; a file that called `exit_file()` before any comparison is listed
+  there with '0 tests'. A baseline now counts only when its final log
+  line shows at least one test and no '[Exited at' marker, so a file
+  that exits part way also leaves the result at L2.
+- **`zzc verify` coherence no longer aborts on generated Dockerfiles.**
+  The R-version check read `ARG R_VERSION=`, which generated Dockerfiles
+  no longer write. The failed `grep` ended an assignment with status 1
+  under `set -e`, so with a `renv.lock` present `zzc verify` exited 1
+  mid-check, and the Dockerfile side of the comparison could never be
+  read. The version is now taken from the `FROM <image>:<version>` tag
+  (the `ARG` is still read for older Dockerfiles), so a Dockerfile whose
+  R version disagrees with `renv.lock` fails coherence. `zzc doctor`
+  reads the same tag when there is no `renv.lock`.
+
 ### Changed
 
 - `render-report.yml` is part of a workspace's expected workflow set only
