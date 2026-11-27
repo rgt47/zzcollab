@@ -469,6 +469,8 @@ GLOBAL OPTIONS:
   -q, --quiet              Errors only
   -y, --yes  /  -Y         Accept defaults (non-interactive)
   --no-build               Skip Docker build prompt
+  --allow-unpinned         Write a tag-only FROM when the base-image digest
+                           cannot be resolved (offline); recorded unpinned
   --version                Print version
   -h, --help               Show help message
 

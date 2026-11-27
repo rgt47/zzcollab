@@ -2813,6 +2813,8 @@ Global options (any position):
   -q, --quiet      Errors only
   -y, --yes        Accept defaults (non-interactive)
   --no-build       Skip Docker build prompt
+  --allow-unpinned Write a tag-only FROM when the base-image digest cannot
+                   be resolved (offline); recorded as unpinned
   --version        Print version and exit
   -h, --help       Show this help
 
@@ -3044,6 +3046,7 @@ main() {
             -q|--quiet)            export VERBOSITY_LEVEL=0 ;;
             -y|--yes)              export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
             --no-build)            export ZZCOLLAB_NO_BUILD=true ;;
+            --allow-unpinned)      export ZZCOLLAB_ALLOW_UNPINNED=true ;;
             *)                     _filtered+=("$_arg") ;;
         esac
     done

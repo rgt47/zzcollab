@@ -114,6 +114,7 @@ make fix-renv                            # repair DESCRIPTION, renv.lock
 ```
 -v / --verbose      -q / --quiet      -y / -Y (accept defaults)
 --no-build           (skip Docker build prompt)
+--allow-unpinned     (offline: write a tag-only FROM, recorded unpinned)
 ```
 
 ## Gotchas verified this session

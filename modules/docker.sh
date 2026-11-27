@@ -1015,8 +1015,20 @@ generate_dockerfile() {
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
     # Resolve the base-image digest for content-addressed pinning (R-2).
+    # Without a digest the FROM line falls back to a mutable tag, and the
+    # project looks pinned when it is not. Stop unless the user opted in.
     local image_digest
     image_digest=$(resolve_image_digest "${base_image}:${r_version}")
+    if [[ -z "$image_digest" ]]; then
+        if [[ "${ZZCOLLAB_ALLOW_UNPINNED:-false}" != "true" ]]; then
+            log_error "Could not resolve a digest for ${base_image}:${r_version}; refusing to write an unpinned FROM line."
+            log_error "Start Docker (or restore network access) and retry, or pass --allow-unpinned"
+            log_error "(ZZCOLLAB_ALLOW_UNPINNED=true) to write a tag-only FROM, recorded as unpinned."
+            return 1
+        fi
+        log_warn "Writing an UNPINNED FROM line (${base_image}:${r_version}, no digest); --allow-unpinned was given."
+        log_warn "tooling.lock records base_image_digest: null; 'zzc verify' will warn until the digest is pinned."
+    fi
 
     generate_dockerfile_inline "$base_image" "$r_version" \
         "$system_deps_install" "$tools_install" \
@@ -1218,10 +1230,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 # startup restore so the image library is authoritative. OMP_NUM_THREADS=1
 # runs OpenMP-threaded code (including OpenMP builds of OpenBLAS) serially,
 # so reduction order, and hence floating-point results, does not depend on
-# the host's core count. Override per run if speed matters more than
-# bit-level agreement.
+# the host's core count. OPENBLAS_NUM_THREADS and MKL_NUM_THREADS do the
+# same for pthreads builds of OpenBLAS and for MKL, which do not read
+# OMP_NUM_THREADS. Override per run if speed matters more than bit-level
+# agreement.
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     OMP_NUM_THREADS=1 \\
+    OPENBLAS_NUM_THREADS=1 \\
+    MKL_NUM_THREADS=1 \\
     RENV_PATHS_LIBRARY=/opt/renv/library \\
     RENV_PATHS_CACHE=/opt/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\

@@ -385,6 +385,52 @@ test_build_refuses_verse_arm64() {
   assert_false "grep -q -- '--platform' <<< \"\$out\"" "no build was attempted"
 }
 
+# Run generate_dockerfile in a fresh shell with docker stubbed so the pull
+# fails; $1 is the ZZCOLLAB_ALLOW_UNPINNED value. Echoes the return code
+# line, then the Dockerfile (if any).
+_generate_with_failed_pull() {
+  bash -c '
+    source "$ZZCOLLAB_LIB_DIR/constants.sh"
+    source "$ZZCOLLAB_LIB_DIR/core.sh"
+    for m in config.sh status.sh docker.sh; do source "$ZZCOLLAB_MODULES_DIR/$m"; done
+    docker() { [[ "$1" == pull ]] && return 1; return 0; }
+    export VERBOSITY_LEVEL=0 BASE_IMAGE=rocker/r-ver R_VERSION=4.5.0 ZZCOLLAB_NO_BUILD=true
+    rc=0
+    ZZCOLLAB_ALLOW_UNPINNED="$1" generate_dockerfile >/dev/null 2>&1 || rc=$?
+    echo "rc=$rc"
+    cat Dockerfile 2>/dev/null || true
+  ' _ "$1"
+}
+
+test_unresolved_digest_refuses_unpinned_from() {
+  setup_test
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  printf 'Package: genfx\nVersion: 0.1.0\n' > DESCRIPTION
+  local out
+  out=$(_generate_with_failed_pull false)
+  assert_true "grep -q '^rc=1' <<< \"\$out\"" \
+    "a failed digest resolution stops generation"
+  assert_false "[[ -f Dockerfile ]]" "no Dockerfile is written"
+
+  out=$(_generate_with_failed_pull true)
+  assert_true "grep -q '^rc=0' <<< \"\$out\"" "--allow-unpinned proceeds"
+  assert_true "grep -q '^FROM rocker/r-ver:4.5.0$' <<< \"\$out\"" \
+    "the opt-in writes a tag-only FROM"
+  teardown_test
+}
+
+test_dockerfile_pins_blas_threads() {
+  setup_test
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  printf 'Package: genfx\nVersion: 0.1.0\n' > DESCRIPTION
+  local out v
+  out=$(_generate_with_failed_pull true)
+  for v in OMP_NUM_THREADS OPENBLAS_NUM_THREADS MKL_NUM_THREADS; do
+    assert_true "grep -q '^ *$v=1' <<< \"\$out\"" "generated ENV sets $v=1"
+  done
+  teardown_test
+}
+
 test_build_platform_other_hosts() {
   local p_x86 p_aarch
   uname() { echo x86_64; }

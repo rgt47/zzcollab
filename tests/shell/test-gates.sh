@@ -429,6 +429,49 @@ test_platform_default_follows_base() {
 }
 
 ##############################################################################
+# verify: digest pin and malformed renv.lock
+##############################################################################
+
+_verify_out() {
+    ZZCOLLAB_ACCEPT_DEFAULTS=true bash "$ZZCOLLAB_ROOT/zzcollab.sh" verify "$1" \
+        < /dev/null 2>&1 || true
+}
+
+test_verify_warns_on_unpinned_base() {
+    setup_test
+    mkdir -p p
+    touch p/.zzcollab
+    printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > p/renv.lock
+    printf 'FROM rocker/r-ver:4.5.0\nCOPY renv.lock renv.lock\n' > p/Dockerfile
+    local out
+    out=$(_verify_out p)
+    assert_true "grep -q 'base image not pinned by digest' <<< \"\$out\"" \
+        "a tag-only FROM is reported"
+
+    printf 'FROM rocker/r-ver:4.5.0@sha256:abc\nCOPY renv.lock renv.lock\n' > p/Dockerfile
+    out=$(_verify_out p)
+    assert_true "grep -q 'base image pinned by digest' <<< \"\$out\"" \
+        "a digest-pinned FROM passes"
+    teardown_test
+}
+
+test_verify_reports_malformed_lock() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "SKIP: python3 not available"
+        return 0
+    fi
+    setup_test
+    mkdir -p p
+    touch p/.zzcollab
+    printf '{not json\n' > p/renv.lock
+    local out
+    out=$(_verify_out p)
+    assert_true "grep -q 'renv.lock is malformed' <<< \"\$out\"" \
+        "a malformed renv.lock is reported, not an abort"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

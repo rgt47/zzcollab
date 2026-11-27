@@ -26,6 +26,24 @@ archived in `CHANGELOG-2.x.md`.
   image is always built `linux/amd64`, so `make r` and the other run
   targets requested a platform the local image did not have. The
   default now follows the Dockerfile's base image.
+- **An unresolved base-image digest stops Dockerfile generation.** When
+  the pull failed (Docker absent, daemon down, no network),
+  `generate_dockerfile` logged a warning and wrote a tag-only `FROM`,
+  so the project looked pinned but was not. It now refuses and writes
+  nothing; the new global flag `--allow-unpinned`
+  (`ZZCOLLAB_ALLOW_UNPINNED=true`) writes the tag-only `FROM` with a
+  warning for deliberate offline use, and `tooling.lock` records
+  `base_image_digest: null`. `zzc verify` warns on any tag-only `FROM`.
+  Commands that regenerate the Dockerfile in passing (`zzc renv`, `zzc
+  update`) keep the existing Dockerfile and warn when this happens.
+- **Generated Dockerfiles pin OpenBLAS and MKL threads.** Only
+  `OMP_NUM_THREADS=1` was set, which does not reach pthreads builds of
+  OpenBLAS or MKL; `OPENBLAS_NUM_THREADS=1` and `MKL_NUM_THREADS=1` are
+  now set too, so their reduction order, and hence floating-point
+  results, does not depend on the host's core count.
+- **`zzc verify` reports a malformed `renv.lock` instead of aborting.**
+  The validity check's nonzero return ended `verify` under `set -e`
+  before its result could be reported.
 
 - **Test gates fail when no expectation ran.** `TINYTEST_RUN` (both
   Makefiles, so `make test`, `make docker-test`, `make test-container`,

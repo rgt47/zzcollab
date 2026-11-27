@@ -212,14 +212,16 @@ The Quarto gate works the same way: `needs_quarto=true` with
   `install_mode=description` AND by `renv::restore()` in renv mode,
   since the `ENV` is set regardless of mode) and `tooling.lock`.** It is
   one value read in two places that don't otherwise interact.
-- **`resolve_image_digest` is best-effort and silent on failure.** If
-  Docker isn't installed or the pull fails, `image_digest` is empty and
-  the generator falls back to `FROM base:tag` with no digest pin — this
-  degrades reproducibility (R-2 in the codebase's own numbering) without
-  failing the build. It runs after all the capability/need resolution in
-  Section 3, so a failed digest pull never affects which install blocks
-  get emitted, only the `FROM` line's precision and the `tooling.lock`
-  record.
+- **An unresolved digest stops generation.** If Docker isn't installed
+  or the pull fails, `resolve_image_digest` returns empty and
+  `generate_dockerfile` refuses to write a Dockerfile, since a tag-only
+  `FROM base:tag` would degrade reproducibility (R-2 in the codebase's
+  own numbering) while looking pinned. `--allow-unpinned`
+  (`ZZCOLLAB_ALLOW_UNPINNED=true`) writes the tag-only `FROM` with a
+  warning; `tooling.lock` then records `base_image_digest: null`, and
+  `zzc verify` warns until the digest is pinned. Resolution runs after
+  all the capability/need resolution in Section 3, so it never affects
+  which install blocks get emitted.
 
 ## 5. What this document does not cover
 
