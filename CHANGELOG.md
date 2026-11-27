@@ -45,6 +45,23 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Changed
 
+- **`make check-renv` no longer edits files; `make fix-renv` repairs.**
+  `check-renv`, `check-renv-no-strict`, and `check-renv-slim` ran
+  `zzrenvcheck` with `auto_fix = TRUE`: they rewrote `DESCRIPTION` and
+  `renv.lock` and then passed, which made the target users reach for
+  unsuitable as a CI or pre-commit gate. They now run with
+  `auto_fix = FALSE, error_on_fail = TRUE`, edit nothing, exit nonzero
+  on any finding, and print 'To repair: make fix-renv'. The repairing
+  behavior moves to `fix-renv`, `fix-renv-no-strict`, and
+  `fix-renv-slim`. `check-renv-no-fix` remains as a deprecated alias of
+  `check-renv`; `docker-check-renv` and `docker-check-renv-fix` alias
+  `check-renv` and `fix-renv`. `make r`'s post-session validation, which
+  relies on the repair, now calls `fix-renv` when the host has no R.
+  `zzc validate` already defaulted to no auto-fix and is unchanged.
+  **Behavior change for existing projects:** after `zzc doctor --force`
+  refreshes the Makefile, `make check-renv` fails where it used to
+  repair silently; run `make fix-renv` instead.
+
 - `render-report.yml` is part of a workspace's expected workflow set only
   when the workspace has a report, defined once in `zzc_has_report`
   (`lib/core.sh`): an `.Rmd` or `.qmd` file in `analysis/report/`, a

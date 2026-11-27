@@ -635,14 +635,15 @@ jobs:
         make check-renv
 ```
 
-The `make check-renv` target runs the companion `zzrenvcheck` package
-inside the project's Docker image. It executes
-`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`, which
-verifies that every package referenced in code is declared in both
-`DESCRIPTION` and `renv.lock`. The host wrapper `zzcollab validate`
-performs the same check. Variants `make check-renv-no-fix` (report
-only) and `make check-renv-no-strict` (skip `tests/` and `vignettes/`)
-are available.
+The `make check-renv` target runs the companion `zzrenvcheck` package. It
+executes `zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE,
+error_on_fail = TRUE)`, which verifies that every package referenced in
+code is declared in both `DESCRIPTION` and `renv.lock`, edits nothing, and
+exits nonzero on any finding, so it can serve as a CI gate. The host
+wrapper `zzcollab validate` performs the same check. `make
+check-renv-no-strict` skips `tests/` and `vignettes/`. To repair the files
+rather than only check them, run `make fix-renv` (or `fix-renv-no-strict`)
+and review the resulting diff.
 
 These two files play complementary roles: `renv.lock` pins the exact
 package closure, while `DESCRIPTION` declares dependency roles (packages

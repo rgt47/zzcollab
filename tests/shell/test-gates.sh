@@ -132,6 +132,57 @@ test_lint_target_fails_on_lints() {
 }
 
 ##############################################################################
+# check-renv (gate) vs fix-renv (repair)
+##############################################################################
+
+# Dry-run a target of the given Makefile in an empty dir; echo the recipe.
+_dry() {
+    make -n -f "$1" CONTAINER_RUNTIME=docker "$2" 2>&1 || true
+}
+
+test_check_renv_is_a_non_editing_gate() {
+    setup_test
+    local mk out t
+    for mk in "$ZZCOLLAB_ROOT/templates/Makefile" "$ZZCOLLAB_ROOT/Makefile"; do
+        for t in check-renv check-renv-no-strict docker-check-renv; do
+            out=$(_dry "$mk" "$t")
+            assert_true "grep -q 'auto_fix = FALSE' <<< \"\$out\"" \
+                "$(basename "$(dirname "$mk")")/$t does not edit files"
+            assert_true "grep -q 'error_on_fail = TRUE' <<< \"\$out\"" \
+                "$t fails on findings"
+            assert_false "grep -q 'auto_fix = TRUE' <<< \"\$out\"" \
+                "$t never runs the auto-fix"
+        done
+        for t in fix-renv fix-renv-no-strict docker-check-renv-fix; do
+            out=$(_dry "$mk" "$t")
+            assert_true "grep -q 'auto_fix = TRUE' <<< \"\$out\"" \
+                "$t runs the auto-fix"
+        done
+        out=$(_dry "$mk" check-renv-no-fix)
+        assert_true "grep -q 'deprecated' <<< \"\$out\"" \
+            "check-renv-no-fix prints a deprecation notice"
+        assert_false "grep -q 'auto_fix = TRUE' <<< \"\$out\"" \
+            "check-renv-no-fix still does not edit"
+    done
+    out=$(_dry "$ZZCOLLAB_ROOT/templates/Makefile" check-renv-slim)
+    assert_true "grep -q 'auto_fix = FALSE.*skip_image_pkgs = TRUE' <<< \"\$out\"" \
+        "check-renv-slim is a non-editing gate"
+    out=$(_dry "$ZZCOLLAB_ROOT/templates/Makefile" fix-renv-slim)
+    assert_true "grep -q 'auto_fix = TRUE.*skip_image_pkgs = TRUE' <<< \"\$out\"" \
+        "fix-renv-slim repairs"
+    teardown_test
+}
+
+# make r's no-host-R branch relies on the repair after a session, so it
+# must call fix-renv, not the (now non-editing) check-renv.
+test_post_session_hook_repairs() {
+    assert_true "grep -q 'MAKE) --no-print-directory fix-renv' '$ZZCOLLAB_ROOT/templates/Makefile'" \
+        "post-session validation calls fix-renv"
+    assert_false "grep -q 'MAKE) --no-print-directory check-renv' '$ZZCOLLAB_ROOT/templates/Makefile'" \
+        "no template recipe relies on check-renv to repair"
+}
+
+##############################################################################
 # _vrf_baseline_ran
 ##############################################################################
 

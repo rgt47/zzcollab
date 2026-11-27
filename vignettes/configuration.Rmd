@@ -841,9 +841,10 @@ the two YAML files directly for provenance) is the only way to answer
   only changes the base image and regenerates the Dockerfile; it does
   not retroactively add the switched-to profile's advertised packages
   — see the Layer 1 caveat above.
-- `make check-renv` (strict + auto-fix) and `make snapshot` (grow
-  `renv.lock`/`DESCRIPTION` from the running image) are the two make
-  targets to run before committing a package change.
+- `make snapshot` (grow `renv.lock`/`DESCRIPTION` from the running
+  image) and `make check-renv` (strict validation that edits nothing)
+  are the two make targets to run before committing a package change;
+  `make fix-renv` repairs what the check reports.
 
 # Summary
 

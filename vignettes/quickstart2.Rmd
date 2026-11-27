@@ -592,7 +592,7 @@ packages are properly tracked:
 
 ```bash
 make snapshot        # hydrate, renv::snapshot(), then zzrenvcheck
-make check-renv      # validate deps: strict + auto-fix
+make check-renv      # validate deps: strict, no edits
 ```
 
 `make snapshot` is the fuller loop: in the container it runs

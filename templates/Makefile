@@ -131,16 +131,30 @@ HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
 	@$(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
 
-check-renv: ensure-zzrenvcheck ## Validate deps on host: strict + auto-fix (run before commit)
+# check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
+# nonzero on any finding, so they are safe in CI and pre-commit hooks.
+# fix-renv* repair the files (auto-fix) and fail only if issues remain.
+FIX_HINT := { echo "Dependency check failed. To repair: make fix-renv (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
+
+check-renv: ensure-zzrenvcheck ## Validate deps on host: strict, no edits; nonzero on failure
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" || $(FIX_HINT)
+
+check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host, skipping tests/ and vignettes/; no edits
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" || $(FIX_HINT)
+
+check-renv-slim: ensure-zzrenvcheck ## Validate deps, skipping packages already in the image; no edits
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, skip_image_pkgs = TRUE, error_on_fail = TRUE)" || $(FIX_HINT)
+
+check-renv-no-fix: check-renv ## Deprecated alias: check-renv no longer edits files
+	@echo "Note: check-renv-no-fix is deprecated; check-renv now validates without editing."
+
+fix-renv: ensure-zzrenvcheck ## Repair deps on host: strict auto-fix of DESCRIPTION and renv.lock
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
-check-renv-no-fix: ensure-zzrenvcheck ## Validate deps on host: no modifications; nonzero on failure
-	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
-
-check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host: skip tests/ and vignettes/
+fix-renv-no-strict: ensure-zzrenvcheck ## Repair deps on host, skipping tests/ and vignettes/
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = FALSE)"
 
-check-renv-slim: ensure-zzrenvcheck ## Validate deps, skipping packages already in the Docker image
+fix-renv-slim: ensure-zzrenvcheck ## Repair deps, skipping packages already in the image
 	$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)"
 
 snapshot: ensure-zzrenvcheck ## renv snapshot (container) then validate deps (host); run before commit
@@ -247,7 +261,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 	echo "📋 Post-session validation..."; \
 	if [ -z "$(HOST_RSCRIPT)" ]; then \
 		echo "No R on the host: validating in the project container."; \
-		$(MAKE) --no-print-directory check-renv || echo "⚠️  Package validation failed"; \
+		$(MAKE) --no-print-directory fix-renv || echo "⚠️  Package validation failed"; \
 		touch /tmp/zzvim-r-hook-ran; \
 	elif Rscript -e "quit(status = if(requireNamespace('zzrenvcheck', quietly=TRUE)) 0L else 1L)" 2>/dev/null; then \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)" \
@@ -427,11 +441,11 @@ docker-render-book: ## Render the Quarto book (archetype: book -> analysis/repor
 	$(DOCKER_RUN) quarto render analysis/report
 
 # Back-compat aliases. docker-check-renv is invoked by zzcollab::run_script;
-# both are identical to check-renv-no-fix and check-renv respectively, so they
-# delegate rather than duplicate the docker run command.
-docker-check-renv: check-renv-no-fix ## Validate deps in container (alias)
+# they are identical to check-renv and fix-renv respectively, so they
+# delegate rather than duplicate the command.
+docker-check-renv: check-renv ## Validate deps (alias of check-renv)
 
-docker-check-renv-fix: check-renv
+docker-check-renv-fix: fix-renv ## Repair deps (alias of fix-renv)
 
 ##@ Team images
 
@@ -529,4 +543,4 @@ docker-prune-all: ## Deep clean all unused Docker resources (system-wide)
 	@echo "✅ Docker cleanup complete"
 	@$(MAKE) docker-disk-usage
 
-.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint lint-report check-renv check-renv-no-fix check-renv-no-strict check-renv-slim check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-qmd-pdf docker-render-qmd-html docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: document build check install vignettes test deps snapshot reset-lock ensure-zzrenvcheck style lint lint-report check-renv check-renv-no-fix check-renv-no-strict check-renv-slim fix-renv fix-renv-no-strict fix-renv-slim check-binaries docker-build docker-rebuild docker-build-log docker-push-team docker-pull-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-script docker-render-qmd docker-render-qmd-pdf docker-render-qmd-html docker-render-book docker-rstudio rstudio r sh test-container docker-check-renv docker-check-renv-fix hash-data verify-data clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help

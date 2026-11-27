@@ -15,9 +15,10 @@ help:
 	@echo "Available targets:"
 	@echo ""
 	@echo "  Validation (runs inside Docker, no host R required):"
-	@echo "    check-renv             - Full validation: strict + auto-fix (recommended)"
-	@echo "    check-renv-no-fix      - Report only, no modifications"
-	@echo "    check-renv-no-strict   - Skip tests/ and vignettes/"
+	@echo "    check-renv             - Validate: strict, no edits, nonzero on failure"
+	@echo "    check-renv-no-strict   - Validate, skipping tests/ and vignettes/"
+	@echo "    fix-renv               - Repair DESCRIPTION and renv.lock (auto-fix)"
+	@echo "    fix-renv-no-strict     - Repair, skipping tests/ and vignettes/"
 	@echo ""
 	@echo "  Main workflow (RECOMMENDED):"
 	@echo "    r                     - Start bash terminal (vim editing, all profiles)"
@@ -71,24 +72,42 @@ deps:
 # library()/require()/:: calls, then checks DESCRIPTION and renv.lock are in sync.
 # Run before `git commit` to catch issues locally and prevent CI failures.
 
-# Full validation: strict mode + auto-fix missing packages
+# check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
+# nonzero on any finding. fix-renv* repair the files (auto-fix).
+FIX_HINT := { echo "Dependency check failed. To repair: make fix-renv (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
+
+# Full validation: strict mode, no edits
 check-renv:
+	@docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" \
+	|| $(FIX_HINT)
+
+# Non-strict: skip tests/ and vignettes/ directories; no edits
+check-renv-no-strict:
+	@docker run --rm \
+		-v $$(pwd):/home/analyst/project \
+		-w /home/analyst/project \
+		$(PACKAGE_NAME) \
+		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" \
+	|| $(FIX_HINT)
+
+# Deprecated alias: check-renv no longer edits files
+check-renv-no-fix: check-renv
+	@echo "Note: check-renv-no-fix is deprecated; check-renv now validates without editing."
+
+# Repair: strict auto-fix of DESCRIPTION and renv.lock
+fix-renv:
 	docker run --rm \
 		-v $$(pwd):/home/analyst/project \
 		-w /home/analyst/project \
 		$(PACKAGE_NAME) \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
 
-# Report only: identify gaps without modifying DESCRIPTION or renv.lock
-check-renv-no-fix:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
-
-# Non-strict: skip tests/ and vignettes/ directories
-check-renv-no-strict:
+# Repair, skipping tests/ and vignettes/
+fix-renv-no-strict:
 	docker run --rm \
 		-v $$(pwd):/home/analyst/project \
 		-w /home/analyst/project \
@@ -144,19 +163,10 @@ docker-render:
 docker-render-qmd:
 	docker run --rm -v $$(pwd):/home/analyst/project -w /home/analyst/project $(PACKAGE_NAME) quarto render analysis/report/index.qmd
 
-docker-check-renv:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)"
+# Back-compat aliases of check-renv and fix-renv.
+docker-check-renv: check-renv
 
-docker-check-renv-fix:
-	docker run --rm \
-		-v $$(pwd):/home/analyst/project \
-		-w /home/analyst/project \
-		$(PACKAGE_NAME) \
-		Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)"
+docker-check-renv-fix: fix-renv
 
 docker-rstudio:
 	@echo "Starting RStudio Server on http://localhost:8787"
@@ -242,4 +252,4 @@ docker-prune-all:
 	@echo "✅ Docker cleanup complete"
 	@make docker-disk-usage
 
-.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict check-renv-ci docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
+.PHONY: all document build check install vignettes test deps check-renv check-renv-no-fix check-renv-no-strict fix-renv fix-renv-no-strict docker-build docker-rebuild docker-build-log docker-push-team docker-document docker-build-pkg docker-check docker-test docker-vignettes docker-render docker-render-qmd docker-rstudio r docker-check-renv docker-check-renv-fix clean docker-clean docker-disk-usage docker-prune-cache docker-prune-all help
