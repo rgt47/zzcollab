@@ -339,6 +339,7 @@ sh: ## Interactive bash shell in the project container
 		-w "$(CONTAINER_HOME)/project$(if $(SUBDIR),/$(SUBDIR))" \
 		-e ZZ_HOST_ROOT="$(CURDIR)" -e TZ="$(HOST_TZ)" \
 		-e R_PROFILE_USER="$(CONTAINER_HOME)/project/.Rprofile" \
+		-e ZZCOLLAB_AUTO_SNAPSHOT=$(ZZCOLLAB_AUTO_SNAPSHOT) \
 		$(PACKAGE_NAME) bash
 
 docker-rstudio: ## RStudio Server at http://localhost:8787

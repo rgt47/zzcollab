@@ -203,7 +203,9 @@ library(dplyr)
 library(ggplot2)
 
 # Save dependency state
-# In ZZCOLLAB Docker containers: snapshot happens automatically on exit!
+# In ZZCOLLAB Docker containers: make r's post-session check records
+# packages the code uses; otherwise run renv::snapshot() (or
+# make snapshot) and review the renv.lock diff
 # Outside Docker: run renv::snapshot() manually
 
 # Collaborator restores exact versions
@@ -226,7 +228,8 @@ renv::restore()   # Installs from renv.lock
   (~100-500MB typical)
 - **Initial setup time**: First `renv::restore()` downloads all packages
 - **Snapshot discipline**: Must remember `renv::snapshot()` after package
-  changes (automated in ZZCOLLAB Docker containers - see Level 3)
+  changes (after `make r`, a post-session check records packages the
+  code uses; see Level 3)
 - **R version dependency**: Still depends on user's R version
 - **System library dependency**: Still depends on system libraries
   (gdal, geos, etc.)
@@ -268,7 +271,8 @@ install.packages("lme4")
 # ... write code ...
 renv::snapshot()  # Remember to snapshot!
 
-# Note: With ZZCOLLAB Docker (Level 3), snapshot happens automatically on container exit!
+# Note: With ZZCOLLAB Docker (Level 3), make r's post-session check
+# records packages the code uses when you exit the container
 
 # Year 2: Collaborator joins
 git clone project
@@ -324,13 +328,15 @@ R
 > # ... work normally ...
 > quit()
 
-# Exit container - AUTO-SNAPSHOT HAPPENS AUTOMATICALLY!
+# Exit container - post-session validation runs
 exit
 
-# Auto-snapshot architecture (October 2025)
-# - renv::snapshot() runs automatically on container exit
-# - No manual snapshot command required!
-# - renv.lock automatically updated and validated (via zzrenvcheck)
+# Dependency capture after make r
+# - zzrenvcheck adds packages the code uses to DESCRIPTION and
+#   renv.lock; review the diff before committing
+# - The .Rprofile exit snapshot (renv::snapshot() in .Last) is
+#   opt-in: make r ZZCOLLAB_AUTO_SNAPSHOT=true
+# - Otherwise snapshot explicitly: make snapshot or renv::snapshot()
 
 # Collaborator gets identical environment
 git clone project
@@ -953,7 +959,7 @@ zzc github                       # Create private GitHub repo with CI/CD
 # Develop locally
 make r
 # ... work in container ...
-exit  # Auto-snapshot runs on exit!
+exit  # Post-session check records packages the code uses
 
 # Grow and validate the manifest before committing
 make snapshot        # hydrate + snapshot + check (renv.lock + DESCRIPTION)
@@ -1060,7 +1066,7 @@ zzc github                       # Create private GitHub repo with CI/CD
 make r
 # ... develop code ...
 # ... write tests in inst/tinytest/ ...
-exit  # Auto-snapshot runs automatically!
+exit  # Post-session check records packages the code uses
 
 # Validate locally first (make check-renv runs zzrenvcheck)
 make check-renv
@@ -1426,19 +1432,21 @@ renv::snapshot()  # Update renv.lock
 git add renv.lock
 git commit
 
-# ZZCOLLAB Docker auto-snapshot (October 2025):
-# With ZZCOLLAB Docker containers, snapshot happens automatically on exit!
+# ZZCOLLAB Docker workflow:
+# make r's post-session check records packages the code uses
 make r
 install.packages("new-package")  # Standard R command works in Docker
-exit  # Auto-snapshot runs automatically - no manual command needed!
-git add renv.lock && git commit
+# ... use package in code ...
+exit  # Post-session check adds it to DESCRIPTION and renv.lock
+git diff renv.lock DESCRIPTION   # review what was recorded
+git add renv.lock DESCRIPTION && git commit
 ```
 
 **Package installation methods** (both work in ZZCOLLAB Docker containers):
 
 ```r
 # Standard R command (recommended in ZZCOLLAB Docker containers)
-install.packages("dplyr")  # Auto-captured in renv.lock on exit
+install.packages("dplyr")  # Recorded on exit from make r if code uses it
 
 # For GitHub packages
 install.packages("remotes")
@@ -1446,8 +1454,10 @@ remotes::install_github("user/package")
 ```
 
 **Note**: In ZZCOLLAB Docker containers, `install.packages()` works correctly
-because packages are automatically captured in renv.lock when you exit the
-container.
+because, when you exit `make r`, the post-session check records packages the
+code uses in renv.lock. In other sessions (for example RStudio), run
+`make snapshot` or `renv::snapshot()` and review the diff. The `.Rprofile`
+exit snapshot is opt-in (`ZZCOLLAB_AUTO_SNAPSHOT=true`).
 
 ## Level 3 Pitfalls (Docker)
 

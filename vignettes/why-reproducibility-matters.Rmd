@@ -253,18 +253,25 @@ make r      # Start working
 
 No Docker Hub required—team members build from the Dockerfile in the repository, ensuring perfect reproducibility with minimal wait time.
 
-## Automatic Snapshot on Exit
+## Automatic Dependency Check on Exit
 
-ZZCOLLAB implements an automatic snapshot-on-exit architecture that eliminates manual `renv::snapshot()` commands:
+When an interactive `make r` session ends, a post-session check
+(zzrenvcheck) adds the packages the code uses to `DESCRIPTION` and
+`renv.lock`:
 
 ```bash
 make r
 # Inside container:
 install.packages("ggplot2")  # Add packages as needed
-exit                         # Automatically snapshots renv.lock
+# ... use them in code ...
+exit                         # Post-session check records them
 ```
 
 This addresses @ram2013's finding that manual processes create reproducibility failures.
+A separate `.Rprofile` hook that runs `renv::snapshot()` on exit is
+opt-in (`make r ZZCOLLAB_AUTO_SNAPSHOT=true`) and off by default: what
+enters `renv.lock` should be the analyst's decision, made by running
+`make snapshot` or `renv::snapshot()` and reviewing the lockfile diff.
 
 ## Volume Mounts Enable Iterative Development
 
@@ -362,7 +369,7 @@ make r
 devtools::load_all()                    # Load your R package
 source("analysis/scripts/01_clean.R")   # Run analysis
 install.packages("tidymodels")          # Add new packages
-exit                                    # Auto-snapshot on exit
+exit                                    # Post-session dependency check
 
 # Commit and share
 git add . && git commit -m "Analysis update"

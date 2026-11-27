@@ -676,7 +676,7 @@ test_auto_snapshot_passed_to_runs() {
     setup_test
     local mk="$ZZCOLLAB_ROOT/templates/Makefile" out t
     printf 'FROM rocker/r-ver:4.5.0\n' > Dockerfile
-    for t in docker-test docker-rstudio; do
+    for t in docker-test docker-rstudio sh; do
         out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker "$t" 2>&1 || true)
         assert_true "grep -q 'ZZCOLLAB_AUTO_SNAPSHOT=false' <<< \"\$out\"" \
             "$t passes the off default to the container"

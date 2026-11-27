@@ -95,10 +95,12 @@ engineering that zzcollab builds on.
 
 - **Package backend (renv / Nix / none)**: how the project records exact
   package versions; a single mutually-exclusive choice.
-- **Auto-snapshot / auto-restore**: zzcollab automatically records
-  installed packages to `renv.lock` on container exit, and installs
-  missing packages on start, replacing manual `renv::snapshot()` /
-  `renv::restore()`.
+- **Auto-snapshot / auto-restore**: optional `.Rprofile` hooks that
+  run `renv::snapshot()` on container exit and `renv::restore()` on
+  start. Auto-snapshot is off unless opted in
+  (`ZZCOLLAB_AUTO_SNAPSHOT=true`); by default packages enter
+  `renv.lock` through `make r`'s post-session check or an explicit
+  `make snapshot`, followed by review of the lockfile diff.
 - **Container runtime**: the engine that runs the image: Docker, Podman
   (daemonless), or Apptainer (HPC, single-file `.sif`).
 - **Team image**: a pre-built Docker image shared via a registry so every

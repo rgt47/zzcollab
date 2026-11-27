@@ -436,8 +436,10 @@ exit
 ```
 
 Capturing packages is now an explicit step: run `make snapshot` after
-installing new packages. The `make r` gate validates dependencies on entry and
-exit; it does not auto-snapshot on exit.
+installing new packages, then review the `renv.lock` diff. On exit, `make r`
+runs a post-session check that adds packages the code uses to `DESCRIPTION`
+and `renv.lock`; the `.Rprofile` exit snapshot is off unless opted in
+(`make r ZZCOLLAB_AUTO_SNAPSHOT=true`).
 
 ```bash
 make snapshot

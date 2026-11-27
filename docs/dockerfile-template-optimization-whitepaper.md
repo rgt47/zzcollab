@@ -1081,8 +1081,12 @@ library changes only on a rebuild.
 
 ### 10.2 Two automatic operations on session exit, in two places
 
-Leaving an interactive `make r` session triggers two steps, by two different
-mechanisms and in two different locations:
+Leaving an interactive `make r` session can trigger two steps, by two
+different mechanisms and in two different locations. The first is opt-in:
+`ZZCOLLAB_AUTO_SNAPSHOT` defaults to `false`, and the Makefile passes it to
+every container run, so by default only the second step runs. Opt in with
+`make r ZZCOLLAB_AUTO_SNAPSHOT=true`. The analysis below describes the hook
+as it behaves when opted in.
 
 - **`renv::snapshot()` runs inside the container, via R's `.Last` hook.**
   The project `.Rprofile` defines `.Last`, which R calls during its own

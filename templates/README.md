@@ -100,11 +100,12 @@ ${PKG_NAME}/
 # 1. Enter development container
 make r
 
-# 2. Work in R (packages auto-captured on exit)
+# 2. Work in R
 library(tidyverse)
 # ... your analysis ...
 
-# 3. Exit container (automatic snapshot)
+# 3. Exit container (post-session check adds packages the code
+#    uses to DESCRIPTION and renv.lock; review the diff)
 q()
 
 # 4. Test and commit

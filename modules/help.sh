@@ -30,9 +30,10 @@ Commands:
                         --bare omits the R-package skeleton (R/, tests/,
                         DESCRIPTION, NAMESPACE) for a prose-only compendium.
   tidyverse | minimal | rstudio | publishing
-                        Quickstart: init + renv + docker (new project),
-                        or switch profile (existing project)
-                        ('analysis' still works as a deprecated alias)
+                        Quickstart: init + renv + docker (new project only;
+                        switch an existing one with 'docker --profile NAME')
+                        ('analysis' is a deprecated alias; it warns and will
+                        be removed in the next release)
   docker [--build]      Generate/build the Docker image
   renv                  Create or update renv.lock
   nix                   Create flake.nix (Nix backend, alternative to renv)
@@ -97,7 +98,8 @@ After zzc init / zzc <profile>:
 
   1. Build the image:        make docker-build
   2. Enter the container:    make r        (or: make docker-rstudio)
-  3. Work in R; on exit, renv snapshots your package additions
+  3. Work in R; on exit, make r records packages the code uses
+     (RStudio: run make snapshot, then review the renv.lock diff)
   4. Run tests:             make docker-test
   5. Validate deps:         make check-renv
   6. Commit and push:       git add . && git commit && git push
