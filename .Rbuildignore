@@ -110,3 +110,4 @@
 ^_pkgdown\.yml$
 ^pkgdown_site$
 ^cran-comments\.md$
+^LICENSE\.md$
