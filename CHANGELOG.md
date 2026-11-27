@@ -10,6 +10,18 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Fixed
 
+- **New projects use implicit renv snapshots.** `renv_init_quiet()` in
+  the `.Rprofile` template initialized renv with `snapshot.type =
+  "explicit"`, which records only `DESCRIPTION`'s packages. A
+  compendium's `analysis/`-only packages belong in `renv.lock` but not
+  in `DESCRIPTION` (zzrenvcheck's compendium rule), so they were never
+  locked, and a `renv::status()` check could not see that drift. It now
+  uses `"implicit"`, matching the comment in `zzc add` that already
+  assumed it. Existing projects keep their setting; switch one with
+  `renv::settings$snapshot.type("implicit")`. Verified with renv 1.3.1:
+  an `analysis/`-only package is absent from `renv.lock` under
+  `explicit` and present under `implicit`.
+
 - **`make docker-build PLATFORM=...` now builds for that platform.** The
   Makefile documented 'Override with make PLATFORM=linux/amd64', but the
   build (`zzc rebuild`) chose `--platform` from `uname -m` and ignored

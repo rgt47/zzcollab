@@ -585,6 +585,43 @@ test_zzrenvcheck_version_rule() {
 }
 
 ##############################################################################
+# renv snapshot type: analysis/-only packages reach renv.lock
+##############################################################################
+
+# Read the snapshot type the template's renv_init_quiet() uses, then run the
+# same init + snapshot on a compendium whose analysis/ alone uses jsonlite.
+test_template_snapshot_records_analysis_packages() {
+    if ! command -v Rscript >/dev/null 2>&1 ||
+        ! Rscript --vanilla -e "quit(status = if (all(c('renv', 'jsonlite') %in% rownames(installed.packages()))) 0L else 1L)" \
+            >/dev/null 2>&1; then
+        echo "SKIP: Rscript, renv, or jsonlite not available"
+        return 0
+    fi
+    local type
+    type=$(sed -n 's/.*snapshot.type = "\([a-z]*\)".*/\1/p' \
+        "$ZZCOLLAB_ROOT/templates/.Rprofile" | head -1)
+    assert_equals "implicit" "$type" "template initializes renv with implicit snapshots"
+
+    setup_test
+    mkdir -p analysis
+    printf 'Package: snapfx\nVersion: 0.1.0\n' > DESCRIPTION
+    printf 'jsonlite::toJSON(1)\n' > analysis/x.R
+    local out
+    out=$(RENV_CONFIG_AUTOLOADER_ENABLED=FALSE Rscript --vanilla -e "
+        d <- getwd()
+        renv::init(project = d, bare = TRUE,
+                   settings = list(snapshot.type = '$type'),
+                   force = TRUE, restart = FALSE, load = FALSE)
+        renv::snapshot(project = d, library = .libPaths(), prompt = FALSE,
+                       force = TRUE)
+        lock <- jsonlite::read_json(file.path(d, 'renv.lock'))
+        cat('LOCKED', 'jsonlite' %in% names(lock\$Packages), '\n')" 2>&1)
+    assert_true "grep -q 'LOCKED TRUE' <<< \"\$out\"" \
+        "a package used only in analysis/ is recorded in renv.lock"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

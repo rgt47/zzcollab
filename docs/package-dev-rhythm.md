@@ -46,15 +46,17 @@ zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE,
 ```
 
 This scans the project source files and adds any newly referenced packages
-to `DESCRIPTION`. Because the project uses `snapshot.type = "explicit"`,
-`renv::snapshot()` then reads `DESCRIPTION` as the authoritative dependency
-list and writes those packages to `renv.lock`. Packages already in the
+to `DESCRIPTION`, and records it in `renv.lock`. Packages already in the
 Docker image are skipped (so `tidyverse` and its dependencies are not
 written to `DESCRIPTION` or `renv.lock` redundantly).
 
-The chain is: code references package → `DESCRIPTION` updated → `renv.lock`
-updated via snapshot. A package does not reach `renv.lock` unless it first
-appears in `DESCRIPTION`.
+New projects use `snapshot.type = "implicit"`, so `renv::snapshot()`
+records every package the code uses, whether or not it appears in
+`DESCRIPTION`. That matters for a compendium: a package used only in
+`analysis/` belongs in `renv.lock` but not in `DESCRIPTION`. (Projects
+created before this change were initialized with `"explicit"`, which
+records only `DESCRIPTION`'s packages; switch one with
+`renv::settings$snapshot.type("implicit")`.)
 
 ### Step 3: Decide whether to rebuild
 
@@ -162,10 +164,10 @@ With both settings in place, container R startup takes under 3 seconds.
 
 ## zzrenvcheck vs renv::snapshot
 
-`renv::snapshot()` is a write operation: it records whatever is declared in
-`DESCRIPTION` into `renv.lock` (under `snapshot.type = "explicit"`). It has
-no opinion on whether `DESCRIPTION` is complete or whether the code actually
-uses the declared packages.
+`renv::snapshot()` is a write operation: under `snapshot.type =
+"implicit"` it records the packages the code uses into `renv.lock`. It has
+no opinion on whether `DESCRIPTION` is complete, or on which packages
+belong in `Imports` and which in `Suggests`.
 
 `zzrenvcheck` is a validation and repair layer that runs upstream of the
 snapshot:

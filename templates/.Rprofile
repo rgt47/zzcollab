@@ -132,11 +132,15 @@ if (!renv_enabled) {
     }
   }
 
-  # Helper function for initializing renv without prompts
+  # Helper function for initializing renv without prompts.
+  # snapshot.type = "implicit" records every package the code uses. The
+  # "explicit" type records only DESCRIPTION's packages, which misses those
+  # a compendium uses only in analysis/ (they belong in renv.lock but not in
+  # DESCRIPTION), and makes a renv::status() check blind to that drift.
   renv_init_quiet <- function() {
     renv::init(
       bare = TRUE,
-      settings = list(snapshot.type = "explicit"),
+      settings = list(snapshot.type = "implicit"),
       force = TRUE,
       restart = FALSE,
       load = FALSE
