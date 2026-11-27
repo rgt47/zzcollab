@@ -264,6 +264,44 @@ test_dockerfile_r_version_survives_errexit() {
 }
 
 ##############################################################################
+# doctor state back-fill (doctor.sh runs under set -euo pipefail)
+##############################################################################
+
+# Back-fill .zzcollab-state for the given project dir in a fresh strict
+# shell, as doctor does; echo the recorded r_version, or ABORTED.
+_doctor_backfill() {
+    bash -c 'set -euo pipefail
+        source "$1/lib/constants.sh"
+        source "$1/lib/core.sh"
+        # The file ends in [[ sourced-check ]] && main, which returns 1
+        # when sourced; that status is not the code under test.
+        source "$1/modules/doctor.sh" || true
+        FIX_MODE=true DRY_RUN=false
+        check_state_record "$2" >/dev/null
+        grep "^r_version=" "$2/.zzcollab-state" | cut -d= -f2' \
+        _ "$ZZCOLLAB_ROOT" "$1" 2>/dev/null || echo ABORTED
+}
+
+test_doctor_backfill_reads_from_tag() {
+    setup_test
+    mkdir -p a b c
+
+    printf 'FROM rocker/tidyverse:4.5.0@sha256:abc\n' > a/Dockerfile
+    assert_equals "4.5.0" "$(_doctor_backfill "$PWD/a")" \
+        "no renv.lock: version taken from the FROM tag"
+
+    printf 'FROM rocker/r-ver:latest\n' > b/Dockerfile
+    assert_equals "" "$(_doctor_backfill "$PWD/b")" \
+        "non-numeric tag, no ARG: empty, no abort"
+
+    printf '{"Packages":{}}\n' > c/renv.lock
+    printf 'FROM rocker/r-ver:4.4.1\n' > c/Dockerfile
+    assert_equals "4.4.1" "$(_doctor_backfill "$PWD/c")" \
+        "renv.lock without R section: no abort, tag used"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

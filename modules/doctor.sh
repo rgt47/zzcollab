@@ -222,8 +222,10 @@ check_state_record() {
     # Derive fields from artifact presence only.
     local r_version="" base="" digest="" mode="" ppm="" from
     if [[ -f "$dir/renv.lock" ]]; then
+        # doctor runs under set -euo pipefail: a no-match grep must not
+        # end an assignment with status 1, or the back-fill aborts.
         r_version=$(grep -A3 '"R"' "$dir/renv.lock" 2>/dev/null \
-            | grep -m1 '"Version"' | cut -d'"' -f4)
+            | grep -m1 '"Version"' | cut -d'"' -f4 || true)
     fi
     if [[ -f "$dir/Dockerfile" ]]; then
         [[ -f "$dir/renv.lock" ]] && mode="renv" || mode="description"
@@ -231,8 +233,8 @@ check_state_record() {
         if [[ "$from" == *'${'* ]]; then
             # ARG-substituted FROM: read the recorded ARGs instead.
             local bi rv
-            bi=$(grep -m1 '^ARG BASE_IMAGE=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
-            rv=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
+            bi=$(grep -m1 '^ARG BASE_IMAGE=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2 || true)
+            rv=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2 || true)
             base="${bi}:${rv}"
             [[ -z "$r_version" ]] && r_version="$rv"
         else
@@ -246,7 +248,7 @@ check_state_record() {
             [[ "$tag" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] && r_version="$tag"
         fi
         if [[ -z "$r_version" ]]; then
-            r_version=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2)
+            r_version=$(grep -m1 '^ARG R_VERSION=' "$dir/Dockerfile" 2>/dev/null | cut -d= -f2 || true)
         fi
     fi
 
