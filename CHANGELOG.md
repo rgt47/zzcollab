@@ -6,7 +6,25 @@ is archived in `CHANGELOG-2.x.md`.
 
 ------------------------------------------------------------------------
 
-## Unreleased
+## 0.4.0 (2026-11-27)
+
+The CLI (0.3.0 in `lib/constants.sh` and `install.sh`) and the R package
+(0.2.0 in `DESCRIPTION`) had drifted apart again since the 0.1.0
+re-baseline, and neither number was released. Both are now 0.4.0. The
+`v0.9.0` tag predates the re-baseline and does not describe this line.
+
+### Upgrading an existing project
+
+The `Makefile` and `.Rprofile` templates changed (auto-snapshot is off
+by default and every run target passes `ZZCOLLAB_AUTO_SNAPSHOT`;
+`make docker-build PLATFORM=...` reaches the build). Run
+`zzc update --dry-run`, then `zzc update`, to regenerate them. Do not
+use `zzc doctor --fix` for this: it rewrites only the version stamp
+line, so the old file would then report itself as current. New projects
+use implicit renv snapshots; an existing project keeps its setting until
+changed with `renv::settings$snapshot.type("implicit")`. The `analysis`
+profile name now warns and will be removed in the next release; use
+`tidyverse`.
 
 ### Fixed
 

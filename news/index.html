@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">zzcollab</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,9 +47,10 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.2.0" id="zzcollab-020">zzcollab 0.2.0<a class="anchor" aria-label="anchor" href="#zzcollab-020"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.4.0" id="zzcollab-040">zzcollab 0.4.0<a class="anchor" aria-label="anchor" href="#zzcollab-040"></a></h2>
+<p>The R package and the CLI share one version again. The package had reached 0.2.0 and the CLI 0.3.0, neither released; both are now 0.4.0. CLI and template changes are listed in <code>CHANGELOG.md</code>.</p>
 <div class="section level3">
-<h3 id="correctness-and-security-fixes-0-2-0">Correctness and security fixes<a class="anchor" aria-label="anchor" href="#correctness-and-security-fixes-0-2-0"></a></h3>
+<h3 id="correctness-and-security-fixes-0-4-0">Correctness and security fixes<a class="anchor" aria-label="anchor" href="#correctness-and-security-fixes-0-4-0"></a></h3>
 <ul><li>
 <p><strong>Arguments passed to external commands are now quoted.</strong> <code><a href="https://rdrr.io/r/base/system2.html" class="external-link">system2()</a></code> does not quote: it pastes <code>args</code> together and hands the result to a shell. <code><a href="../reference/safe_system2.html">safe_system2()</a></code> relied on it doing so, with a comment at each call site saying no quoting was needed.</p>
 <p>Every multi-word commit message failed. <code>git_commit("add feature x")</code> ran <code>git commit -m add feature x</code>; git rejected <code>feature</code> and <code>x</code> as pathspecs and no commit was made. The function reported failure, so the effect was a git wrapper that could not commit with an ordinary message.</p>
@@ -62,7 +63,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="tests-0-2-0">Tests<a class="anchor" aria-label="anchor" href="#tests-0-2-0"></a></h3>
+<h3 id="tests-0-4-0">Tests<a class="anchor" aria-label="anchor" href="#tests-0-4-0"></a></h3>
 <ul><li>
 <code>test-git.R</code> called <code><a href="../reference/git_commit.html">git_commit()</a></code>, <code><a href="../reference/git_push.html">git_push()</a></code> and <code><a href="../reference/create_branch.html">create_branch()</a></code> against the working directory, and asserted <code>expect_true(TRUE)</code> from inside an error handler, so each test passed whether the call worked or threw. They were dormant only because <code>.git</code> is not visible from the test directory; a run started from the package root would have staged everything, committed, and pushed. The file now builds a throwaway repository under the temp directory and makes assertions that can fail.</li>
 <li>New <code>test-arg-quoting.R</code> covers the quoting and injection fixes.</li>
