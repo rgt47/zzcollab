@@ -425,6 +425,9 @@ test_platform_default_follows_base() {
     out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker docker-test 2>&1 || true)
     assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
         "a verse image runs as linux/amd64 on every host"
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker docker-rstudio 2>&1 || true)
+    assert_true "grep -q -- 'run --rm -it --platform linux/amd64' <<< \"\$out\"" \
+        "docker-rstudio runs with the same platform as the other run targets"
     teardown_test
 }
 

@@ -326,7 +326,7 @@ docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
 	@echo "Terminal available for code editing with vim"
-	$(CONTAINER_RUNTIME) run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Alias for rstudio
 rstudio: docker-rstudio ## Alias for docker-rstudio
