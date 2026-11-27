@@ -81,8 +81,9 @@ readonly ZZCOLLAB_DEFAULT_RPROJROOT_VERSION="2.1.1"
 # Pinned tag for the zzrenvcheck validation tool. It is not installed into
 # the image: make ensure-zzrenvcheck installs it on the host (or into a
 # per-user tools library for the container) at the tag that tooling.lock
-# records. Bump this constant, and the fallback in templates/Makefile
-# (a test checks they agree), when upgrading zzrenvcheck.
+# records, or this one if the lock's is older. Bump this constant, and
+# ZZRENVCHECK_MIN in templates/Makefile (a test checks they agree), when
+# upgrading zzrenvcheck.
 readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.11.0}"
 
 # Author information (should be set via environment variables or config file)

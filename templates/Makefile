@@ -142,14 +142,20 @@ HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 # is neither failed nor silently passed.
 BARE_GUARD := if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION (bare compendium): dependency check skipped."; exit 0; fi;
 
-# zzrenvcheck is pinned to the tag recorded in tooling.lock (written by
-# zzc docker), so the tool that runs is the one the lock names. The fallback
-# applies before the first zzc docker; a test keeps it equal to the
-# ZZRENVCHECK_TAG constant in zzcollab's lib/constants.sh.
-ZZRENVCHECK_TAG := $(or $(shell sed -n 's/.*"tag": *"\(v[0-9][0-9.]*\)".*/\1/p' tooling.lock 2>/dev/null | head -1),v0.11.0)
-ZZRENVCHECK_INSTALL := if (!requireNamespace('zzrenvcheck', quietly = TRUE) || as.character(utils::packageVersion('zzrenvcheck')) != sub('^v', '', '$(ZZRENVCHECK_TAG)')) { if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck@$(ZZRENVCHECK_TAG)', upgrade = 'never') }
+# zzrenvcheck version. ZZRENVCHECK_MIN is the oldest release whose
+# arguments these targets use (skip_image_pkgs, error_on_fail); a test keeps
+# it equal to ZZRENVCHECK_TAG in zzcollab's lib/constants.sh. tooling.lock
+# (written by zzc docker) records the release the project was set up with.
+# The release wanted is the newer of the two, so a lock written by an older
+# zzcollab (v0.3.1) cannot downgrade the tool; rerun zzc docker to update it.
+# An installed release at or above the wanted one is kept: the host library
+# is shared across projects, so an exact pin would reinstall on every switch
+# and overwrite a development install.
+ZZRENVCHECK_MIN  := v0.11.0
+ZZRENVCHECK_LOCK := $(shell sed -n 's/.*"tag": *"\(v[0-9][0-9.]*\)".*/\1/p' tooling.lock 2>/dev/null | head -1)
+ZZRENVCHECK_INSTALL := lock <- '$(ZZRENVCHECK_LOCK)'; min <- '$(ZZRENVCHECK_MIN)'; v <- function(x) package_version(sub('^v', '', x)); want <- if (nzchar(lock) && v(lock) >= v(min)) lock else min; if (nzchar(lock) && want != lock) message('tooling.lock records zzrenvcheck ', lock, ', older than the ', min, ' these targets need; using ', min, '. Rerun zzc docker to update tooling.lock.'); if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < v(want)) { if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes'); remotes::install_github(paste0('rgt47/zzrenvcheck@', want), upgrade = 'never') }
 
-ensure-zzrenvcheck: ## Install zzrenvcheck at the pinned tag (host R, else a tools library for the container)
+ensure-zzrenvcheck: ## Install zzrenvcheck at or above the pinned tag (host R, else a tools library for the container)
 	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "$(ZZRENVCHECK_INSTALL)"
 
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit

@@ -480,30 +480,69 @@ test_verify_reports_malformed_lock() {
 
 test_zzrenvcheck_pinned_to_lock() {
     setup_test
-    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out const fallback
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" const min
     printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
 
     const=$(grep -m1 'ZZRENVCHECK_TAG=' "$ZZCOLLAB_ROOT/lib/constants.sh" \
         | sed 's/.*:-\(v[0-9.]*\)}.*/\1/')
-    fallback=$(grep -m1 '^ZZRENVCHECK_TAG := ' "$mk" | sed 's/.*,\(v[0-9.]*\))$/\1/')
+    min=$(grep -m1 '^ZZRENVCHECK_MIN  *:= ' "$mk" | sed 's/.*:= *//')
     assert_not_empty "$const" "constants.sh defines a tag"
-    assert_equals "$const" "$fallback" "Makefile fallback equals ZZRENVCHECK_TAG"
+    assert_equals "$const" "$min" "Makefile minimum equals ZZRENVCHECK_TAG"
+    assert_false "grep -q \"install_github('rgt47/zzrenvcheck'\" '$mk'" \
+        "no unpinned install remains (host or post-session paths)"
+    teardown_test
+}
 
-    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>&1 || true)
-    assert_true "grep -q \"zzrenvcheck@$const'\" <<< \"\$out\"" \
-        "without tooling.lock the fallback tag is installed"
-    assert_false "grep -q \"install_github('rgt47/zzrenvcheck',\" <<< \"\$out\"" \
-        "no unpinned install remains"
+# Evaluate the Makefile's install expression with install_github and
+# packageVersion stubbed: echo which tag it would install (NONE if it keeps
+# the installed release), plus any message.
+_wanted_tag() {
+    local lock="$1" installed="$2" expr
+    expr=$(make -n --no-print-directory -f "$ZZCOLLAB_ROOT/templates/Makefile" \
+        CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>/dev/null \
+        | sed -n 's/.* -e "\(lock <- .*\)"$/\1/p')
+    Rscript --vanilla -e "
+      requireNamespace <- function(pkg, ...) TRUE
+      utils_pv <- package_version('$installed')
+      packageVersion <- function(...) utils_pv
+      assign('packageVersion', packageVersion, envir = globalenv())
+      remotes_install <- function(ref, ...) cat('INSTALL', ref, '\n')
+      expr <- gsub('utils::packageVersion', 'packageVersion', '$(printf '%s' "$expr" | sed "s/'/\\\\'/g")', fixed = TRUE)
+      expr <- gsub('remotes::install_github', 'remotes_install', expr, fixed = TRUE)
+      eval(parse(text = expr))
+      cat('DONE\n')" 2>&1
+}
 
-    printf '{\n  "tools": {\n    "zzrenvcheck": {\n      "tag": "v9.8.7"\n    }\n  }\n}\n' > tooling.lock
-    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>&1 || true)
-    assert_true "grep -q \"zzrenvcheck@v9.8.7'\" <<< \"\$out\"" \
-        "the tag recorded in tooling.lock is the one installed"
-    assert_true "grep -q \"!= sub('^v', '', 'v9.8.7')\" <<< \"\$out\"" \
-        "an installed version other than the pin is replaced"
+test_zzrenvcheck_version_rule() {
+    if ! command -v Rscript >/dev/null 2>&1; then
+        echo "SKIP: Rscript not available"
+        return 0
+    fi
+    setup_test
+    printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
+    local out
 
-    assert_false "grep -q \"install_github('rgt47/zzrenvcheck', upgrade\" '$mk'" \
-        "the post-session hook's install is pinned too"
+    printf '{ "tools": { "zzrenvcheck": { "tag": "v0.3.1" } } }\n' > tooling.lock
+    out=$(_wanted_tag v0.3.1 0.3.1)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+        "a v0.3.1 lock installs the minimum, never v0.3.1"
+    assert_true "grep -q 'Rerun zzc docker' <<< \"\$out\"" \
+        "a stale lock says how to update it"
+
+    out=$(_wanted_tag v0.3.1 0.12.0)
+    assert_true "grep -q '^DONE' <<< \"\$out\"" "the expression ran to the end"
+    assert_false "grep -q 'INSTALL' <<< \"\$out\"" \
+        "a newer installed release (shared library, dev install) is kept"
+
+    printf '{ "tools": { "zzrenvcheck": { "tag": "v0.12.0" } } }\n' > tooling.lock
+    out=$(_wanted_tag v0.12.0 0.11.0)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.12.0' <<< \"\$out\"" \
+        "a newer lock tag than the minimum is honored"
+
+    rm -f tooling.lock
+    out=$(_wanted_tag "" 0.10.0)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+        "without a lock the minimum is installed"
     teardown_test
 }
 

@@ -917,9 +917,9 @@ EOF
 }
 
 # Write tooling.lock: a JSON file recording the pinned versions of tools
-# used outside of renv. zzrenvcheck is not in the image; the Makefile reads
-# its tag from this file and installs exactly that release (make
-# ensure-zzrenvcheck), so the record and the installed tool agree.
+# used outside of renv. zzrenvcheck is not in the image; make
+# ensure-zzrenvcheck reads its tag from this file and installs that release
+# unless one at least as new is already installed.
 # This file serves as the content-addressed record called for by R-5.
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
@@ -943,7 +943,7 @@ write_tooling_lock() {
       "source": "github",
       "ref": "rgt47/zzrenvcheck@${tag}",
       "tag": "${tag}",
-      "installed_by": "make ensure-zzrenvcheck (host or tools library; not in the image)"
+      "installed_by": "make ensure-zzrenvcheck: this release or newer, host or tools library; not in the image"
     }
   }
 }

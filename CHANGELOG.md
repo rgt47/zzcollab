@@ -41,12 +41,17 @@ archived in `CHANGELOG-2.x.md`.
   it.** `tooling.lock` recorded `rgt47/zzrenvcheck@v0.3.1`, but the
   image never installed zzrenvcheck: `make ensure-zzrenvcheck` (and
   `make r`'s post-session install) installed GitHub `main` unpinned,
-  requiring only `>= 0.9.0`. The default tag is now `v0.11.0`; the
-  Makefile reads the tag from the project's `tooling.lock` and installs
-  exactly that release, replacing any other installed version, so the
-  record and the tool that runs agree. `tooling.lock` now states that
-  the tool is installed by `make ensure-zzrenvcheck`, not into the
-  image. Unused `zzrenvcheck_tag`/`zzrenvcheck_version` variables in the
+  requiring only `>= 0.9.0`. The default tag is now `v0.11.0`, which is
+  also the minimum the Makefile accepts (`ZZRENVCHECK_MIN`): it reads the
+  tag from the project's `tooling.lock`, uses the newer of that tag and
+  the minimum (a lock written by an older zzcollab records `v0.3.1`,
+  which lacks arguments the targets pass; the Makefile says to rerun
+  `zzc docker`), and installs that release from its tag unless one at
+  least as new is already installed. It never downgrades, so projects
+  sharing a host library do not reinstall over each other, and a
+  development install is kept. `tooling.lock` now states that the tool
+  is installed by `make ensure-zzrenvcheck` (that release or newer), not
+  into the image. Unused `zzrenvcheck_tag`/`zzrenvcheck_version` variables in the
   Dockerfile generator, and a generated comment naming a nonexistent
   `make install-zzrenvcheck` target, are removed.
 - **Generated Dockerfiles pin OpenBLAS and MKL threads.** Only
