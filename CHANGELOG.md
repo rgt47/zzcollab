@@ -41,6 +41,9 @@ archived in `CHANGELOG-2.x.md`.
   `base_image_digest: null`. `zzc verify` warns on any tag-only `FROM`.
   Commands that regenerate the Dockerfile in passing (`zzc renv`, `zzc
   update`) keep the existing Dockerfile and warn when this happens.
+  Digest resolution now uses the configured runtime (podman as well as
+  docker; apptainer resolves with docker), so a podman-only setup is not
+  forced to `--allow-unpinned`.
 - **zzrenvcheck is pinned, and `tooling.lock` tells the truth about
   it.** `tooling.lock` recorded `rgt47/zzrenvcheck@v0.3.1`, but the
   image never installed zzrenvcheck: `make ensure-zzrenvcheck` (and

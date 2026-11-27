@@ -1025,7 +1025,7 @@ generate_dockerfile() {
     if [[ -z "$image_digest" ]]; then
         if [[ "${ZZCOLLAB_ALLOW_UNPINNED:-false}" != "true" ]]; then
             log_error "Could not resolve a digest for ${base_image}:${r_version}; refusing to write an unpinned FROM line."
-            log_error "Start Docker (or restore network access) and retry, or pass --allow-unpinned"
+            log_error "Start ${CONFIG_DOCKER_RUNTIME:-docker} (or restore network access) and retry, or pass --allow-unpinned"
             log_error "(ZZCOLLAB_ALLOW_UNPINNED=true) to write a tag-only FROM, recorded as unpinned."
             return 1
         fi
@@ -1081,14 +1081,21 @@ prompt_docker_build() {
 
 # Resolve the repo digest for a pulled image tag so the Dockerfile FROM line
 # can be pinned by content address rather than by mutable tag.
-# Returns the full sha256:... string, or an empty string if Docker is not
-# available or the pull fails (caller must handle the degraded case).
+# Returns the full sha256:... string, or an empty string if the container
+# runtime is not available or the pull fails (caller must handle the
+# degraded case). Uses the configured runtime: docker, or podman, which
+# accepts the same pull/inspect flags; apptainer builds its SIF from a
+# docker image, so it resolves with docker.
 resolve_image_digest() {
     local image_ref="$1"
-    local digest
+    local digest runtime
 
-    if ! command -v docker > /dev/null 2>&1; then
-        log_warn "Docker not found; base-image digest not pinned (R-2)"
+    [[ -z "${CONFIG_DOCKER_RUNTIME:-}" ]] && load_config 2>/dev/null || true
+    runtime="${CONFIG_DOCKER_RUNTIME:-docker}"
+    [[ "$runtime" == "apptainer" ]] && runtime="docker"
+
+    if ! command -v "$runtime" > /dev/null 2>&1; then
+        log_warn "${runtime} not found; base-image digest not pinned (R-2)"
         echo ""
         return 0
     fi
@@ -1100,13 +1107,13 @@ resolve_image_digest() {
     # returns the manifest list digest, which is platform-agnostic; a FROM line
     # pinned to it resolves the correct platform at build time via --platform.
     log_info "  Pulling ${image_ref} (linux/amd64) to resolve digest..."
-    if ! docker pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
-        log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
+    if ! "$runtime" pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
+        log_warn "Could not pull ${image_ref} with ${runtime}; base-image digest not pinned (R-2)"
         echo ""
         return 0
     fi
 
-    digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null)
+    digest=$("$runtime" inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null || true)
     # RepoDigests entry is "name@sha256:..." -- extract just the sha256 part
     digest="${digest##*@}"
     echo "$digest"

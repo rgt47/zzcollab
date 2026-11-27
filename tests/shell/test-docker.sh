@@ -419,6 +419,32 @@ test_unresolved_digest_refuses_unpinned_from() {
   teardown_test
 }
 
+# Digest resolution uses the configured runtime: podman, not docker.
+test_digest_resolution_uses_configured_runtime() {
+  local out calls
+  calls=$(mktemp)
+  out=$(CALLS="$calls" bash -c '
+    source "$ZZCOLLAB_LIB_DIR/constants.sh"
+    source "$ZZCOLLAB_LIB_DIR/core.sh"
+    for m in config.sh docker.sh; do source "$ZZCOLLAB_MODULES_DIR/$m"; done
+    command() { [[ "$1 $2" == "-v podman" ]] && return 0; builtin command "$@"; }
+    podman() {
+      case "$1" in
+        pull) echo "podman $*" >> "$CALLS"; return 0 ;;
+        inspect) echo "docker.io/rocker/r-ver@sha256:feed"; return 0 ;;
+      esac
+    }
+    docker() { echo "docker $*" >> "$CALLS"; return 1; }
+    CONFIG_DOCKER_RUNTIME=podman resolve_image_digest rocker/r-ver:4.5.0
+  ' 2>&1)
+  assert_true "grep -q '^sha256:feed$' <<< \"\$out\"" \
+    "podman's digest is returned"
+  assert_true "grep -q '^podman pull --platform linux/amd64' '$calls'" \
+    "the pull goes through podman"
+  assert_false "grep -q '^docker' '$calls'" "docker is not used"
+  rm -f "$calls"
+}
+
 test_dockerfile_pins_blas_threads() {
   setup_test
   printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
