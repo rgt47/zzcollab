@@ -309,7 +309,7 @@ vignettes: document ## Build vignettes
 # tinytest::run_test_dir() returns its results rather than signalling
 # failure, so R exits 0 even when assertions fail. Exit nonzero on any
 # failed assertion, so test targets (and `zzc verify --full`) are gates.
-TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (!all(as.logical(r))) quit(status = 1)
+TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (length(r) == 0L) { message('No expectations ran'); quit(status = 1) }; if (!all(as.logical(r))) quit(status = 1)
 
 test: ## Run the tinytest suite (exits nonzero on any failure)
 	$(R_RUN) R --quiet -e "$(TINYTEST_RUN)"

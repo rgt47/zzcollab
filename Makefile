@@ -58,7 +58,7 @@ vignettes: document
 
 # tinytest::run_test_dir() returns its results rather than signalling
 # failure; exit nonzero on any failed assertion so test targets gate.
-TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (!all(as.logical(r))) quit(status = 1)
+TINYTEST_RUN := r <- tinytest::run_test_dir('inst/tinytest'); print(r); if (length(r) == 0L) { message('No expectations ran'); quit(status = 1) }; if (!all(as.logical(r))) quit(status = 1)
 
 test:
 	R --quiet -e "$(TINYTEST_RUN)"
