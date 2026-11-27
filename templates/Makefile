@@ -142,8 +142,15 @@ HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 # is neither failed nor silently passed.
 BARE_GUARD := if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION (bare compendium): dependency check skipped."; exit 0; fi;
 
-ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
-	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
+# zzrenvcheck is pinned to the tag recorded in tooling.lock (written by
+# zzc docker), so the tool that runs is the one the lock names. The fallback
+# applies before the first zzc docker; a test keeps it equal to the
+# ZZRENVCHECK_TAG constant in zzcollab's lib/constants.sh.
+ZZRENVCHECK_TAG := $(or $(shell sed -n 's/.*"tag": *"\(v[0-9][0-9.]*\)".*/\1/p' tooling.lock 2>/dev/null | head -1),v0.11.0)
+ZZRENVCHECK_INSTALL := if (!requireNamespace('zzrenvcheck', quietly = TRUE) || as.character(utils::packageVersion('zzrenvcheck')) != sub('^v', '', '$(ZZRENVCHECK_TAG)')) { if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck@$(ZZRENVCHECK_TAG)', upgrade = 'never') }
+
+ensure-zzrenvcheck: ## Install zzrenvcheck at the pinned tag (host R, else a tools library for the container)
+	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "$(ZZRENVCHECK_INSTALL)"
 
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
 # nonzero on any finding, so they are safe in CI and pre-commit hooks.
@@ -293,7 +300,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		read _ans; \
 		case "$$_ans" in \
 			[Nn]*) echo "Skipping validation." ;; \
-			*) Rscript -e "install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never')" \
+			*) Rscript -e "$(ZZRENVCHECK_INSTALL)" \
 			   && Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)" \
 			   && touch /tmp/zzvim-r-hook-ran \
 			   || echo "⚠️  Package validation failed" ;; \

@@ -37,6 +37,18 @@ archived in `CHANGELOG-2.x.md`.
   `base_image_digest: null`. `zzc verify` warns on any tag-only `FROM`.
   Commands that regenerate the Dockerfile in passing (`zzc renv`, `zzc
   update`) keep the existing Dockerfile and warn when this happens.
+- **zzrenvcheck is pinned, and `tooling.lock` tells the truth about
+  it.** `tooling.lock` recorded `rgt47/zzrenvcheck@v0.3.1`, but the
+  image never installed zzrenvcheck: `make ensure-zzrenvcheck` (and
+  `make r`'s post-session install) installed GitHub `main` unpinned,
+  requiring only `>= 0.9.0`. The default tag is now `v0.11.0`; the
+  Makefile reads the tag from the project's `tooling.lock` and installs
+  exactly that release, replacing any other installed version, so the
+  record and the tool that runs agree. `tooling.lock` now states that
+  the tool is installed by `make ensure-zzrenvcheck`, not into the
+  image. Unused `zzrenvcheck_tag`/`zzrenvcheck_version` variables in the
+  Dockerfile generator, and a generated comment naming a nonexistent
+  `make install-zzrenvcheck` target, are removed.
 - **Generated Dockerfiles pin OpenBLAS and MKL threads.** Only
   `OMP_NUM_THREADS=1` was set, which does not reach pthreads builds of
   OpenBLAS or MKL; `OPENBLAS_NUM_THREADS=1` and `MKL_NUM_THREADS=1` are

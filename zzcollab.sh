@@ -1243,7 +1243,7 @@ cmd_validate() {
     fi
 
     Rscript -e "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) {
-        message('zzrenvcheck not installed. Install with: remotes::install_github(\"rgt47/zzrenvcheck\")')
+        message('zzrenvcheck not installed. Install with: remotes::install_github(\"rgt47/zzrenvcheck@${ZZRENVCHECK_TAG}\")')
         message('Or validate inside the container: make check-renv')
         quit(status = 1)
     }

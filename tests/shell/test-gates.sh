@@ -475,6 +475,39 @@ test_verify_reports_malformed_lock() {
 }
 
 ##############################################################################
+# zzrenvcheck is installed at the tag tooling.lock records
+##############################################################################
+
+test_zzrenvcheck_pinned_to_lock() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out const fallback
+    printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
+
+    const=$(grep -m1 'ZZRENVCHECK_TAG=' "$ZZCOLLAB_ROOT/lib/constants.sh" \
+        | sed 's/.*:-\(v[0-9.]*\)}.*/\1/')
+    fallback=$(grep -m1 '^ZZRENVCHECK_TAG := ' "$mk" | sed 's/.*,\(v[0-9.]*\))$/\1/')
+    assert_not_empty "$const" "constants.sh defines a tag"
+    assert_equals "$const" "$fallback" "Makefile fallback equals ZZRENVCHECK_TAG"
+
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>&1 || true)
+    assert_true "grep -q \"zzrenvcheck@$const'\" <<< \"\$out\"" \
+        "without tooling.lock the fallback tag is installed"
+    assert_false "grep -q \"install_github('rgt47/zzrenvcheck',\" <<< \"\$out\"" \
+        "no unpinned install remains"
+
+    printf '{\n  "tools": {\n    "zzrenvcheck": {\n      "tag": "v9.8.7"\n    }\n  }\n}\n' > tooling.lock
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>&1 || true)
+    assert_true "grep -q \"zzrenvcheck@v9.8.7'\" <<< \"\$out\"" \
+        "the tag recorded in tooling.lock is the one installed"
+    assert_true "grep -q \"!= sub('^v', '', 'v9.8.7')\" <<< \"\$out\"" \
+        "an installed version other than the pin is replaced"
+
+    assert_false "grep -q \"install_github('rgt47/zzrenvcheck', upgrade\" '$mk'" \
+        "the post-session hook's install is pinned too"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

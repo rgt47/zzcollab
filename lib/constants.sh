@@ -78,9 +78,12 @@ readonly ZZCOLLAB_DEFAULT_TINYTEST_VERSION="1.4.3"
 # the project root, here::here(...), wherever R was started; both are pure R.
 readonly ZZCOLLAB_DEFAULT_HERE_VERSION="1.0.2"
 readonly ZZCOLLAB_DEFAULT_RPROJROOT_VERSION="2.1.1"
-# Pinned tag for the zzrenvcheck validation tool installed into the image.
-# Bump this constant when upgrading zzrenvcheck.
-readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.3.1}"
+# Pinned tag for the zzrenvcheck validation tool. It is not installed into
+# the image: make ensure-zzrenvcheck installs it on the host (or into a
+# per-user tools library for the container) at the tag that tooling.lock
+# records. Bump this constant, and the fallback in templates/Makefile
+# (a test checks they agree), when upgrading zzrenvcheck.
+readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.11.0}"
 
 # Author information (should be set via environment variables or config file)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"

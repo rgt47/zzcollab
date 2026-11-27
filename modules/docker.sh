@@ -917,11 +917,13 @@ EOF
 }
 
 # Write tooling.lock: a JSON file recording the pinned versions of tools
-# installed into the image outside of renv (zzrenvcheck, renv itself).
+# used outside of renv. zzrenvcheck is not in the image; the Makefile reads
+# its tag from this file and installs exactly that release (make
+# ensure-zzrenvcheck), so the record and the installed tool agree.
 # This file serves as the content-addressed record called for by R-5.
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
-    local tag="${ZZRENVCHECK_TAG:-v0.3.1}"
+    local tag="${ZZRENVCHECK_TAG:-v0.11.0}"
     local snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     local digest_field
     if [[ -n "$image_digest" ]]; then
@@ -940,7 +942,8 @@ write_tooling_lock() {
     "zzrenvcheck": {
       "source": "github",
       "ref": "rgt47/zzrenvcheck@${tag}",
-      "tag": "${tag}"
+      "tag": "${tag}",
+      "installed_by": "make ensure-zzrenvcheck (host or tools library; not in the image)"
     }
   }
 }
@@ -1141,12 +1144,10 @@ get_ubuntu_codename() {
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
     local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
-    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag zzrenvcheck_version
+    local ubuntu_codename ppm_snapshot ppm_url from_spec
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
     ppm_snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
-    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.1}"
-    zzrenvcheck_version="${zzrenvcheck_tag#v}"
 
     # Pin the FROM line to a content-addressed digest when available (R-2).
     # Fallback to tag-only reference if digest resolution was skipped.
@@ -1281,9 +1282,9 @@ ${install_block}
 RUN echo 'local({ lib <- Sys.glob(file.path(Sys.getenv("RENV_PATHS_LIBRARY", "/opt/renv/library"), "*", "*", "*"))[1]; if (length(lib) == 1L && !is.na(lib) && nzchar(lib) && dir.exists(lib)) .libPaths(unique(c(lib, .libPaths()))) })' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install zzrenvcheck as a validation tool (system library, outside project renv).
-# Installed post-build via make install-zzrenvcheck to avoid GitHub/network
-# issues during docker build on cloud-mounted filesystems.
+# zzrenvcheck is a validation tool, not a project dependency, and is not
+# installed here: make ensure-zzrenvcheck installs it on the host (or into a
+# per-user tools library) at the tag recorded in tooling.lock.
 
 
 # Create non-root user, in the 'staff' group. rocker/verse owns its TeX tree
