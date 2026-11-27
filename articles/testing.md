@@ -649,14 +649,16 @@ jobs:
         make check-renv
 ```
 
-The `make check-renv` target runs the companion `zzrenvcheck` package
-inside the project’s Docker image. It executes
-`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)`, which
-verifies that every package referenced in code is declared in both
-`DESCRIPTION` and `renv.lock`. The host wrapper `zzcollab validate`
-performs the same check. Variants `make check-renv-no-fix` (report only)
-and `make check-renv-no-strict` (skip `tests/` and `vignettes/`) are
-available.
+The `make check-renv` target runs the companion `zzrenvcheck` package.
+It executes
+`zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)`,
+which verifies that every package referenced in code is declared in both
+`DESCRIPTION` and `renv.lock`, edits nothing, and exits nonzero on any
+finding, so it can serve as a CI gate. The host wrapper
+`zzcollab validate` performs the same check. `make check-renv-no-strict`
+skips `tests/` and `vignettes/`. To repair the files rather than only
+check them, run `make fix-renv` (or `fix-renv-no-strict`) and review the
+resulting diff.
 
 These two files play complementary roles: `renv.lock` pins the exact
 package closure, while `DESCRIPTION` declares dependency roles (packages
@@ -680,8 +682,11 @@ into the project image, and two targets run them inside the container:
 # Format R code with styler
 make style
 
-# Lint R code with lintr
+# Lint R code with lintr (exits nonzero if lintr reports anything)
 make lint
+
+# List lintr findings without failing
+make lint-report
 ```
 
 Both targets run in the container, so no host R installation is
@@ -689,7 +694,9 @@ required. They are gated on the code-quality feature: if it is not
 enabled, the tooling is absent from the image and the targets are
 unavailable. Running `make style` before committing keeps formatting
 consistent, and `make lint` surfaces style and correctness issues that
-tests may not catch.
+tests may not catch. Because `make lint` fails when any lint remains, it
+can serve as a CI or pre-commit gate; `make lint-report` is the
+non-failing listing.
 
 #### Quality Gates
 

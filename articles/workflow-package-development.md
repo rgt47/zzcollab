@@ -340,9 +340,10 @@ run the dependency gate directly:
 make check-renv
 ```
 
-This runs `zzrenvcheck` in strict + auto-fix mode and fails when code
-references a package that is not declared in `DESCRIPTION` or not locked
-in `renv.lock`.
+This runs `zzrenvcheck` in strict mode, without editing any file, and
+fails when code references a package that is not declared in
+`DESCRIPTION` or not locked in `renv.lock`. `make fix-renv` repairs both
+files; review the diff before committing.
 
 ### Step 3: Documentation with roxygen2
 

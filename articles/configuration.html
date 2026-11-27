@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-11-23</h4>
+            <h4 data-toc-skip class="date">2026-11-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/configuration.Rmd" class="external-link"><code>vignettes/configuration.Rmd</code></a></small>
       <div class="d-none name"><code>configuration.Rmd</code></div>
@@ -560,7 +560,15 @@ pins before switching down to a smaller profile.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-v</span> docker            <span class="co"># -v / --verbose : detailed output</span></span>
 <span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-q</span> config list       <span class="co"># -q / --quiet : errors only</span></span>
 <span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">-y</span> tidyverse         <span class="co"># -y / --yes (-Y / --yes-all) : accept defaults</span></span>
-<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">--no-build</span> docker    <span class="co"># skip the Docker build prompt</span></span></code></pre></div>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">--no-build</span> docker    <span class="co"># skip the Docker build prompt</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="ex">zzc</span> <span class="at">--allow-unpinned</span> docker  <span class="co"># offline: tag-only FROM, recorded unpinned</span></span></code></pre></div>
+<p><code>zzc docker</code> pins the base image by digest, which needs
+Docker and network access to resolve. When the digest cannot be resolved
+it stops rather than write a <code>FROM</code> line that only looks
+pinned. <code>--allow-unpinned</code> writes the tag-only line anyway,
+with a warning; <code>tooling.lock</code> records
+<code>base_image_digest: null</code> and <code>zzc verify</code> warns
+until <code>zzc docker</code> is rerun with network access.</p>
 </div>
 </div>
 <div class="section level2">
@@ -1076,10 +1084,11 @@ regenerates the Dockerfile; it does not retroactively add the
 switched-to profile’s advertised packages — see the Layer 1 caveat
 above.</li>
 <li>
-<code>make check-renv</code> (strict + auto-fix) and
 <code>make snapshot</code> (grow
 <code>renv.lock</code>/<code>DESCRIPTION</code> from the running image)
-are the two make targets to run before committing a package change.</li>
+and <code>make check-renv</code> (strict validation that edits nothing)
+are the two make targets to run before committing a package change;
+<code>make fix-renv</code> repairs what the check reports.</li>
 </ul>
 </div>
 </div>

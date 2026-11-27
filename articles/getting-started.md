@@ -944,8 +944,9 @@ reproducibility to hold.
 ZZCOLLAB provides automated dependency checking to keep them aligned.
 The check is implemented by the companion R package `zzrenvcheck`, which
 is installed into the project image. `make check-renv` runs
-`zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)` inside the
-container; `zzcollab validate` wraps the same check on the host.
+`zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)`,
+which reports without editing any file; `zzcollab validate` wraps the
+same check on the host.
 
 ``` bash
 # Validate dependencies are synchronized (runs zzrenvcheck in the container)
@@ -964,22 +965,27 @@ newly used packages into `renv.lock` and `DESCRIPTION` in one step:
 make snapshot
 ```
 
-The default `check-renv` target is strict and auto-fixing:
+The default `check-renv` target is strict and does not edit files:
 
 - Verifies all packages used in R/ code are declared in DESCRIPTION
 - Checks that renv.lock matches actual package usage
 - Scans tests/, vignettes/, and inst/ in addition to R/
 - Validates packages across CRAN, Bioconductor, and GitHub
-- Repairs DESCRIPTION and renv.lock discrepancies automatically
+- Exits nonzero on any finding, so it can gate CI or a pre-commit hook
+
+Repair is a separate, explicit step: `make fix-renv` edits DESCRIPTION
+and renv.lock to resolve the discrepancies, and the diff should be
+reviewed before it is committed.
 
 **Common validation scenarios:**
 
 ``` bash
-# Standard validation (strict + auto-fix, recommended before every commit)
+# Standard validation (strict, no edits; recommended before every commit)
 make check-renv
 
-# Report only, without modifying any files
-make check-renv-no-fix
+# Repair DESCRIPTION and renv.lock, then review the diff
+make fix-renv
+git diff DESCRIPTION renv.lock
 
 # Skip the tests/ and vignettes/ scan
 make check-renv-no-strict

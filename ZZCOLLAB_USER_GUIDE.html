@@ -338,9 +338,9 @@
 <div class="section level3">
 <h3 id="validation">Validation<a class="anchor" aria-label="anchor" href="#validation"></a></h3>
 <p>Pure-shell validation checks that all packages referenced in code are listed in DESCRIPTION and renv.lock:</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> check-renv                 <span class="co"># strict + auto-fix (recommended)</span></span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="fu">make</span> check-renv-no-fix          <span class="co"># report only, no modifications</span></span>
-<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict       <span class="co"># skip tests/ and vignettes/</span></span>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> check-renv                 <span class="co"># strict, no edits, nonzero on failure</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict       <span class="co"># skip tests/ and vignettes/</span></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="fu">make</span> fix-renv                   <span class="co"># repair DESCRIPTION and renv.lock</span></span>
 <span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="fu">make</span> check-system-deps          <span class="co"># check system library requirements</span></span></code></pre></div>
 </div>
 </div>
@@ -393,10 +393,10 @@
 <h2 id="build-system-with-make">Build System with Make<a class="anchor" aria-label="anchor" href="#build-system-with-make"></a></h2>
 <div class="section level3">
 <h3 id="validation-no-host-r-required">Validation (no host R required)<a class="anchor" aria-label="anchor" href="#validation-no-host-r-required"></a></h3>
-<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">make</span> check-renv                 <span class="co"># strict + auto-fix + verbose</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">make</span> check-renv-no-fix          <span class="co"># report only</span></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict       <span class="co"># skip tests/ and vignettes/</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="fu">make</span> check-renv-ci              <span class="co"># same as check-renv (CI compat)</span></span>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="fu">make</span> check-renv                 <span class="co"># strict, no edits, nonzero on failure</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">make</span> check-renv-no-strict       <span class="co"># skip tests/ and vignettes/</span></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="fu">make</span> check-renv-slim            <span class="co"># skip packages already in the image</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="fu">make</span> fix-renv                   <span class="co"># repair (also fix-renv-no-strict, -slim)</span></span>
 <span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="fu">make</span> check-system-deps          <span class="co"># check Dockerfile system deps</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -420,15 +420,16 @@
 <span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="fu">make</span> docker-vignettes           <span class="co"># build vignettes in container</span></span>
 <span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="fu">make</span> docker-render              <span class="co"># render analysis/report/report.Rmd</span></span>
 <span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="fu">make</span> docker-render-qmd          <span class="co"># render Quarto document</span></span>
-<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="fu">make</span> docker-check-renv          <span class="co"># renv::status() in container</span></span>
-<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="fu">make</span> docker-check-renv-fix      <span class="co"># renv::snapshot() in container</span></span>
+<span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a><span class="fu">make</span> docker-check-renv          <span class="co"># alias of check-renv</span></span>
+<span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a><span class="fu">make</span> docker-check-renv-fix      <span class="co"># alias of fix-renv</span></span>
 <span id="cb27-10"><a href="#cb27-10" tabindex="-1"></a><span class="fu">make</span> docker-rstudio             <span class="co"># start RStudio Server</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="code-quality-and-dependency-capture-in-container">Code Quality and Dependency Capture (in container)<a class="anchor" aria-label="anchor" href="#code-quality-and-dependency-capture-in-container"></a></h3>
 <div class="sourceCode" id="cb28"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="fu">make</span> style                      <span class="co"># format R code with styler</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> lint                       <span class="co"># lint R code with lintr</span></span>
-<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">make</span> snapshot                   <span class="co"># grow renv.lock + DESCRIPTION from image</span></span></code></pre></div>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a><span class="fu">make</span> lint                       <span class="co"># lint; nonzero if any lints remain</span></span>
+<span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a><span class="fu">make</span> lint-report                <span class="co"># list lints without failing</span></span>
+<span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="fu">make</span> snapshot                   <span class="co"># grow renv.lock + DESCRIPTION from image</span></span></code></pre></div>
 <p><code>make style</code> and <code>make lint</code> require the code-quality feature (which installs <code>styler</code> and <code>lintr</code> in the image). <code>make snapshot</code> runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, <code>renv::snapshot(prompt = FALSE)</code>, and <code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code> in the container; run it before committing to capture code dependencies into the manifest.</p>
 </div>
 <div class="section level3">
@@ -562,7 +563,7 @@ Solution: make docker-clean &amp;&amp; docker system prune
 Solution: Check the package name; try renv::install("xyz")
 
 Error: Dependencies not synchronized
-Solution: make check-renv
+Solution: make fix-renv, review the diff, then make check-renv
 
 Error: renv cache issues
 Solution: renv::restore() then renv::rebuild() if needed</code></pre>

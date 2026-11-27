@@ -466,7 +466,7 @@ Edit `analysis/report/report.Rmd`:
     ---
     title: "Fuel Efficiency Analysis: mtcars Subset"
     author: "Developer 1"
-    date: "2026-11-23"
+    date: "2026-11-27"
     output:
       html_document:
         toc: true
@@ -583,7 +583,7 @@ packages are properly tracked:
 
 ``` bash
 make snapshot        # hydrate, renv::snapshot(), then zzrenvcheck
-make check-renv      # validate deps: strict + auto-fix
+make check-renv      # validate deps: strict, no edits
 ```
 
 `make snapshot` is the fuller loop: in the container it runs

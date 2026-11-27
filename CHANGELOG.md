@@ -8,7 +8,143 @@ is archived in `CHANGELOG-2.x.md`.
 
 ## Unreleased
 
+### Fixed
+
+- **`make docker-build PLATFORM=...` now builds for that platform.** The
+  Makefile documented ‘Override with make PLATFORM=linux/amd64’, but the
+  build (`zzc rebuild`) chose `--platform` from `uname -m` and ignored
+  it, so an amd64 image could not be built through `make` on an arm64
+  Mac, and the build and later `make r` could disagree. An explicit
+  `PLATFORM` (command line or environment) is now passed to the build as
+  `ZZCOLLAB_PLATFORM`, honored by both the build and its cache key; the
+  auto-detected default is not passed, so the build still chooses per
+  base image. Requesting arm64 for `rocker/verse` (amd64 only) is
+  refused. A native arm64 build warns that CI builds `linux/amd64` and
+  names the CI-matching command.
+
+- **Run targets match a `rocker/verse` image on arm64 hosts.** The
+  `PLATFORM` default was `linux/arm64` on any arm64 host, while a verse
+  image is always built `linux/amd64`, so `make r` and the other run
+  targets requested a platform the local image did not have. The default
+  now comes, in order, from the local image’s `zzcollab.platform` label
+  (so `make r` runs whatever `make docker-build` produced, including an
+  amd64 image built with `PLATFORM=linux/amd64` on an arm64 Mac), then
+  from the Dockerfile’s base image (verse is amd64), then from the host.
+  `make docker-rstudio`, which omitted `--platform`, now passes it like
+  the other run targets.
+
+- **An unresolved base-image digest stops Dockerfile generation.** When
+  the pull failed (Docker absent, daemon down, no network),
+  `generate_dockerfile` logged a warning and wrote a tag-only `FROM`, so
+  the project looked pinned but was not. It now refuses and writes
+  nothing; the new global flag `--allow-unpinned`
+  (`ZZCOLLAB_ALLOW_UNPINNED=true`) writes the tag-only `FROM` with a
+  warning for deliberate offline use, and `tooling.lock` records
+  `base_image_digest: null`. `zzc verify` warns on any tag-only `FROM`.
+  Commands that regenerate the Dockerfile in passing (`zzc renv`,
+  `zzc update`) keep the existing Dockerfile and warn when this happens.
+  Digest resolution now uses the configured runtime (podman as well as
+  docker; apptainer resolves with docker), so a podman-only setup is not
+  forced to `--allow-unpinned`.
+
+- **zzrenvcheck is pinned, and `tooling.lock` tells the truth about
+  it.** `tooling.lock` recorded `rgt47/zzrenvcheck@v0.3.1`, but the
+  image never installed zzrenvcheck: `make ensure-zzrenvcheck` (and
+  `make r`’s post-session install) installed GitHub `main` unpinned,
+  requiring only `>= 0.9.0`. The default tag is now `v0.11.0`, which is
+  also the minimum the Makefile accepts (`ZZRENVCHECK_MIN`): it reads
+  the tag from the project’s `tooling.lock`, uses the newer of that tag
+  and the minimum (a lock written by an older zzcollab records `v0.3.1`,
+  which lacks arguments the targets pass; the Makefile says to rerun
+  `zzc docker`), and installs that release from its tag unless one at
+  least as new is already installed. It never downgrades, so projects
+  sharing a host library do not reinstall over each other, and a
+  development install is kept. `tooling.lock` now states that the tool
+  is installed by `make ensure-zzrenvcheck` (that release or newer), not
+  into the image. Unused `zzrenvcheck_tag`/`zzrenvcheck_version`
+  variables in the Dockerfile generator, and a generated comment naming
+  a nonexistent `make install-zzrenvcheck` target, are removed.
+
+- **Generated Dockerfiles pin OpenBLAS and MKL threads.** Only
+  `OMP_NUM_THREADS=1` was set, which does not reach pthreads builds of
+  OpenBLAS or MKL; `OPENBLAS_NUM_THREADS=1` and `MKL_NUM_THREADS=1` are
+  now set too, so their reduction order, and hence floating-point
+  results, does not depend on the host’s core count.
+
+- **`zzc verify` reports a malformed `renv.lock` instead of aborting.**
+  The validity check’s nonzero return ended `verify` under `set -e`
+  before its result could be reported.
+
+- **Test gates fail when no expectation ran.** `TINYTEST_RUN` (both
+  Makefiles, so `make test`, `make docker-test`, `make test-container`,
+  and `zzc verify --full`) and the test steps in `r-package.yml` and
+  `.gitlab-ci.yml` exited 0 for a suite whose files ran no expectation,
+  because `all(logical(0))` is `TRUE`. They now print ‘No expectations
+  ran’ and exit 1. Scaffolded projects ship `inst/tinytest/test-basic.R`
+  with one unconditional expectation, so a new project still passes.
+
+- **GitLab test steps are blocking.** Both test steps in
+  `.gitlab-ci.yml` ended in
+  `|| echo "tests reported failures (non-blocking)"`, so a failing suite
+  never failed the pipeline. The suffix is removed.
+
+- **`zzc verify` credits a baseline only when it compared something.**
+  L3 was awarded when a `test-baseline*.R` file name appeared in the
+  test log; a file that called `exit_file()` before any comparison is
+  listed there with ‘0 tests’. A baseline now counts only when its final
+  log line shows at least one test and no ‘\[Exited at’ marker, so a
+  file that exits part way also leaves the result at L2.
+
+- **`zzc verify` coherence no longer aborts on generated Dockerfiles.**
+  The R-version check read `ARG R_VERSION=`, which generated Dockerfiles
+  no longer write. The failed `grep` ended an assignment with status 1
+  under `set -e`, so with a `renv.lock` present `zzc verify` exited 1
+  mid-check, and the Dockerfile side of the comparison could never be
+  read. The version is now taken from the `FROM <image>:<version>` tag
+  (the `ARG` is still read for older Dockerfiles), so a Dockerfile whose
+  R version disagrees with `renv.lock` fails coherence. `zzc doctor`
+  reads the same tag when there is no `renv.lock`, and its state
+  back-fill no longer aborts under `set -euo pipefail` when a read finds
+  nothing (for example a `renv.lock` without an `R` section).
+
+- **`make lint` fails when lintr reports anything.** It printed the
+  lints and exited 0, so it could not serve as a gate. It now exits 1
+  when any lint remains in `R/` or `analysis/`; the new
+  `make lint-report` keeps the old print-only behavior. A project whose
+  code has outstanding lints will see `make lint` fail after
+  `zzc doctor --force` refreshes its Makefile.
+
 ### Changed
+
+- **`make check-renv` no longer edits files; `make fix-renv` repairs.**
+  `check-renv`, `check-renv-no-strict`, and `check-renv-slim` ran
+  `zzrenvcheck` with `auto_fix = TRUE`: they rewrote `DESCRIPTION` and
+  `renv.lock` and then passed, which made the target users reach for
+  unsuitable as a CI or pre-commit gate. They now run with
+  `auto_fix = FALSE, error_on_fail = TRUE`, edit nothing, exit nonzero
+  on any finding, and name the matching repair target (`fix-renv`,
+  `fix-renv-no-strict`, or `fix-renv-slim`). The repairing behavior
+  moves to `fix-renv`, `fix-renv-no-strict`, and `fix-renv-slim`.
+  `check-renv-no-fix` remains as a deprecated alias of `check-renv`;
+  `docker-check-renv` and `docker-check-renv-fix` alias `check-renv` and
+  `fix-renv`. `make r`’s post-session validation, which relies on the
+  repair, now calls `fix-renv` when the host has no R. `zzc validate`
+  already defaulted to no auto-fix and is unchanged. **Behavior change
+  for existing projects:** after `zzc doctor --force` refreshes the
+  Makefile, `make check-renv` fails where it used to repair silently;
+  run `make fix-renv` instead.
+
+- **Dependency checks skip a bare compendium.** `zzc init --bare` omits
+  `DESCRIPTION` by design, and zzrenvcheck (from the release that fails
+  a project without `DESCRIPTION`) cannot validate one. The
+  `check-renv*`, `fix-renv*`, `snapshot` (its check step), and
+  `reset-lock` targets, `make r`‘s post-session hook, `zzc validate`,
+  and `zzc verify` now detect a missing `DESCRIPTION` and report ’No
+  DESCRIPTION (bare compendium): dependency check skipped’ with exit 0,
+  instead of failing or passing silently. `ensure-zzrenvcheck` does not
+  install the tool for a bare project. `zzc verify` also now runs the
+  dependency check in the verified directory rather than the caller’s
+  working directory.
 
 - `render-report.yml` is part of a workspace’s expected workflow set
   only when the workspace has a report, defined once in `zzc_has_report`
@@ -33,17 +169,20 @@ is archived in `CHANGELOG-2.x.md`.
   report exists but the workflow is missing. When neither an R package
   nor a report applies, no empty `.github/workflows/` directory is
   created.
+
 - `r-package.yml`, `render-report.yml`, and `render-book.yml` set
   `GITHUB_PAT` from the workflow’s `GITHUB_TOKEN`, so renv and pak
   resolve GitHub-hosted packages with the authenticated API rate limit
   rather than the 60-request hourly limit per runner IP. The token is
   not passed into `docker build`, so container image restores remain
   unauthenticated.
+
 - `render-report.yml` reads an optional `timeout:` (minutes,
   default 120) from `.github/report-ci.yml` and applies it to every
   render step, so a hung render fails in bounded time instead of holding
   the runner for the 6-hour job limit. A non-integer value fails the job
   with an annotation.
+
 - `render-book.yml` uses `actions/cache@v6` (v4 runs on the deprecated
   Node 20 runtime).
 

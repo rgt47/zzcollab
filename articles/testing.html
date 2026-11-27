@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-11-23</h4>
+            <h4 data-toc-skip class="date">2026-11-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/testing.Rmd" class="external-link"><code>vignettes/testing.Rmd</code></a></small>
       <div class="d-none name"><code>testing.Rmd</code></div>
@@ -740,15 +740,16 @@ testing data frames:</p>
 <span id="cb23-30"><a href="#cb23-30" tabindex="-1"></a><span class="fu">      run</span><span class="kw">: </span><span class="ch">|</span></span>
 <span id="cb23-31"><a href="#cb23-31" tabindex="-1"></a>        make check-renv</span></code></pre></div>
 <p>The <code>make check-renv</code> target runs the companion
-<code>zzrenvcheck</code> package inside the project’s Docker image. It
-executes
-<code>zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE)</code>,
+<code>zzrenvcheck</code> package. It executes
+<code>zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)</code>,
 which verifies that every package referenced in code is declared in both
-<code>DESCRIPTION</code> and <code>renv.lock</code>. The host wrapper
-<code>zzcollab validate</code> performs the same check. Variants
-<code>make check-renv-no-fix</code> (report only) and
-<code>make check-renv-no-strict</code> (skip <code>tests/</code> and
-<code>vignettes/</code>) are available.</p>
+<code>DESCRIPTION</code> and <code>renv.lock</code>, edits nothing, and
+exits nonzero on any finding, so it can serve as a CI gate. The host
+wrapper <code>zzcollab validate</code> performs the same check.
+<code>make check-renv-no-strict</code> skips <code>tests/</code> and
+<code>vignettes/</code>. To repair the files rather than only check
+them, run <code>make fix-renv</code> (or
+<code>fix-renv-no-strict</code>) and review the resulting diff.</p>
 <p>These two files play complementary roles: <code>renv.lock</code> pins
 the exact package closure, while <code>DESCRIPTION</code> declares
 dependency roles (packages used by <code>R/</code> code go in
@@ -773,14 +774,20 @@ container:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Format R code with styler</span></span>
 <span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">make</span> style</span>
 <span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co"># Lint R code with lintr</span></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="fu">make</span> lint</span></code></pre></div>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="co"># Lint R code with lintr (exits nonzero if lintr reports anything)</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="fu">make</span> lint</span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="co"># List lintr findings without failing</span></span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="fu">make</span> lint-report</span></code></pre></div>
 <p>Both targets run in the container, so no host R installation is
 required. They are gated on the code-quality feature: if it is not
 enabled, the tooling is absent from the image and the targets are
 unavailable. Running <code>make style</code> before committing keeps
 formatting consistent, and <code>make lint</code> surfaces style and
-correctness issues that tests may not catch.</p>
+correctness issues that tests may not catch. Because
+<code>make lint</code> fails when any lint remains, it can serve as a CI
+or pre-commit gate; <code>make lint-report</code> is the non-failing
+listing.</p>
 </div>
 <div class="section level4">
 <h4 id="quality-gates">Quality Gates<a class="anchor" aria-label="anchor" href="#quality-gates"></a>

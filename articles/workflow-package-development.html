@@ -69,7 +69,7 @@
                         <h4 data-toc-skip class="author">ZZCOLLAB
 Development Team</h4>
             
-            <h4 data-toc-skip class="date">2026-11-23</h4>
+            <h4 data-toc-skip class="date">2026-11-27</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/rgt47/zzcollab/blob/main/vignettes/workflow-package-development.Rmd" class="external-link"><code>vignettes/workflow-package-development.Rmd</code></a></small>
       <div class="d-none name"><code>workflow-package-development.Rmd</code></div>
@@ -436,9 +436,11 @@ files are complementary, not redundant.</p>
 <p>To validate the manifest at any point without the full snapshot loop,
 run the dependency gate directly:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
-<p>This runs <code>zzrenvcheck</code> in strict + auto-fix mode and
-fails when code references a package that is not declared in
-<code>DESCRIPTION</code> or not locked in <code>renv.lock</code>.</p>
+<p>This runs <code>zzrenvcheck</code> in strict mode, without editing
+any file, and fails when code references a package that is not declared
+in <code>DESCRIPTION</code> or not locked in <code>renv.lock</code>.
+<code>make fix-renv</code> repairs both files; review the diff before
+committing.</p>
 </div>
 <div class="section level3">
 <h3 id="step-3-documentation-with-roxygen2">Step 3: Documentation with roxygen2<a class="anchor" aria-label="anchor" href="#step-3-documentation-with-roxygen2"></a>

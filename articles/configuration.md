@@ -402,7 +402,15 @@ zzc -v docker            # -v / --verbose : detailed output
 zzc -q config list       # -q / --quiet : errors only
 zzc -y tidyverse         # -y / --yes (-Y / --yes-all) : accept defaults
 zzc --no-build docker    # skip the Docker build prompt
+zzc --allow-unpinned docker  # offline: tag-only FROM, recorded unpinned
 ```
+
+`zzc docker` pins the base image by digest, which needs Docker and
+network access to resolve. When the digest cannot be resolved it stops
+rather than write a `FROM` line that only looks pinned.
+`--allow-unpinned` writes the tag-only line anyway, with a warning;
+`tooling.lock` records `base_image_digest: null` and `zzc verify` warns
+until `zzc docker` is rerun with network access.
 
 ## Docker Profile System
 
@@ -829,9 +837,10 @@ the two YAML files directly for provenance) is the only way to answer
   only changes the base image and regenerates the Dockerfile; it does
   not retroactively add the switched-to profile’s advertised packages —
   see the Layer 1 caveat above.
-- `make check-renv` (strict + auto-fix) and `make snapshot` (grow
-  `renv.lock`/`DESCRIPTION` from the running image) are the two make
-  targets to run before committing a package change.
+- `make snapshot` (grow `renv.lock`/`DESCRIPTION` from the running
+  image) and `make check-renv` (strict validation that edits nothing)
+  are the two make targets to run before committing a package change;
+  `make fix-renv` repairs what the check reports.
 
 ## Summary
 

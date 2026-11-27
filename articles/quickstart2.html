@@ -501,7 +501,7 @@ container; packages are baked into the image at build time.</p>
 <pre><code>---
 title: "Fuel Efficiency Analysis: mtcars Subset"
 author: "Developer 1"
-date: "2026-11-23"
+date: "2026-11-27"
 output:
   html_document:
     toc: true
@@ -608,7 +608,7 @@ ggplot(data, aes(x = mpg, fill = efficiency_class)) +
 <p>After exiting R, grow the manifest from the image and validate that
 all packages are properly tracked:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="fu">make</span> snapshot        <span class="co"># hydrate, renv::snapshot(), then zzrenvcheck</span></span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> check-renv      <span class="co"># validate deps: strict + auto-fix</span></span></code></pre></div>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">make</span> check-renv      <span class="co"># validate deps: strict, no edits</span></span></code></pre></div>
 <p><code>make snapshot</code> is the fuller loop: in the container it
 runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
 <code>renv::snapshot(prompt = FALSE)</code>, then
