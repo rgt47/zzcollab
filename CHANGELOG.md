@@ -119,6 +119,20 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Changed
 
+- **The auto-snapshot-on-exit hook is off by default.** The
+  `.Rprofile` `.Last()` hook ran `renv::snapshot(prompt = FALSE)` on
+  every container R exit unless `ZZCOLLAB_AUTO_SNAPSHOT` was false. The
+  Makefile already set it false for `make r`, the `DOCKER_RUN` targets,
+  and CI, but not for `make docker-rstudio` or host sessions, so whether
+  `renv.lock` changed depended on how R was started. The hook now
+  defaults to off: what enters `renv.lock` is the analyst's call
+  (`renv::snapshot()`, `make snapshot`, or `make fix-renv`, then review
+  the diff). Opt in with `make r ZZCOLLAB_AUTO_SNAPSHOT=true` (or export
+  the variable); every container run target, now including
+  `docker-rstudio`, passes the Makefile's `ZZCOLLAB_AUTO_SNAPSHOT ?=
+  false`, which also keeps a project whose `.Rprofile` predates this
+  change off. `make r`'s post-session dependency check, which records
+  packages the code uses, is unchanged.
 - **`make check-renv` no longer edits files; `make fix-renv` repairs.**
   `check-renv`, `check-renv-no-strict`, and `check-renv-slim` ran
   `zzrenvcheck` with `auto_fix = TRUE`: they rewrote `DESCRIPTION` and
