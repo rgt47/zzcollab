@@ -1243,7 +1243,7 @@ cmd_validate() {
     fi
 
     Rscript -e "if (!requireNamespace('zzrenvcheck', quietly = TRUE)) {
-        message('zzrenvcheck not installed. Install with: remotes::install_github(\"rgt47/zzrenvcheck\")')
+        message('zzrenvcheck not installed. Install with: remotes::install_github(\"rgt47/zzrenvcheck@${ZZRENVCHECK_TAG}\")')
         message('Or validate inside the container: make check-renv')
         quit(status = 1)
     }
@@ -2813,6 +2813,8 @@ Global options (any position):
   -q, --quiet      Errors only
   -y, --yes        Accept defaults (non-interactive)
   --no-build       Skip Docker build prompt
+  --allow-unpinned Write a tag-only FROM when the base-image digest cannot
+                   be resolved (offline); recorded as unpinned
   --version        Print version and exit
   -h, --help       Show this help
 
@@ -3044,6 +3046,7 @@ main() {
             -q|--quiet)            export VERBOSITY_LEVEL=0 ;;
             -y|--yes)              export ZZCOLLAB_ACCEPT_DEFAULTS=true ;;
             --no-build)            export ZZCOLLAB_NO_BUILD=true ;;
+            --allow-unpinned)      export ZZCOLLAB_ALLOW_UNPINNED=true ;;
             *)                     _filtered+=("$_arg") ;;
         esac
     done

@@ -917,11 +917,13 @@ EOF
 }
 
 # Write tooling.lock: a JSON file recording the pinned versions of tools
-# installed into the image outside of renv (zzrenvcheck, renv itself).
+# used outside of renv. zzrenvcheck is not in the image; make
+# ensure-zzrenvcheck reads its tag from this file and installs that release
+# unless one at least as new is already installed.
 # This file serves as the content-addressed record called for by R-5.
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
-    local tag="${ZZRENVCHECK_TAG:-v0.3.1}"
+    local tag="${ZZRENVCHECK_TAG:-v0.11.0}"
     local snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     local digest_field
     if [[ -n "$image_digest" ]]; then
@@ -940,7 +942,8 @@ write_tooling_lock() {
     "zzrenvcheck": {
       "source": "github",
       "ref": "rgt47/zzrenvcheck@${tag}",
-      "tag": "${tag}"
+      "tag": "${tag}",
+      "installed_by": "make ensure-zzrenvcheck: this release or newer, host or tools library; not in the image"
     }
   }
 }
@@ -1015,8 +1018,20 @@ generate_dockerfile() {
     log_info "  Tools: pandoc, languageserver, yaml (as needed)"
 
     # Resolve the base-image digest for content-addressed pinning (R-2).
+    # Without a digest the FROM line falls back to a mutable tag, and the
+    # project looks pinned when it is not. Stop unless the user opted in.
     local image_digest
     image_digest=$(resolve_image_digest "${base_image}:${r_version}")
+    if [[ -z "$image_digest" ]]; then
+        if [[ "${ZZCOLLAB_ALLOW_UNPINNED:-false}" != "true" ]]; then
+            log_error "Could not resolve a digest for ${base_image}:${r_version}; refusing to write an unpinned FROM line."
+            log_error "Start ${CONFIG_DOCKER_RUNTIME:-docker} (or restore network access) and retry, or pass --allow-unpinned"
+            log_error "(ZZCOLLAB_ALLOW_UNPINNED=true) to write a tag-only FROM, recorded as unpinned."
+            return 1
+        fi
+        log_warn "Writing an UNPINNED FROM line (${base_image}:${r_version}, no digest); --allow-unpinned was given."
+        log_warn "tooling.lock records base_image_digest: null; 'zzc verify' will warn until the digest is pinned."
+    fi
 
     generate_dockerfile_inline "$base_image" "$r_version" \
         "$system_deps_install" "$tools_install" \
@@ -1066,14 +1081,21 @@ prompt_docker_build() {
 
 # Resolve the repo digest for a pulled image tag so the Dockerfile FROM line
 # can be pinned by content address rather than by mutable tag.
-# Returns the full sha256:... string, or an empty string if Docker is not
-# available or the pull fails (caller must handle the degraded case).
+# Returns the full sha256:... string, or an empty string if the container
+# runtime is not available or the pull fails (caller must handle the
+# degraded case). Uses the configured runtime: docker, or podman, which
+# accepts the same pull/inspect flags; apptainer builds its SIF from a
+# docker image, so it resolves with docker.
 resolve_image_digest() {
     local image_ref="$1"
-    local digest
+    local digest runtime
 
-    if ! command -v docker > /dev/null 2>&1; then
-        log_warn "Docker not found; base-image digest not pinned (R-2)"
+    [[ -z "${CONFIG_DOCKER_RUNTIME:-}" ]] && load_config 2>/dev/null || true
+    runtime="${CONFIG_DOCKER_RUNTIME:-docker}"
+    [[ "$runtime" == "apptainer" ]] && runtime="docker"
+
+    if ! command -v "$runtime" > /dev/null 2>&1; then
+        log_warn "${runtime} not found; base-image digest not pinned (R-2)"
         echo ""
         return 0
     fi
@@ -1085,13 +1107,13 @@ resolve_image_digest() {
     # returns the manifest list digest, which is platform-agnostic; a FROM line
     # pinned to it resolves the correct platform at build time via --platform.
     log_info "  Pulling ${image_ref} (linux/amd64) to resolve digest..."
-    if ! docker pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
-        log_warn "Could not pull ${image_ref}; base-image digest not pinned (R-2)"
+    if ! "$runtime" pull --platform linux/amd64 "$image_ref" > /dev/null 2>&1; then
+        log_warn "Could not pull ${image_ref} with ${runtime}; base-image digest not pinned (R-2)"
         echo ""
         return 0
     fi
 
-    digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null)
+    digest=$("$runtime" inspect --format '{{index .RepoDigests 0}}' "$image_ref" 2>/dev/null || true)
     # RepoDigests entry is "name@sha256:..." -- extract just the sha256 part
     digest="${digest##*@}"
     echo "$digest"
@@ -1129,12 +1151,10 @@ get_ubuntu_codename() {
 generate_dockerfile_inline() {
     local base_image="$1" r_version="$2" system_deps_install="$3"
     local tools_install="$4" deps_comment="$5" image_digest="${6:-}"
-    local ubuntu_codename ppm_snapshot ppm_url from_spec zzrenvcheck_tag zzrenvcheck_version
+    local ubuntu_codename ppm_snapshot ppm_url from_spec
     ubuntu_codename="$(get_ubuntu_codename "$r_version")"
     ppm_snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     ppm_url="https://packagemanager.posit.co/cran/__linux__/${ubuntu_codename}/${ppm_snapshot}"
-    zzrenvcheck_tag="${ZZRENVCHECK_TAG:-v0.3.1}"
-    zzrenvcheck_version="${zzrenvcheck_tag#v}"
 
     # Pin the FROM line to a content-addressed digest when available (R-2).
     # Fallback to tag-only reference if digest resolution was skipped.
@@ -1218,10 +1238,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 # startup restore so the image library is authoritative. OMP_NUM_THREADS=1
 # runs OpenMP-threaded code (including OpenMP builds of OpenBLAS) serially,
 # so reduction order, and hence floating-point results, does not depend on
-# the host's core count. Override per run if speed matters more than
-# bit-level agreement.
+# the host's core count. OPENBLAS_NUM_THREADS and MKL_NUM_THREADS do the
+# same for pthreads builds of OpenBLAS and for MKL, which do not read
+# OMP_NUM_THREADS. Override per run if speed matters more than bit-level
+# agreement.
 ENV LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 TZ=UTC \\
     OMP_NUM_THREADS=1 \\
+    OPENBLAS_NUM_THREADS=1 \\
+    MKL_NUM_THREADS=1 \\
     RENV_PATHS_LIBRARY=/opt/renv/library \\
     RENV_PATHS_CACHE=/opt/renv/cache \\
     RENV_CONFIG_REPOS_OVERRIDE="${ppm_url}" \\
@@ -1265,9 +1289,9 @@ ${install_block}
 RUN echo 'local({ lib <- Sys.glob(file.path(Sys.getenv("RENV_PATHS_LIBRARY", "/opt/renv/library"), "*", "*", "*"))[1]; if (length(lib) == 1L && !is.na(lib) && nzchar(lib) && dir.exists(lib)) .libPaths(unique(c(lib, .libPaths()))) })' \\
         >> /usr/local/lib/R/etc/Rprofile.site
 
-# Install zzrenvcheck as a validation tool (system library, outside project renv).
-# Installed post-build via make install-zzrenvcheck to avoid GitHub/network
-# issues during docker build on cloud-mounted filesystems.
+# zzrenvcheck is a validation tool, not a project dependency, and is not
+# installed here: make ensure-zzrenvcheck installs it on the host (or into a
+# per-user tools library) at the tag recorded in tooling.lock.
 
 
 # Create non-root user, in the 'staff' group. rocker/verse owns its TeX tree
@@ -1310,7 +1334,15 @@ EOF
 # the same Dockerfile and renv.lock built for amd64 and for arm64 are
 # different images, and reusing one for the other leaves 'make r' (which
 # runs --platform $(PLATFORM)) without a matching local image.
+#
+# ZZCOLLAB_PLATFORM (set by the Makefile when the user passes PLATFORM=...)
+# overrides the host-based choice, so 'make docker-build PLATFORM=linux/amd64'
+# builds the CI-matching image on an arm64 Mac.
 _build_platform() {
+    if [[ -n "${ZZCOLLAB_PLATFORM:-}" ]]; then
+        echo "$ZZCOLLAB_PLATFORM"
+        return 0
+    fi
     case "$(uname -m)" in
         arm64)
             if [[ "${BASE_IMAGE##*/}" == "verse" ]]; then
@@ -1416,15 +1448,30 @@ build_docker_image() {
     # avoiding QEMU emulation that kills Haskell binaries such as pandoc. For
     # verse (amd64-only; no arm64 image variant) we force linux/amd64 on both
     # arm64 and x86_64 hosts so the build and run always agree.
+    # An explicit ZZCOLLAB_PLATFORM (make docker-build PLATFORM=...) takes
+    # precedence and is passed through on any host; build_platform already
+    # reflects it, so the cache key and the build agree.
     local build_base_name="${BASE_IMAGE##*/}"
-    if [[ "$(uname -m)" == "arm64" ]]; then
+    if [[ -n "${ZZCOLLAB_PLATFORM:-}" ]]; then
+        if [[ "$build_base_name" == "verse" && "$build_platform" != "linux/amd64" ]]; then
+            log_error "rocker/verse publishes linux/amd64 only; cannot build for $build_platform"
+            return 1
+        fi
+        build_args+=(--platform "$build_platform")
+        log_info "Building for $build_platform (requested via PLATFORM)"
+    elif [[ "$(uname -m)" == "arm64" ]]; then
+        build_args+=(--platform "$build_platform")
         if [[ "$build_base_name" == "verse" ]]; then
-            build_args+=(--platform linux/amd64)
             log_info "arm64 host + amd64-only base (verse): building for linux/amd64"
         else
-            build_args+=(--platform linux/arm64)
             log_info "arm64 host: building for linux/arm64 (native)"
         fi
+    fi
+    # CI runners build linux/amd64. A native arm64 image can resolve
+    # different binaries (BLAS, compiled packages), so results may differ.
+    if [[ "$build_platform" == "linux/arm64" ]]; then
+        log_warn "Building linux/arm64 (native); CI builds linux/amd64, so results can differ."
+        log_warn "For a CI-matching image: make docker-build PLATFORM=linux/amd64"
     fi
 
     # Build with hash label for future cache lookups

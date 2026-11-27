@@ -225,14 +225,26 @@ EOF
         else
             _vrf_skip "no base_image in state; cannot cross-check Dockerfile FROM"
         fi
+
+        # 5b. The base image is pinned by digest. A tag-only FROM (written
+        # with --allow-unpinned, or by an older zzcollab when the pull
+        # failed) rebuilds against whatever the tag points to later.
+        if grep -m1 '^FROM ' "$d/Dockerfile" 2>/dev/null | grep -q '@sha256:'; then
+            _vrf_pass "base image pinned by digest"
+        else
+            _vrf_warn "base image not pinned by digest (tag-only FROM); rerun 'zzc docker' with network access to pin it"
+        fi
     else
         _vrf_skip "no Dockerfile; environment not containerised"
     fi
 
     # 6. renv.lock is well-formed and its R version agrees across sources.
     if [[ -f "$d/renv.lock" ]]; then
-        _vrf_renv_lock_valid "$d/renv.lock"
-        case $? in
+        # Capture the status: a bare nonzero return would abort verify under
+        # zzcollab.sh's set -e before the case could report it.
+        local lock_ok=0
+        _vrf_renv_lock_valid "$d/renv.lock" || lock_ok=$?
+        case $lock_ok in
             0) _vrf_pass "renv.lock is valid JSON with a Packages section" ;;
             1) _vrf_fail "renv.lock is malformed or has no Packages section" ;;
             2) _vrf_skip "python3 absent; cannot validate renv.lock JSON" ;;

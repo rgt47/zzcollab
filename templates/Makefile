@@ -44,17 +44,26 @@ RAW_DATA_DIR ?= analysis/data/raw_data
 # Container execution. The mount and work path follow the Dockerfile's
 # ARG USERNAME (default analyst), matching what the `r` target resolves at
 # runtime, so a customised container user is honoured rather than hardcoded.
-# PLATFORM selects the container architecture. Auto-detects the host: arm64
-# hosts use linux/arm64 (native; avoids QEMU emulation that breaks Haskell
-# binaries such as pandoc). Override with make PLATFORM=linux/amd64 when
-# cross-building for CI or comparing amd64-pinned results.
-_HOST_ARCH     := $(shell uname -m)
-PLATFORM       ?= $(if $(filter arm64,$(_HOST_ARCH)),linux/arm64,linux/amd64)
 # Container runtime: docker (default), podman (drop-in for `run`), or apptainer
 # (HPC; executes a SIF built from the project image, no --platform). The default
 # below is the configured zzcollab runtime; override per-invocation with
 # `make CONTAINER_RUNTIME=podman r`.
 CONTAINER_RUNTIME ?= $CONTAINER_RUNTIME
+# PLATFORM selects the container architecture, in this order:
+#  1. an explicit PLATFORM (command line or environment), which is also
+#     passed to the build as ZZCOLLAB_PLATFORM, so
+#     make docker-build PLATFORM=linux/amd64 builds the CI-matching image;
+#  2. the platform the local image was built for (its zzcollab.platform
+#     label), so make r runs whatever make docker-build produced;
+#  3. linux/amd64 for a rocker/verse base, which publishes amd64 only;
+#  4. the host: arm64 hosts use linux/arm64 (native; avoids QEMU emulation
+#     that breaks Haskell binaries such as pandoc).
+# Only 1 is passed to the build; otherwise the build chooses per base image.
+_HOST_ARCH      := $(shell uname -m)
+_BASE_IS_VERSE  := $(shell grep -m1 '^FROM ' Dockerfile 2>/dev/null | grep -c '/verse[:@]')
+_IMAGE_PLATFORM := $(if $(filter apptainer,$(CONTAINER_RUNTIME)),,$(filter linux/%,$(shell $(CONTAINER_RUNTIME) image inspect -f '{{index .Config.Labels "zzcollab.platform"}}' $(PACKAGE_NAME) 2>/dev/null)))
+PLATFORM        ?= $(or $(_IMAGE_PLATFORM),$(if $(filter 1,$(_BASE_IS_VERSE)),linux/amd64,$(if $(filter arm64 aarch64,$(_HOST_ARCH)),linux/arm64,linux/amd64)))
+BUILD_PLATFORM_ENV := $(if $(filter command line environment,$(origin PLATFORM)),ZZCOLLAB_PLATFORM="$(PLATFORM)",)
 SIF ?= env.sif
 # Backend-aware prefix for the host-style R targets (document, build, check,
 # test, ...). With a Nix flake present the environment is entered via
@@ -134,8 +143,21 @@ HOST_CHECK := $(TOOL_RSCRIPT) -e "options(repos = c(CRAN = '$(PPM_REPO)'))" -e
 # is neither failed nor silently passed.
 BARE_GUARD := if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION (bare compendium): dependency check skipped."; exit 0; fi;
 
-ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools library for the container)
-	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < '0.9.0') { install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never') }"
+# zzrenvcheck version. ZZRENVCHECK_MIN is the oldest release whose
+# arguments these targets use (skip_image_pkgs, error_on_fail); a test keeps
+# it equal to ZZRENVCHECK_TAG in zzcollab's lib/constants.sh. tooling.lock
+# (written by zzc docker) records the release the project was set up with.
+# The release wanted is the newer of the two, so a lock written by an older
+# zzcollab (v0.3.1) cannot downgrade the tool; rerun zzc docker to update it.
+# An installed release at or above the wanted one is kept: the host library
+# is shared across projects, so an exact pin would reinstall on every switch
+# and overwrite a development install.
+ZZRENVCHECK_MIN  := v0.11.0
+ZZRENVCHECK_LOCK := $(shell sed -n 's/.*"tag": *"\(v[0-9][0-9.]*\)".*/\1/p' tooling.lock 2>/dev/null | head -1)
+ZZRENVCHECK_INSTALL := lock <- '$(ZZRENVCHECK_LOCK)'; min <- '$(ZZRENVCHECK_MIN)'; v <- function(x) package_version(sub('^v', '', x)); want <- if (nzchar(lock) && v(lock) >= v(min)) lock else min; if (nzchar(lock) && want != lock) message('tooling.lock records zzrenvcheck ', lock, ', older than the ', min, ' these targets need; using ', min, '. Rerun zzc docker to update tooling.lock.'); if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < v(want)) { if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes'); remotes::install_github(paste0('rgt47/zzrenvcheck@', want), upgrade = 'never') }
+
+ensure-zzrenvcheck: ## Install zzrenvcheck at or above the pinned tag (host R, else a tools library for the container)
+	@[ -f DESCRIPTION ] || exit 0; $(HOST_CHECK) "$(ZZRENVCHECK_INSTALL)"
 
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
 # nonzero on any finding, so they are safe in CI and pre-commit hooks.
@@ -285,7 +307,7 @@ r: ## Interactive R session (Docker/Podman, nix, apptainer; host R fallback if n
 		read _ans; \
 		case "$$_ans" in \
 			[Nn]*) echo "Skipping validation." ;; \
-			*) Rscript -e "install.packages('remotes'); remotes::install_github('rgt47/zzrenvcheck', upgrade = 'never')" \
+			*) Rscript -e "$(ZZRENVCHECK_INSTALL)" \
 			   && Rscript -e "zzrenvcheck::check_packages(auto_fix = TRUE, strict = TRUE, skip_image_pkgs = TRUE)" \
 			   && touch /tmp/zzvim-r-hook-ran \
 			   || echo "⚠️  Package validation failed" ;; \
@@ -318,7 +340,7 @@ docker-rstudio: ## RStudio Server at http://localhost:8787
 	@echo "Starting RStudio Server on http://localhost:8787"
 	@echo "Username: rstudio, Password: rstudio"
 	@echo "Terminal available for code editing with vim"
-	$(CONTAINER_RUNTIME) run --rm -it -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
+	$(CONTAINER_RUNTIME) run --rm -it --platform $(PLATFORM) -p 8787:8787 -v $$(pwd):/home/rstudio/project $(PACKAGE_NAME) /init
 
 # Alias for rstudio
 rstudio: docker-rstudio ## Alias for docker-rstudio
@@ -373,15 +395,15 @@ ZZCOLLAB_CHECK = @[ -n "$(ZZCOLLAB)" ] || \
 
 docker-build: check-binaries ## Pre-build audit then build image from renv.lock
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild
 
 docker-rebuild: ## Rebuild image without cache (force fresh build)
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild --no-cache
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild --no-cache
 
 docker-build-log: ## Build image with detailed logs (for debugging)
 	$(ZZCOLLAB_CHECK)
-	"$(ZZCOLLAB)" rebuild --log
+	$(BUILD_PLATFORM_ENV) "$(ZZCOLLAB)" rebuild --log
 
 ##@ Apptainer (HPC)
 

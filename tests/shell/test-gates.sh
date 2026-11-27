@@ -400,6 +400,191 @@ test_bare_verify_and_validate_skip() {
 }
 
 ##############################################################################
+# PLATFORM reaches the build; the run default follows the base image
+##############################################################################
+
+test_platform_override_reaches_build() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out t
+    printf 'FROM rocker/tidyverse:4.5.0\n' > Dockerfile
+    for t in docker-build docker-rebuild docker-build-log; do
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker PLATFORM=linux/amd64 "$t" 2>&1 || true)
+        assert_true "grep -q 'ZZCOLLAB_PLATFORM=\"linux/amd64\"' <<< \"\$out\"" \
+            "make $t PLATFORM=linux/amd64 passes the platform to the build"
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker "$t" 2>&1 || true)
+        assert_false "grep -q 'ZZCOLLAB_PLATFORM' <<< \"\$out\"" \
+            "make $t without PLATFORM leaves the choice to the build"
+    done
+    teardown_test
+}
+
+# End to end through zzc rebuild, with a recording docker on PATH: an
+# explicit PLATFORM reaches docker build, and a later make r without
+# PLATFORM runs the platform the image was built for (its label).
+test_platform_end_to_end() {
+    setup_test
+    mkdir -p bin proj
+    cat > bin/docker <<'EOF'
+#!/bin/bash
+echo "docker $*" >> "$SEAM_LOG"
+case "$1 $2" in
+  "image inspect") [ -n "${SEAM_LABEL:-}" ] && { echo "$SEAM_LABEL"; exit 0; }; exit 1 ;;
+esac
+exit 0
+EOF
+    chmod +x bin/docker
+    local log="$PWD/docker.log" out
+    cd proj
+    cp "$ZZCOLLAB_ROOT/templates/Makefile" Makefile
+    printf 'Package: proj\nVersion: 0.1.0\n' > DESCRIPTION
+    printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+    printf 'FROM rocker/tidyverse:4.5.0@sha256:abc\nCOPY renv.lock renv.lock\n' > Dockerfile
+    touch .zzcollab
+
+    SEAM_LOG="$log" PATH="$PWD/../bin:$PATH" make --no-print-directory docker-build \
+        PLATFORM=linux/amd64 CONTAINER_RUNTIME=docker \
+        ZZCOLLAB="$ZZCOLLAB_ROOT/zzcollab.sh" >/dev/null 2>&1 || true
+    assert_true "grep '^docker build' '$log' | grep -q -- '--platform linux/amd64'" \
+        "make docker-build PLATFORM=linux/amd64 reaches docker build"
+    assert_true "grep '^docker build' '$log' | grep -q 'zzcollab.platform=linux/amd64'" \
+        "the image is labeled with the platform it was built for"
+
+    out=$(SEAM_LOG="$log" SEAM_LABEL=linux/amd64 PATH="$PWD/../bin:$PATH" \
+        make -n --no-print-directory r CONTAINER_RUNTIME=docker 2>&1 || true)
+    assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+        "make r without PLATFORM runs the platform the image was built for"
+    teardown_test
+}
+
+test_platform_default_follows_base() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out
+    printf 'FROM rocker/verse:4.5.0@sha256:abc\n' > Dockerfile
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker docker-test 2>&1 || true)
+    assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+        "a verse image runs as linux/amd64 on every host"
+    out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker docker-rstudio 2>&1 || true)
+    assert_true "grep -q -- 'run --rm -it --platform linux/amd64' <<< \"\$out\"" \
+        "docker-rstudio runs with the same platform as the other run targets"
+    teardown_test
+}
+
+##############################################################################
+# verify: digest pin and malformed renv.lock
+##############################################################################
+
+_verify_out() {
+    ZZCOLLAB_ACCEPT_DEFAULTS=true bash "$ZZCOLLAB_ROOT/zzcollab.sh" verify "$1" \
+        < /dev/null 2>&1 || true
+}
+
+test_verify_warns_on_unpinned_base() {
+    setup_test
+    mkdir -p p
+    touch p/.zzcollab
+    printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > p/renv.lock
+    printf 'FROM rocker/r-ver:4.5.0\nCOPY renv.lock renv.lock\n' > p/Dockerfile
+    local out
+    out=$(_verify_out p)
+    assert_true "grep -q 'base image not pinned by digest' <<< \"\$out\"" \
+        "a tag-only FROM is reported"
+
+    printf 'FROM rocker/r-ver:4.5.0@sha256:abc\nCOPY renv.lock renv.lock\n' > p/Dockerfile
+    out=$(_verify_out p)
+    assert_true "grep -q 'base image pinned by digest' <<< \"\$out\"" \
+        "a digest-pinned FROM passes"
+    teardown_test
+}
+
+test_verify_reports_malformed_lock() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "SKIP: python3 not available"
+        return 0
+    fi
+    setup_test
+    mkdir -p p
+    touch p/.zzcollab
+    printf '{not json\n' > p/renv.lock
+    local out
+    out=$(_verify_out p)
+    assert_true "grep -q 'renv.lock is malformed' <<< \"\$out\"" \
+        "a malformed renv.lock is reported, not an abort"
+    teardown_test
+}
+
+##############################################################################
+# zzrenvcheck is installed at the tag tooling.lock records
+##############################################################################
+
+test_zzrenvcheck_pinned_to_lock() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" const min
+    printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
+
+    const=$(grep -m1 'ZZRENVCHECK_TAG=' "$ZZCOLLAB_ROOT/lib/constants.sh" \
+        | sed 's/.*:-\(v[0-9.]*\)}.*/\1/')
+    min=$(grep -m1 '^ZZRENVCHECK_MIN  *:= ' "$mk" | sed 's/.*:= *//')
+    assert_not_empty "$const" "constants.sh defines a tag"
+    assert_equals "$const" "$min" "Makefile minimum equals ZZRENVCHECK_TAG"
+    assert_false "grep -q \"install_github('rgt47/zzrenvcheck'\" '$mk'" \
+        "no unpinned install remains (host or post-session paths)"
+    teardown_test
+}
+
+# Evaluate the Makefile's install expression with install_github and
+# packageVersion stubbed: echo which tag it would install (NONE if it keeps
+# the installed release), plus any message.
+_wanted_tag() {
+    local lock="$1" installed="$2" expr
+    expr=$(make -n --no-print-directory -f "$ZZCOLLAB_ROOT/templates/Makefile" \
+        CONTAINER_RUNTIME=docker ensure-zzrenvcheck 2>/dev/null \
+        | sed -n 's/.* -e "\(lock <- .*\)"$/\1/p')
+    Rscript --vanilla -e "
+      requireNamespace <- function(pkg, ...) TRUE
+      utils_pv <- package_version('$installed')
+      packageVersion <- function(...) utils_pv
+      assign('packageVersion', packageVersion, envir = globalenv())
+      remotes_install <- function(ref, ...) cat('INSTALL', ref, '\n')
+      expr <- gsub('utils::packageVersion', 'packageVersion', '$(printf '%s' "$expr" | sed "s/'/\\\\'/g")', fixed = TRUE)
+      expr <- gsub('remotes::install_github', 'remotes_install', expr, fixed = TRUE)
+      eval(parse(text = expr))
+      cat('DONE\n')" 2>&1
+}
+
+test_zzrenvcheck_version_rule() {
+    if ! command -v Rscript >/dev/null 2>&1; then
+        echo "SKIP: Rscript not available"
+        return 0
+    fi
+    setup_test
+    printf 'Package: x\nVersion: 0.1.0\n' > DESCRIPTION
+    local out
+
+    printf '{ "tools": { "zzrenvcheck": { "tag": "v0.3.1" } } }\n' > tooling.lock
+    out=$(_wanted_tag v0.3.1 0.3.1)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+        "a v0.3.1 lock installs the minimum, never v0.3.1"
+    assert_true "grep -q 'Rerun zzc docker' <<< \"\$out\"" \
+        "a stale lock says how to update it"
+
+    out=$(_wanted_tag v0.3.1 0.12.0)
+    assert_true "grep -q '^DONE' <<< \"\$out\"" "the expression ran to the end"
+    assert_false "grep -q 'INSTALL' <<< \"\$out\"" \
+        "a newer installed release (shared library, dev install) is kept"
+
+    printf '{ "tools": { "zzrenvcheck": { "tag": "v0.12.0" } } }\n' > tooling.lock
+    out=$(_wanted_tag v0.12.0 0.11.0)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.12.0' <<< \"\$out\"" \
+        "a newer lock tag than the minimum is honored"
+
+    rm -f tooling.lock
+    out=$(_wanted_tag "" 0.10.0)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+        "without a lock the minimum is installed"
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 

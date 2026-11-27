@@ -17,13 +17,14 @@
   ],
   "regexManagers": [
     {
-      "description": "zzrenvcheck tag fallbacks in constants.sh and docker.sh",
-      "fileMatch": ["^lib/constants\\.sh$", "^modules/docker\\.sh$"],
+      "description": "zzrenvcheck tag in constants.sh and docker.sh, and the Makefile minimum (a test requires they agree; zzrenvcheck publishes tags, not GitHub Releases)",
+      "fileMatch": ["^lib/constants\\.sh$", "^modules/docker\\.sh$", "^templates/Makefile$"],
       "matchStrings": [
-        "ZZRENVCHECK_TAG:-(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
+        "ZZRENVCHECK_TAG:-(?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)",
+        "ZZRENVCHECK_MIN +:= (?<currentValue>v[0-9]+\\.[0-9]+\\.[0-9]+)"
       ],
       "depNameTemplate": "rgt47/zzrenvcheck",
-      "datasourceTemplate": "github-releases"
+      "datasourceTemplate": "github-tags"
     },
     {
       "description": "zzrenvcheck direct pin in Dockerfile",

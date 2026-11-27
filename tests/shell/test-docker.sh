@@ -316,6 +316,147 @@ test_build_platform_arm64_mac() {
   assert_equals "linux/amd64" "$p_verse" "verse is amd64-only, so it builds for amd64"
 }
 
+test_build_platform_honors_explicit_platform() {
+  uname() { echo arm64; }
+  local p
+  p=$(ZZCOLLAB_PLATFORM=linux/amd64 BASE_IMAGE=rocker/tidyverse _build_platform)
+  unset -f uname
+  assert_equals "linux/amd64" "$p" \
+    "ZZCOLLAB_PLATFORM overrides the arm64 host default (and the cache key)"
+}
+
+# Run build_docker_image with docker and uname stubbed; echo the recorded
+# build arguments (or BUILD_REFUSED when it returns nonzero), then the log.
+_stubbed_build() {
+  local host="$1" base="$2" req="${3:-}"
+  setup_test
+  printf 'FROM %s:4.5.0\n' "$base" > Dockerfile
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  local rec="$TEST_TEMP_DIR/args.txt"
+  : > "$rec"
+  uname() { echo "$host"; }
+  docker() {
+    case "$1" in
+      build) shift; printf '%s\n' "$*" >> "$rec" ;;
+    esac
+    return 0
+  }
+  local rc=0 out
+  # VERBOSITY_LEVEL=1 is the user's default level, at which warnings show.
+  out=$(VERBOSITY_LEVEL=1 CONFIG_DOCKER_RUNTIME=docker BASE_IMAGE="$base" ZZCOLLAB_PLATFORM="$req" \
+        build_docker_image testimg false true 2>&1) || rc=$?
+  unset -f uname docker
+  [[ "$rc" -ne 0 ]] && echo BUILD_REFUSED
+  cat "$rec"
+  echo "$out"
+  teardown_test
+}
+
+test_build_passes_explicit_platform() {
+  local out
+  out=$(_stubbed_build arm64 rocker/tidyverse linux/amd64)
+  assert_true "grep -q -- '--platform linux/amd64' <<< \"\$out\"" \
+    "PLATFORM=linux/amd64 on an arm64 Mac builds amd64"
+  assert_false "grep -q 'BUILD_REFUSED' <<< \"\$out\"" "the build ran"
+  assert_false "grep -q 'CI builds linux/amd64' <<< \"\$out\"" \
+    "no arm64 warning for an amd64 build"
+
+  out=$(_stubbed_build x86_64 rocker/tidyverse linux/arm64)
+  assert_true "grep -q -- '--platform linux/arm64' <<< \"\$out\"" \
+    "an explicit platform is passed on an x86_64 host too"
+}
+
+test_build_native_arm64_warns() {
+  local out
+  out=$(_stubbed_build arm64 rocker/tidyverse)
+  assert_true "grep -q -- '--platform linux/arm64' <<< \"\$out\"" \
+    "default on an arm64 Mac is a native arm64 build"
+  assert_true "grep -q 'CI builds linux/amd64' <<< \"\$out\"" \
+    "a native arm64 build warns that CI builds amd64"
+  assert_true "grep -q 'PLATFORM=linux/amd64' <<< \"\$out\"" \
+    "the warning names the CI-matching command"
+}
+
+test_build_refuses_verse_arm64() {
+  local out
+  out=$(_stubbed_build arm64 rocker/verse linux/arm64)
+  assert_true "grep -q 'BUILD_REFUSED' <<< \"\$out\"" \
+    "verse cannot be built for arm64"
+  assert_false "grep -q -- '--platform' <<< \"\$out\"" "no build was attempted"
+}
+
+# Run generate_dockerfile in a fresh shell with docker stubbed so the pull
+# fails; $1 is the ZZCOLLAB_ALLOW_UNPINNED value. Echoes the return code
+# line, then the Dockerfile (if any).
+_generate_with_failed_pull() {
+  bash -c '
+    source "$ZZCOLLAB_LIB_DIR/constants.sh"
+    source "$ZZCOLLAB_LIB_DIR/core.sh"
+    for m in config.sh status.sh docker.sh; do source "$ZZCOLLAB_MODULES_DIR/$m"; done
+    docker() { [[ "$1" == pull ]] && return 1; return 0; }
+    export VERBOSITY_LEVEL=0 BASE_IMAGE=rocker/r-ver R_VERSION=4.5.0 ZZCOLLAB_NO_BUILD=true
+    rc=0
+    ZZCOLLAB_ALLOW_UNPINNED="$1" generate_dockerfile >/dev/null 2>&1 || rc=$?
+    echo "rc=$rc"
+    cat Dockerfile 2>/dev/null || true
+  ' _ "$1"
+}
+
+test_unresolved_digest_refuses_unpinned_from() {
+  setup_test
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  printf 'Package: genfx\nVersion: 0.1.0\n' > DESCRIPTION
+  local out
+  out=$(_generate_with_failed_pull false)
+  assert_true "grep -q '^rc=1' <<< \"\$out\"" \
+    "a failed digest resolution stops generation"
+  assert_false "[[ -f Dockerfile ]]" "no Dockerfile is written"
+
+  out=$(_generate_with_failed_pull true)
+  assert_true "grep -q '^rc=0' <<< \"\$out\"" "--allow-unpinned proceeds"
+  assert_true "grep -q '^FROM rocker/r-ver:4.5.0$' <<< \"\$out\"" \
+    "the opt-in writes a tag-only FROM"
+  teardown_test
+}
+
+# Digest resolution uses the configured runtime: podman, not docker.
+test_digest_resolution_uses_configured_runtime() {
+  local out calls
+  calls=$(mktemp)
+  out=$(CALLS="$calls" bash -c '
+    source "$ZZCOLLAB_LIB_DIR/constants.sh"
+    source "$ZZCOLLAB_LIB_DIR/core.sh"
+    for m in config.sh docker.sh; do source "$ZZCOLLAB_MODULES_DIR/$m"; done
+    command() { [[ "$1 $2" == "-v podman" ]] && return 0; builtin command "$@"; }
+    podman() {
+      case "$1" in
+        pull) echo "podman $*" >> "$CALLS"; return 0 ;;
+        inspect) echo "docker.io/rocker/r-ver@sha256:feed"; return 0 ;;
+      esac
+    }
+    docker() { echo "docker $*" >> "$CALLS"; return 1; }
+    CONFIG_DOCKER_RUNTIME=podman resolve_image_digest rocker/r-ver:4.5.0
+  ' 2>&1)
+  assert_true "grep -q '^sha256:feed$' <<< \"\$out\"" \
+    "podman's digest is returned"
+  assert_true "grep -q '^podman pull --platform linux/amd64' '$calls'" \
+    "the pull goes through podman"
+  assert_false "grep -q '^docker' '$calls'" "docker is not used"
+  rm -f "$calls"
+}
+
+test_dockerfile_pins_blas_threads() {
+  setup_test
+  printf '{"R":{"Version":"4.5.0"},"Packages":{}}\n' > renv.lock
+  printf 'Package: genfx\nVersion: 0.1.0\n' > DESCRIPTION
+  local out v
+  out=$(_generate_with_failed_pull true)
+  for v in OMP_NUM_THREADS OPENBLAS_NUM_THREADS MKL_NUM_THREADS; do
+    assert_true "grep -q '^ *$v=1' <<< \"\$out\"" "generated ENV sets $v=1"
+  done
+  teardown_test
+}
+
 test_build_platform_other_hosts() {
   local p_x86 p_aarch
   uname() { echo x86_64; }
