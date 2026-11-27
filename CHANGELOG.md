@@ -119,6 +119,25 @@ archived in `CHANGELOG-2.x.md`.
 
 ### Changed
 
+- **The `analysis` profile alias warns, and help stops recommending
+  it.** `analysis` is a deprecated alias for the `tidyverse` profile and
+  collides with the `analysis` archetype. Typing it (as a profile
+  command, with `--profile`, or in `config set profile-name`) now warns
+  that it will be removed in the next release. A config file that
+  already names it still maps silently to `tidyverse`; the removal will
+  need to migrate those. The main help listed `analysis` as the
+  recommended profile and said a profile command switches an existing
+  project, which the code refuses; it now recommends `tidyverse` and
+  points to `zzcollab docker --profile NAME`. `make r` suggested
+  `--profile analysis` and labeled a tidyverse image 'analysis'; both now
+  say `tidyverse`.
+- **The `CITATION.cff` template no longer claims all data are
+  included.** Its abstract said the compendium 'Contains all data',
+  false for any deposit that withholds restricted data. It now describes
+  the code and environment, points to the data availability statement,
+  and a comment asks the author to edit it.
+- **Both repositories ship a `LICENSE.md`** (GPL-3, matching
+  `DESCRIPTION`), so GitHub shows the license.
 - **The auto-snapshot-on-exit hook is off by default.** The
   `.Rprofile` `.Last()` hook ran `renv::snapshot(prompt = FALSE)` on
   every container R exit unless `ZZCOLLAB_AUTO_SNAPSHOT` was false. The
