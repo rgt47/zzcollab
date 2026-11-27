@@ -8,7 +8,73 @@ archived in `CHANGELOG-2.x.md`.
 
 ## Unreleased
 
+### Fixed
+
+- **Test gates fail when no expectation ran.** `TINYTEST_RUN` (both
+  Makefiles, so `make test`, `make docker-test`, `make test-container`,
+  and `zzc verify --full`) and the test steps in `r-package.yml` and
+  `.gitlab-ci.yml` exited 0 for a suite whose files ran no expectation,
+  because `all(logical(0))` is `TRUE`. They now print 'No expectations
+  ran' and exit 1. Scaffolded projects ship `inst/tinytest/test-basic.R`
+  with one unconditional expectation, so a new project still passes.
+- **GitLab test steps are blocking.** Both test steps in
+  `.gitlab-ci.yml` ended in `|| echo "tests reported failures
+  (non-blocking)"`, so a failing suite never failed the pipeline. The
+  suffix is removed.
+- **`zzc verify` credits a baseline only when it compared something.**
+  L3 was awarded when a `test-baseline*.R` file name appeared in the test
+  log; a file that called `exit_file()` before any comparison is listed
+  there with '0 tests'. A baseline now counts only when its final log
+  line shows at least one test and no '[Exited at' marker, so a file
+  that exits part way also leaves the result at L2.
+- **`zzc verify` coherence no longer aborts on generated Dockerfiles.**
+  The R-version check read `ARG R_VERSION=`, which generated Dockerfiles
+  no longer write. The failed `grep` ended an assignment with status 1
+  under `set -e`, so with a `renv.lock` present `zzc verify` exited 1
+  mid-check, and the Dockerfile side of the comparison could never be
+  read. The version is now taken from the `FROM <image>:<version>` tag
+  (the `ARG` is still read for older Dockerfiles), so a Dockerfile whose
+  R version disagrees with `renv.lock` fails coherence. `zzc doctor`
+  reads the same tag when there is no `renv.lock`, and its state
+  back-fill no longer aborts under `set -euo pipefail` when a read finds
+  nothing (for example a `renv.lock` without an `R` section).
+- **`make lint` fails when lintr reports anything.** It printed the
+  lints and exited 0, so it could not serve as a gate. It now exits 1
+  when any lint remains in `R/` or `analysis/`; the new `make
+  lint-report` keeps the old print-only behavior. A project whose code
+  has outstanding lints will see `make lint` fail after `zzc doctor
+  --force` refreshes its Makefile.
+
 ### Changed
+
+- **`make check-renv` no longer edits files; `make fix-renv` repairs.**
+  `check-renv`, `check-renv-no-strict`, and `check-renv-slim` ran
+  `zzrenvcheck` with `auto_fix = TRUE`: they rewrote `DESCRIPTION` and
+  `renv.lock` and then passed, which made the target users reach for
+  unsuitable as a CI or pre-commit gate. They now run with
+  `auto_fix = FALSE, error_on_fail = TRUE`, edit nothing, exit nonzero
+  on any finding, and name the matching repair target (`fix-renv`,
+  `fix-renv-no-strict`, or `fix-renv-slim`). The repairing
+  behavior moves to `fix-renv`, `fix-renv-no-strict`, and
+  `fix-renv-slim`. `check-renv-no-fix` remains as a deprecated alias of
+  `check-renv`; `docker-check-renv` and `docker-check-renv-fix` alias
+  `check-renv` and `fix-renv`. `make r`'s post-session validation, which
+  relies on the repair, now calls `fix-renv` when the host has no R.
+  `zzc validate` already defaulted to no auto-fix and is unchanged.
+  **Behavior change for existing projects:** after `zzc doctor --force`
+  refreshes the Makefile, `make check-renv` fails where it used to
+  repair silently; run `make fix-renv` instead.
+- **Dependency checks skip a bare compendium.** `zzc init --bare`
+  omits `DESCRIPTION` by design, and zzrenvcheck (from the release that
+  fails a project without `DESCRIPTION`) cannot validate one. The
+  `check-renv*`, `fix-renv*`, `snapshot` (its check step), and
+  `reset-lock` targets, `make r`'s post-session hook, `zzc validate`,
+  and `zzc verify` now detect a missing `DESCRIPTION` and report
+  'No DESCRIPTION (bare compendium): dependency check skipped' with
+  exit 0, instead of failing or passing silently. `ensure-zzrenvcheck`
+  does not install the tool for a bare project. `zzc verify` also now
+  runs the dependency check in the verified directory rather than the
+  caller's working directory.
 
 - `render-report.yml` is part of a workspace's expected workflow set only
   when the workspace has a report, defined once in `zzc_has_report`

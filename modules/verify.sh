@@ -52,6 +52,43 @@ except Exception:
     fi
 }
 
+# Did a baseline test file actually compare anything? The file name alone
+# appearing in the tinytest log is not enough: a file that exit_file()s
+# before its first expectation is listed with '0 tests'. tinytest rewrites
+# each file's line with carriage returns, so the last segment naming the
+# file is its final status. Succeeds only when the file ran to completion
+# (no '[Exited at' marker, so a comparison skipped part way also fails)
+# with at least one expectation.
+_vrf_baseline_ran() {
+    local log="$1" name="$2" status
+    status=$(tr '\r' '\n' < "$log" \
+        | sed $'s/\x1b\\[[0-9;]*m//g' \
+        | grep -F "$name" | tail -1)
+    [[ -n "$status" ]] || return 1
+    [[ "$status" == *"[Exited at"* ]] && return 1
+    [[ "$status" =~ [[:space:]]([0-9]+)[[:space:]]tests? ]] || return 1
+    [[ "${BASH_REMATCH[1]}" -gt 0 ]]
+}
+
+# Read the R version from a generated Dockerfile. Generated Dockerfiles
+# write a literal FROM <image>:<version>[@sha256:...]; older ones wrote
+# ARG R_VERSION=, which is still honored.
+_vrf_dockerfile_r_version() {
+    local df="$1" from tag
+    [[ -f "$df" ]] || return 0
+    from=$(grep -m1 '^FROM ' "$df" 2>/dev/null | awk '{print $2}')
+    if [[ -n "$from" && "$from" != *'${'* ]]; then
+        tag="${from%@*}"
+        if [[ "$tag" == *:* ]]; then
+            tag="${tag##*:}"
+            [[ "$tag" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] && { echo "$tag"; return 0; }
+        fi
+    fi
+    # zzcollab.sh runs under set -e: a no-match grep must not end the
+    # caller's assignment with status 1, or verify aborts mid-check.
+    grep -m1 '^ARG R_VERSION=' "$df" 2>/dev/null | cut -d= -f2 || true
+}
+
 # Confirm a renv.lock is well-formed JSON with a Packages section.
 _vrf_renv_lock_valid() {
     local lock="$1"
@@ -204,7 +241,7 @@ EOF
         local lock_rv df_rv
         lock_rv=$(_vrf_renv_r_version "$d/renv.lock")
         df_rv=""
-        [[ -f "$d/Dockerfile" ]] && df_rv=$(grep -m1 '^ARG R_VERSION=' "$d/Dockerfile" 2>/dev/null | cut -d= -f2)
+        df_rv=$(_vrf_dockerfile_r_version "$d/Dockerfile")
         local mismatch=""
         [[ -n "$lock_rv" && -n "$state_rv" && "$lock_rv" != "$state_rv" ]] && mismatch="state=$state_rv vs lock=$lock_rv"
         [[ -n "$lock_rv" && -n "$df_rv"    && "$lock_rv" != "$df_rv"    ]] && mismatch="${mismatch:+$mismatch; }Dockerfile=$df_rv vs lock=$lock_rv"
@@ -230,9 +267,14 @@ EOF
 
     # 7. Dependency triad (Code subset of DESCRIPTION subset of renv.lock).
     # Delegated to zzrenvcheck; reported but not gating (advisory layer).
-    if command -v Rscript >/dev/null 2>&1 \
+    # A bare compendium has no DESCRIPTION by design; there is nothing for
+    # zzrenvcheck to validate, so the step is skipped, not failed.
+    if [[ ! -f "$d/DESCRIPTION" ]]; then
+        _vrf_skip "no DESCRIPTION (bare compendium); dependency check skipped"
+    elif command -v Rscript >/dev/null 2>&1 \
        && Rscript -e "quit(status = !requireNamespace('zzrenvcheck', quietly = TRUE))" >/dev/null 2>&1; then
-        if Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" >/dev/null 2>&1; then
+        # Run in the project being verified, not the caller's directory.
+        if ( cd "$d" && Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" ) >/dev/null 2>&1; then
             _vrf_pass "dependency triad consistent (zzrenvcheck)"
         else
             _vrf_warn "zzrenvcheck reported dependency issues; run 'zzc validate'"
@@ -275,12 +317,13 @@ EOF
                     if [[ ${#baselines[@]} -eq 0 ]]; then
                         _vrf_warn "no baseline test (inst/tinytest/test-baseline*.R); outputs not compared with recorded values"
                     else
-                        # The suite runs every file in inst/tinytest, so a
-                        # baseline file present and a passing suite means it
-                        # ran; confirm from the log where tinytest names it.
+                        # A passing suite does not show that a baseline
+                        # compared anything: a file that exits early still
+                        # appears in the log. Require each baseline file to
+                        # have run at least one expectation to completion.
                         local b ran=true
                         for b in "${baselines[@]}"; do
-                            if ! grep -q "$b" "$test_log"; then
+                            if ! _vrf_baseline_ran "$test_log" "$b"; then
                                 ran=false
                             fi
                         done
@@ -288,7 +331,7 @@ EOF
                             _vrf_pass "baseline comparison passed (${baselines[*]})"
                             reproduced=true
                         else
-                            _vrf_warn "baseline test present but not seen in the test log (${baselines[*]})"
+                            _vrf_warn "baseline test present but did not run to completion with at least one expectation (${baselines[*]}); not L3"
                         fi
                     fi
                 else

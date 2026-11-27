@@ -105,7 +105,8 @@ git clone ... && make docker-build            # member
 
 # Package hygiene (run before commit)
 make snapshot                            # grow renv.lock from running image
-make check-renv                          # strict validate + auto-fix
+make check-renv                          # strict validate, no edits
+make fix-renv                            # repair DESCRIPTION, renv.lock
 ```
 
 ## Global flags (any command)

@@ -385,9 +385,9 @@ Pure-shell validation checks that all packages referenced in code are
 listed in DESCRIPTION and renv.lock:
 
 ```bash
-make check-renv                 # strict + auto-fix (recommended)
-make check-renv-no-fix          # report only, no modifications
+make check-renv                 # strict, no edits, nonzero on failure
 make check-renv-no-strict       # skip tests/ and vignettes/
+make fix-renv                   # repair DESCRIPTION and renv.lock
 make check-system-deps          # check system library requirements
 ```
 
@@ -450,10 +450,10 @@ gh pr create --title "Add GSL system library"
 ### Validation (no host R required)
 
 ```bash
-make check-renv                 # strict + auto-fix + verbose
-make check-renv-no-fix          # report only
+make check-renv                 # strict, no edits, nonzero on failure
 make check-renv-no-strict       # skip tests/ and vignettes/
-make check-renv-ci              # same as check-renv (CI compat)
+make check-renv-slim            # skip packages already in the image
+make fix-renv                   # repair (also fix-renv-no-strict, -slim)
 make check-system-deps          # check Dockerfile system deps
 ```
 
@@ -483,8 +483,8 @@ make docker-build-pkg           # R CMD build in container
 make docker-vignettes           # build vignettes in container
 make docker-render              # render analysis/report/report.Rmd
 make docker-render-qmd          # render Quarto document
-make docker-check-renv          # renv::status() in container
-make docker-check-renv-fix      # renv::snapshot() in container
+make docker-check-renv          # alias of check-renv
+make docker-check-renv-fix      # alias of fix-renv
 make docker-rstudio             # start RStudio Server
 ```
 
@@ -492,7 +492,8 @@ make docker-rstudio             # start RStudio Server
 
 ```bash
 make style                      # format R code with styler
-make lint                       # lint R code with lintr
+make lint                       # lint; nonzero if any lints remain
+make lint-report                # list lints without failing
 make snapshot                   # grow renv.lock + DESCRIPTION from image
 ```
 
@@ -709,7 +710,7 @@ Error: Package 'xyz' not available
 Solution: Check the package name; try renv::install("xyz")
 
 Error: Dependencies not synchronized
-Solution: make check-renv
+Solution: make fix-renv, review the diff, then make check-renv
 
 Error: renv cache issues
 Solution: renv::restore() then renv::rebuild() if needed
