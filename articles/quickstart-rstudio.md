@@ -217,8 +217,8 @@ Save as: `analysis/report/report.Rmd`
 
 #### 4.3 Install Packages in RStudio
 
-Use standard R commands (packages auto-captured when you exit
-container):
+Use standard R commands, then record the packages in `renv.lock`
+yourself (an RStudio session does not capture them automatically):
 
 ``` r
 
@@ -231,8 +231,9 @@ install.packages("dplyr")
 install.packages("remotes")
 remotes::install_github("user/package")
 
-# When you stop the RStudio container, packages are automatically saved to renv.lock
-# No manual renv::snapshot() needed!
+# Record them before you stop the RStudio container, then review
+# the renv.lock diff (the exit snapshot hook is off by default)
+renv::snapshot()
 ```
 
 **RStudio Advantage:** You can also use the Packages pane:
@@ -241,8 +242,9 @@ remotes::install_github("user/package")
 2.  Click “Install”
 3.  Type package name
 4.  Click “Install”
-5.  Packages automatically captured when you exit container (no manual
-    snapshot needed)
+5.  Run
+    [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+    in the Console to record them in `renv.lock`, then review the diff
 
 #### 4.4 Render Report in RStudio
 
@@ -312,7 +314,9 @@ Close your browser tab, then in terminal:
 
 ``` bash
 # Stop RStudio container (Ctrl+C in terminal where docker-rstudio is running)
-# Auto-snapshot runs when container exits - packages saved to renv.lock!
+# Nothing is snapshotted on exit by default: if you did not run
+# renv::snapshot() in RStudio, run make fix-renv (or make snapshot)
+# now and review the renv.lock diff
 
 # Run tests in clean environment
 make docker-test
@@ -439,8 +443,10 @@ docker-rstudio:
 
 RStudio session is temporary - work is saved but R workspace isn’t:
 
-- **Saved:** All file edits, created files, installed packages
-  (auto-captured in renv.lock on exit)
+- **Saved:** All file edits and created files. Installed packages are
+  recorded in renv.lock only if you run
+  [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+  before exit (or `make fix-renv` / `make snapshot` afterward)
 - **Not saved:** R workspace (.RData), unless you explicitly save
 
 **Best Practice:** Save work via files, not R workspace:
@@ -452,7 +458,7 @@ save.image()  # Workspace not portable
 
 # Instead use:
 saveRDS(my_data, "data/my_data.rds")  # Portable, reproducible
-# Packages auto-saved when you exit container - no manual renv::snapshot() needed
+# Record packages with renv::snapshot() and review the renv.lock diff
 ```
 
 ## Transitioning to Command Line
@@ -469,7 +475,8 @@ RStudio is great for development, but some tasks need terminal:
 - Validation: `make check-renv` (runs zzrenvcheck in the container)
 - Git operations: `git commit`, `git push`
 - Building images: `make docker-build`
-- Note: Auto-snapshot and auto-restore run automatically
+- Note: Auto-snapshot on exit is off by default (opt in with
+  `make docker-rstudio ZZCOLLAB_AUTO_SNAPSHOT=true`)
 
 **Use RStudio for:**
 
@@ -487,7 +494,9 @@ RStudio is great for development, but some tasks need terminal:
 2.  **RStudio:** Install packages with standard
     [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
 3.  **RStudio:** Author report and render locally
-4.  **Exit RStudio:** Auto-snapshot captures packages in renv.lock
+4.  **RStudio:** Run
+    [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+    to record packages, review the renv.lock diff, then exit
 5.  **Terminal:** Run full test suite (auto-restore installs packages)
 6.  **Terminal:** Validate dependencies with `make check-renv`
     (zzrenvcheck)
@@ -569,7 +578,7 @@ docker run --rm -p 8888:8787 -v $(pwd):/project \
 ``` r
 
 # In RStudio Console:
-# Use standard install.packages() - auto-captured on container exit
+# Use standard install.packages(), then renv::snapshot() to record it
 install.packages("package-name")
 
 # If package source unavailable, try different CRAN mirror:
@@ -610,7 +619,10 @@ You created a fully reproducible analysis using RStudio Server:
 - **No Local R:** Everything runs in Docker
 - **Interactive Development:** Point-and-click + code
 - **Reproducible:** Docker + renv ensure consistency
-- **Auto-Snapshot:** Packages captured automatically on container exit
+- **Explicit Snapshot:**
+  [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+  or `make snapshot` records packages; the exit auto-snapshot is opt-in
+  (`ZZCOLLAB_AUTO_SNAPSHOT=true`)
 - **Auto-Restore:** Missing packages installed automatically on R
   startup
 - **Testable:** Unit tests validate logic
@@ -630,7 +642,7 @@ You created a fully reproducible analysis using RStudio Server:
 - System libraries: git, pandoc, LaTeX (basic). For full PDF/manuscript
   rendering use the `publishing` profile (rocker/verse), which pre-bakes
   the LaTeX closure
-- Auto-snapshot on container exit
+- Auto-snapshot on container exit (opt-in, off by default)
 - Auto-restore on R startup
 
 ### Next Steps

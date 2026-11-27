@@ -45,10 +45,11 @@ testing, and reporting using Palmer Penguins bill measurements.
 >   ‘just findable’ (L0) up to ‘rebuilt and verified’ (L3).
 > - **renv / lockfile**: the package backend that records exact package
 >   versions in `renv.lock` so installs are repeatable.
-> - **Auto-snapshot**: the automatic
+> - **Auto-snapshot**: an optional
 >   [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
->   that runs when you exit R in the container, capturing new packages
->   into `renv.lock`.
+>   that runs when you exit R in the container. It is off unless opted
+>   in (`make r ZZCOLLAB_AUTO_SNAPSHOT=true`); by default, `make r`’s
+>   post-session check records the packages the code uses.
 > - **Five Pillars**: Dockerfile, renv.lock, .Rprofile, source code, and
 >   research data, the necessary and sufficient parts of a reproducible
 >   compendium.
@@ -399,7 +400,8 @@ summarize_by_species <- function(data) {
 Install required packages:
 
 ``` bash
-# Packages will be captured in renv.lock when you exit the container
+# Packages the code uses are recorded in renv.lock by make r's
+# post-session check when you exit the container
 Rscript -e 'install.packages(c("dplyr", "here"))'
 ```
 
@@ -614,22 +616,24 @@ Create `analysis/report/report.Rmd`:
 # Render the report
 Rscript -e 'rmarkdown::render("analysis/report/report.Rmd")'
 
-# Exit container (auto-snapshot runs here!)
+# Exit container (post-session dependency check runs here)
 exit
 ```
 
-**Auto-Snapshot Architecture**
+**Auto-Snapshot Architecture (Opt-In)**
 
-When you **exit R** (inside the container), zzcollab automatically:
+When you exit a `make r` session, the Makefile’s post-session check
+(zzrenvcheck, with auto-fix) adds the packages your code uses to
+`DESCRIPTION` and `renv.lock`. Review the diff, then commit both files.
 
-1.  Runs
-    [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
-    to capture package dependencies in `renv.lock`
-2.  Reports success and reminds you to commit changes
-
-**You do not need to manually run
-[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)**
-— just exit R and commit the updated `renv.lock`.
+The `.Rprofile` exit hook that runs
+[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+is off by default, because what enters `renv.lock` should be your
+decision rather than a side effect of quitting R. Opt in with
+`make r ZZCOLLAB_AUTO_SNAPSHOT=true`, or snapshot explicitly with
+`make snapshot` (or
+[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html))
+and review the lockfile diff.
 
 **Package restoration**: The container image is built with all packages
 from `renv.lock` baked in at `/opt/renv/library`. Auto-restore on
@@ -638,8 +642,9 @@ Dockerfile) so the baked library is authoritative and the container does
 not re-resolve packages from the network on every startup. If you add
 packages with
 [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
-inside the container, exit R (auto-snapshot runs), rebuild the image
-(`make docker-build`), and the new packages will be baked in.
+inside the container, exit R (the post-session check records packages
+the code uses), rebuild the image (`make docker-build`), and the new
+packages will be baked in.
 
 ### Step 5: Validate and Commit
 
@@ -647,7 +652,8 @@ Validate everything works in a clean environment:
 
 ``` bash
 # Exit the Docker container (if still inside from Step 4)
-# This automatically runs renv::snapshot() and validates packages!
+# make r's post-session check adds packages the code uses to
+# DESCRIPTION and renv.lock
 exit
 
 # Run tests in clean environment
@@ -898,7 +904,7 @@ options(
   digits = 7,
   OutDec = "."
 )
-# renv activation and auto-snapshot-on-exit are handled automatically.
+# renv activation and the opt-in exit snapshot are in the template.
 # Do not add source("renv/activate.R") manually; it is in the template.
 ```
 
@@ -1050,8 +1056,8 @@ and `docs/collaborative-reproducibility.md`.
 
 - Critical options version controlled and copied into Docker
 - RNGkind pinned for seed reproducibility across R versions
-- renv activation and auto-snapshot managed by the template
-  automatically
+- renv activation and the exit-snapshot hook (opt-in, off by default)
+  managed by the template
 
 **Pillar 4 - Source Code**:
 
@@ -1209,7 +1215,8 @@ images.
 2.  Build or pull Docker image for identical environment
 3.  Add packages as needed using
     [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
-4.  Exit container - packages automatically captured in renv.lock
+4.  Exit `make r` - the post-session check records packages the code
+    uses in renv.lock (review the diff before committing)
 
 **Environment Consistency:**
 
@@ -1353,8 +1360,10 @@ and the `zzc verify` workflow are documented in
 - Packages are added dynamically using
   [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
   inside containers.
-- **Auto-snapshot**: packages are captured in `renv.lock` when you exit
-  R in the container.
+- **Capture on exit**: when you exit `make r`, the post-session check
+  records the packages the code uses in `renv.lock`. The `.Rprofile`
+  auto-snapshot is opt-in (`ZZCOLLAB_AUTO_SNAPSHOT=true`); otherwise run
+  `make snapshot` and review the diff.
 - The `renv.lock` file accumulates packages from all team members
   automatically.
 
@@ -1388,7 +1397,8 @@ ZZCOLLAB uses a two-layer package management system:
 
 - **Controlled by**:
   [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
-  inside containers (auto-captured on exit)
+  inside containers (recorded by `make r`’s post-session check, or by
+  `make snapshot`)
 - **Purpose**: Add packages as needed for specific analyses
 - **Collaborative**: renv.lock accumulates packages from all
   contributors
@@ -1418,10 +1428,12 @@ make r
 
 # Inside container - add packages as needed
 install.packages("tidymodels")
-exit  # Auto-snapshot captures in renv.lock!
+# ... use it in code ...
+exit  # Post-session check records it in renv.lock and DESCRIPTION
 
-# Commit changes
-git add renv.lock
+# Review and commit changes
+git diff renv.lock DESCRIPTION
+git add renv.lock DESCRIPTION
 git commit -m "Add tidymodels"
 git push
 ```

@@ -814,15 +814,20 @@ startup, team consistency.</p>
 <h3 id="layer-2-dynamic-renv-personalflexible">Layer 2: Dynamic renv (Personal/Flexible)<a class="anchor" aria-label="anchor" href="#layer-2-dynamic-renv-personalflexible"></a>
 </h3>
 <p><strong>What</strong>: packages installed inside the container with
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>, snapshotted to <code>renv.lock</code>
-automatically on exit via <code>.Last()</code> in
-<code>.Rprofile</code>. <strong>Control</strong>: whoever is working in
-the container, at any time. <strong>Purpose</strong>: analysis-specific
-packages, without rebuilding the image.</p>
+<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> and recorded in <code>renv.lock</code>
+when you choose: after <code>make r</code>, the post-session check adds
+packages the code uses to <code>DESCRIPTION</code> and
+<code>renv.lock</code>; otherwise run <code>make snapshot</code> or
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> and review the diff. The
+<code>.Last()</code> exit snapshot in <code>.Rprofile</code> is off
+unless opted in (<code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>).
+<strong>Control</strong>: whoever is working in the container, at any
+time. <strong>Purpose</strong>: analysis-specific packages, without
+rebuilding the image.</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a></span>
 <span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
-<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># exit R — snapshot to renv.lock happens automatically</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># exit R; post-session check records packages the code uses</span></span>
 <span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a></span>
 <span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co"># back on host</span></span>
 <span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
@@ -1149,7 +1154,7 @@ profile set.</li>
 <span id="cb34-18"><a href="#cb34-18" tabindex="-1"></a></span>
 <span id="cb34-19"><a href="#cb34-19" tabindex="-1"></a><span class="co"># Package management (inside container)</span></span>
 <span id="cb34-20"><a href="#cb34-20" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"package"</span><span class="kw">)</span></span>
-<span id="cb34-21"><a href="#cb34-21" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># auto-snapshot on exit</span></span>
+<span id="cb34-21"><a href="#cb34-21" tabindex="-1"></a><span class="fu">q()</span>   <span class="co"># make r's post-session check records packages used</span></span>
 <span id="cb34-22"><a href="#cb34-22" tabindex="-1"></a></span>
 <span id="cb34-23"><a href="#cb34-23" tabindex="-1"></a><span class="co"># Before committing a dependency change</span></span>
 <span id="cb34-24"><a href="#cb34-24" tabindex="-1"></a><span class="fu">make</span> snapshot</span>

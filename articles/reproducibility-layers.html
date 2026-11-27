@@ -316,7 +316,9 @@ isolated dependencies independent of the global R library.</p>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save dependency state</span></span>
-<span><span class="co"># In ZZCOLLAB Docker containers: snapshot happens automatically on exit!</span></span>
+<span><span class="co"># In ZZCOLLAB Docker containers: make r's post-session check records</span></span>
+<span><span class="co"># packages the code uses; otherwise run renv::snapshot() (or</span></span>
+<span><span class="co"># make snapshot) and review the renv.lock diff</span></span>
 <span><span class="co"># Outside Docker: run renv::snapshot() manually</span></span>
 <span></span>
 <span><span class="co"># Collaborator restores exact versions</span></span>
@@ -362,8 +364,9 @@ package copies (~100-500MB typical)</li>
 <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> downloads all packages</li>
 <li>
 <strong>Snapshot discipline</strong>: Must remember
-<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> after package changes (automated in
-ZZCOLLAB Docker containers - see Level 3)</li>
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> after package changes (after
+<code>make r</code>, a post-session check records packages the code
+uses; see Level 3)</li>
 <li>
 <strong>R version dependency</strong>: Still depends on user’s R
 version</li>
@@ -415,12 +418,13 @@ libraries, same OS</p>
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co"># ... write code ...</span></span>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">snapshot</span>()  <span class="co"># Remember to snapshot!</span></span>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Note: With ZZCOLLAB Docker (Level 3), snapshot happens automatically on container exit!</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co"># Year 2: Collaborator joins</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>git clone project</span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co"># In R:</span></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>()  <span class="co"># Gets exact package versions from Day 30</span></span></code></pre></div>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co"># Note: With ZZCOLLAB Docker (Level 3), make r's post-session check</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co"># records packages the code uses when you exit the container</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co"># Year 2: Collaborator joins</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>git clone project</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co"># In R:</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">restore</span>()  <span class="co"># Gets exact package versions from Day 30</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -471,17 +475,19 @@ identical Linux environment regardless of host operating system.</p>
 <span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="op">&gt;</span> <span class="co"># ... work normally ...</span></span>
 <span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="op">&gt;</span> quit<span class="kw">()</span></span>
 <span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co"># Exit container - AUTO-SNAPSHOT HAPPENS AUTOMATICALLY!</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co"># Exit container - post-session validation runs</span></span>
 <span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="bu">exit</span></span>
 <span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a></span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># Auto-snapshot architecture (October 2025)</span></span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co"># - renv::snapshot() runs automatically on container exit</span></span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># - No manual snapshot command required!</span></span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># - renv.lock automatically updated and validated (via zzrenvcheck)</span></span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a></span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co"># Collaborator gets identical environment</span></span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a><span class="fu">git</span> clone project</span>
-<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="fu">make</span> r  <span class="co"># Builds identical container</span></span></code></pre></div>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># Dependency capture after make r</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co"># - zzrenvcheck adds packages the code uses to DESCRIPTION and</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co">#   renv.lock; review the diff before committing</span></span>
+<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="co"># - The .Rprofile exit snapshot (renv::snapshot() in .Last) is</span></span>
+<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="co">#   opt-in: make r ZZCOLLAB_AUTO_SNAPSHOT=true</span></span>
+<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a><span class="co"># - Otherwise snapshot explicitly: make snapshot or renv::snapshot()</span></span>
+<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" tabindex="-1"></a><span class="co"># Collaborator gets identical environment</span></span>
+<span id="cb11-21"><a href="#cb11-21" tabindex="-1"></a><span class="fu">git</span> clone project</span>
+<span id="cb11-22"><a href="#cb11-22" tabindex="-1"></a><span class="fu">make</span> r  <span class="co"># Builds identical container</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="pros-2">Pros<a class="anchor" aria-label="anchor" href="#pros-2"></a>
@@ -1220,7 +1226,7 @@ not locked in <code>renv.lock</code>.</p>
 <div class="sourceCode" id="cb34"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Develop locally</span></span>
 <span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a><span class="co"># ... work in container ...</span></span>
-<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot runs on exit!</span></span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Post-session check records packages the code uses</span></span>
 <span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a></span>
 <span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a><span class="co"># Grow and validate the manifest before committing</span></span>
 <span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a><span class="fu">make</span> snapshot        <span class="co"># hydrate + snapshot + check (renv.lock + DESCRIPTION)</span></span>
@@ -1363,7 +1369,7 @@ computational correctness (tests) + automated verification (CI/CD)</p>
 <span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="co"># ... develop code ...</span></span>
 <span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co"># ... write tests in inst/tinytest/ ...</span></span>
-<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot runs automatically!</span></span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Post-session check records packages the code uses</span></span>
 <span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a></span>
 <span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="co"># Validate locally first (make check-renv runs zzrenvcheck)</span></span>
 <span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="fu">make</span> check-renv</span>
@@ -1795,24 +1801,30 @@ Automated in ZZCOLLAB Docker!):</p>
 <span id="cb50-13"><a href="#cb50-13" tabindex="-1"></a>git add renv.lock</span>
 <span id="cb50-14"><a href="#cb50-14" tabindex="-1"></a>git commit</span>
 <span id="cb50-15"><a href="#cb50-15" tabindex="-1"></a></span>
-<span id="cb50-16"><a href="#cb50-16" tabindex="-1"></a><span class="co"># ZZCOLLAB Docker auto-snapshot (October 2025):</span></span>
-<span id="cb50-17"><a href="#cb50-17" tabindex="-1"></a><span class="co"># With ZZCOLLAB Docker containers, snapshot happens automatically on exit!</span></span>
+<span id="cb50-16"><a href="#cb50-16" tabindex="-1"></a><span class="co"># ZZCOLLAB Docker workflow:</span></span>
+<span id="cb50-17"><a href="#cb50-17" tabindex="-1"></a><span class="co"># make r's post-session check records packages the code uses</span></span>
 <span id="cb50-18"><a href="#cb50-18" tabindex="-1"></a>make r</span>
 <span id="cb50-19"><a href="#cb50-19" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"new-package"</span>)  <span class="co"># Standard R command works in Docker</span></span>
-<span id="cb50-20"><a href="#cb50-20" tabindex="-1"></a>exit  <span class="co"># Auto-snapshot runs automatically - no manual command needed!</span></span>
-<span id="cb50-21"><a href="#cb50-21" tabindex="-1"></a>git add renv.lock <span class="sc">&amp;&amp;</span> git commit</span></code></pre></div>
+<span id="cb50-20"><a href="#cb50-20" tabindex="-1"></a><span class="co"># ... use package in code ...</span></span>
+<span id="cb50-21"><a href="#cb50-21" tabindex="-1"></a>exit  <span class="co"># Post-session check adds it to DESCRIPTION and renv.lock</span></span>
+<span id="cb50-22"><a href="#cb50-22" tabindex="-1"></a>git diff renv.lock DESCRIPTION   <span class="co"># review what was recorded</span></span>
+<span id="cb50-23"><a href="#cb50-23" tabindex="-1"></a>git add renv.lock DESCRIPTION <span class="sc">&amp;&amp;</span> git commit</span></code></pre></div>
 <p><strong>Package installation methods</strong> (both work in ZZCOLLAB
 Docker containers):</p>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Standard R command (recommended in ZZCOLLAB Docker containers)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"dplyr"</span><span class="op">)</span>  <span class="co"># Auto-captured in renv.lock on exit</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"dplyr"</span><span class="op">)</span>  <span class="co"># Recorded on exit from make r if code uses it</span></span>
 <span></span>
 <span><span class="co"># For GitHub packages</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"user/package"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Note</strong>: In ZZCOLLAB Docker containers,
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> works correctly because packages are
-automatically captured in renv.lock when you exit the container.</p>
+<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> works correctly because, when you exit
+<code>make r</code>, the post-session check records packages the code
+uses in renv.lock. In other sessions (for example RStudio), run
+<code>make snapshot</code> or <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> and review
+the diff. The <code>.Rprofile</code> exit snapshot is opt-in
+(<code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>).</p>
 </div>
 <div class="section level3">
 <h3 id="level-3-pitfalls-docker">Level 3 Pitfalls (Docker)<a class="anchor" aria-label="anchor" href="#level-3-pitfalls-docker"></a>

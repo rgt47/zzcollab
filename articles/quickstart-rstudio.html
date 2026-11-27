@@ -301,8 +301,9 @@ The analysis reveals distinct bill dimension patterns across penguin species.
 <div class="section level4">
 <h4 id="install-packages-in-rstudio">4.3 Install Packages in RStudio<a class="anchor" aria-label="anchor" href="#install-packages-in-rstudio"></a>
 </h4>
-<p>Use standard R commands (packages auto-captured when you exit
-container):</p>
+<p>Use standard R commands, then record the packages in
+<code>renv.lock</code> yourself (an RStudio session does not capture
+them automatically):</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In RStudio Console:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"palmerpenguins"</span><span class="op">)</span></span>
@@ -313,8 +314,9 @@ container):</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"user/package"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># When you stop the RStudio container, packages are automatically saved to renv.lock</span></span>
-<span><span class="co"># No manual renv::snapshot() needed!</span></span></code></pre></div>
+<span><span class="co"># Record them before you stop the RStudio container, then review</span></span>
+<span><span class="co"># the renv.lock diff (the exit snapshot hook is off by default)</span></span>
+<span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">snapshot</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><strong>RStudio Advantage:</strong> You can also use the Packages
 pane:</p>
 <ol style="list-style-type: decimal">
@@ -322,8 +324,8 @@ pane:</p>
 <li>Click “Install”</li>
 <li>Type package name</li>
 <li>Click “Install”</li>
-<li>Packages automatically captured when you exit container (no manual
-snapshot needed)</li>
+<li>Run <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> in the Console to record them in
+<code>renv.lock</code>, then review the diff</li>
 </ol>
 </div>
 <div class="section level4">
@@ -384,14 +386,16 @@ snapshot needed)</li>
 </h3>
 <p>Close your browser tab, then in terminal:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># Stop RStudio container (Ctrl+C in terminal where docker-rstudio is running)</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co"># Auto-snapshot runs when container exits - packages saved to renv.lock!</span></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co"># Run tests in clean environment</span></span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co"># Auto-restore runs when R starts - all packages installed automatically!</span></span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co"># Validate dependencies (runs zzrenvcheck in the container)</span></span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co"># Nothing is snapshotted on exit by default: if you did not run</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># renv::snapshot() in RStudio, run make fix-renv (or make snapshot)</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co"># now and review the renv.lock diff</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co"># Run tests in clean environment</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co"># Auto-restore runs when R starts - all packages installed automatically!</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co"># Validate dependencies (runs zzrenvcheck in the container)</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-7-commit-and-push-1-minute">Step 7: Commit and Push (1 minute)<a class="anchor" aria-label="anchor" href="#step-7-commit-and-push-1-minute"></a>
@@ -522,8 +526,10 @@ snapshot needed)</li>
 isn’t:</p>
 <ul>
 <li>
-<strong>Saved:</strong> All file edits, created files, installed
-packages (auto-captured in renv.lock on exit)</li>
+<strong>Saved:</strong> All file edits and created files. Installed
+packages are recorded in renv.lock only if you run
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> before exit (or <code>make fix-renv</code>
+/ <code>make snapshot</code> afterward)</li>
 <li>
 <strong>Not saved:</strong> R workspace (.RData), unless you
 explicitly save</li>
@@ -536,7 +542,7 @@ workspace:</p>
 <span></span>
 <span><span class="co"># Instead use:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="va">my_data</span>, <span class="st">"data/my_data.rds"</span><span class="op">)</span>  <span class="co"># Portable, reproducible</span></span>
-<span><span class="co"># Packages auto-saved when you exit container - no manual renv::snapshot() needed</span></span></code></pre></div>
+<span><span class="co"># Record packages with renv::snapshot() and review the renv.lock diff</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -559,7 +565,8 @@ container)</li>
 </li>
 <li>Building images: <code>make docker-build</code>
 </li>
-<li>Note: Auto-snapshot and auto-restore run automatically</li>
+<li>Note: Auto-snapshot on exit is off by default (opt in with
+<code>make docker-rstudio ZZCOLLAB_AUTO_SNAPSHOT=true</code>)</li>
 </ul>
 <p><strong>Use RStudio for:</strong></p>
 <ul>
@@ -584,8 +591,8 @@ container)</li>
 <li>
 <strong>RStudio:</strong> Author report and render locally</li>
 <li>
-<strong>Exit RStudio:</strong> Auto-snapshot captures packages in
-renv.lock</li>
+<strong>RStudio:</strong> Run <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> to
+record packages, review the renv.lock diff, then exit</li>
 <li>
 <strong>Terminal:</strong> Run full test suite (auto-restore
 installs packages)</li>
@@ -674,7 +681,7 @@ available.</p>
 </h3>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># In RStudio Console:</span></span>
-<span><span class="co"># Use standard install.packages() - auto-captured on container exit</span></span>
+<span><span class="co"># Use standard install.packages(), then renv::snapshot() to record it</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"package-name"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># If package source unavailable, try different CRAN mirror:</span></span>
@@ -723,8 +730,9 @@ code</li>
 <li>
 <strong>Reproducible:</strong> Docker + renv ensure consistency</li>
 <li>
-<strong>Auto-Snapshot:</strong> Packages captured automatically on
-container exit</li>
+<strong>Explicit Snapshot:</strong> <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> or
+<code>make snapshot</code> records packages; the exit auto-snapshot is
+opt-in (<code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>)</li>
 <li>
 <strong>Auto-Restore:</strong> Missing packages installed
 automatically on R startup</li>
@@ -751,7 +759,7 @@ environment</li>
 <li>System libraries: git, pandoc, LaTeX (basic). For full
 PDF/manuscript rendering use the <code>publishing</code> profile
 (rocker/verse), which pre-bakes the LaTeX closure</li>
-<li>Auto-snapshot on container exit</li>
+<li>Auto-snapshot on container exit (opt-in, off by default)</li>
 <li>Auto-restore on R startup</li>
 </ul>
 </div>

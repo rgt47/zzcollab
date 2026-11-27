@@ -475,16 +475,23 @@ distribution model:</p>
 repository, ensuring perfect reproducibility with minimal wait time.</p>
 </div>
 <div class="section level3">
-<h3 id="automatic-snapshot-on-exit">Automatic Snapshot on Exit<a class="anchor" aria-label="anchor" href="#automatic-snapshot-on-exit"></a>
+<h3 id="automatic-dependency-check-on-exit">Automatic Dependency Check on Exit<a class="anchor" aria-label="anchor" href="#automatic-dependency-check-on-exit"></a>
 </h3>
-<p>ZZCOLLAB implements an automatic snapshot-on-exit architecture that
-eliminates manual <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> commands:</p>
+<p>When an interactive <code>make r</code> session ends, a post-session
+check (zzrenvcheck) adds the packages the code uses to
+<code>DESCRIPTION</code> and <code>renv.lock</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">make</span> r</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co"># Inside container:</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"ggplot2"</span><span class="kw">)</span>  <span class="co"># Add packages as needed</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="bu">exit</span>                         <span class="co"># Automatically snapshots renv.lock</span></span></code></pre></div>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># ... use them in code ...</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="bu">exit</span>                         <span class="co"># Post-session check records them</span></span></code></pre></div>
 <p>This addresses <span class="citation">Ram (2013)</span>’s finding
-that manual processes create reproducibility failures.</p>
+that manual processes create reproducibility failures. A separate
+<code>.Rprofile</code> hook that runs <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> on
+exit is opt-in (<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>) and off
+by default: what enters <code>renv.lock</code> should be the analyst’s
+decision, made by running <code>make snapshot</code> or
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> and reviewing the lockfile diff.</p>
 </div>
 <div class="section level3">
 <h3 id="volume-mounts-enable-iterative-development">Volume Mounts Enable Iterative Development<a class="anchor" aria-label="anchor" href="#volume-mounts-enable-iterative-development"></a>
@@ -754,7 +761,7 @@ Increasing Dominance of Teams in Production of Knowledge.”</span>
 <span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">devtools::load_all()</span>                    <span class="co"># Load your R package</span></span>
 <span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="bu">source</span><span class="er">(</span><span class="st">"analysis/scripts/01_clean.R"</span><span class="kw">)</span>   <span class="co"># Run analysis</span></span>
 <span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span>          <span class="co"># Add new packages</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="bu">exit</span>                                    <span class="co"># Auto-snapshot on exit</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="bu">exit</span>                                    <span class="co"># Post-session dependency check</span></span>
 <span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
 <span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co"># Commit and share</span></span>
 <span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Analysis update"</span></span>

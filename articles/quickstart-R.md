@@ -19,8 +19,9 @@ R package interface.
 >   deprecated alias for `tidyverse`).
 > - **Package backend (renv / Nix / none)**: how the project records
 >   exact package versions; a single mutually-exclusive choice.
-> - **Auto-snapshot / auto-restore**: zzcollab records installed
->   packages to `renv.lock` on exit and installs missing ones on start.
+> - **Auto-snapshot / auto-restore**: optional hooks that record
+>   installed packages to `renv.lock` on exit (off unless opted in with
+>   `ZZCOLLAB_AUTO_SNAPSHOT=true`) and install missing ones on start.
 > - **Docker / container / image**: a tool that packages software with
 >   its environment; a running instance and its template.
 > - **Team image**: a pre-built Docker image shared via a registry so
@@ -375,7 +376,7 @@ if (!rebuild("docker-build")) {
 # Create analysis files, write code, etc.
 # See vignette("quickstart") for analysis details
 
-# 5. ADD PACKAGES (auto-captured in renv.lock on container exit)
+# 5. ADD PACKAGES (add_package() runs renv::snapshot() after install)
 add_package("palmerpenguins")
 add_package("ggplot2")
 add_package("dplyr")
@@ -456,7 +457,9 @@ install.packages("tidyverse")
 install.packages("remotes")
 remotes::install_github("user/package")
 
-# Exit container - packages automatically captured in renv.lock
+# Record them: renv::snapshot() (or make snapshot), then review the
+# renv.lock diff. On exit from make r, the post-session check also
+# adds packages the code uses; make docker-rstudio has no such check.
 # Auto-restore installs them automatically next time you start R
 ```
 
@@ -481,19 +484,20 @@ rebuild("docker-check-renv")
 
 **Auto-Snapshot & Auto-Restore Architecture**:
 
-- **Auto-snapshot**: Packages captured in renv.lock when you exit
-  containers (no manual
+- **Auto-snapshot**: opt-in (`make r ZZCOLLAB_AUTO_SNAPSHOT=true`); off
+  by default, so run
   [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
-  needed)
+  or `make snapshot` and review the renv.lock diff. After `make r`, the
+  post-session check records packages the code uses.
 - **Auto-restore**: Missing packages installed automatically when you
   start R (no manual
   [`renv::restore()`](https://rstudio.github.io/renv/reference/restore.html)
   needed)
-- Both
-  [`add_package()`](https://rgt47.github.io/zzcollab/reference/add_package.md)
-  (R function) and
+- [`add_package()`](https://rgt47.github.io/zzcollab/reference/add_package.md)
+  (R function) installs and then runs
+  [`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html);
   [`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
-  (standard R) work identically
+  (standard R) installs only
 
 ## RStudio Integration
 
@@ -602,7 +606,7 @@ check()
 # Add dependencies (standard R command)
 # Inside container:
 # install.packages("usethis")
-# Exit container - auto-captured in renv.lock
+# Exit make r - the post-session check records packages the code uses
 
 # Validate and commit
 validate_repro()

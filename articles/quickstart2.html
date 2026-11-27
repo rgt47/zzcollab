@@ -486,9 +486,13 @@ inst/tinytest/test-data-validation.R...........    7 tests OK</code></pre>
 <p>Exit R when done:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>Packages are automatically captured to <code>renv.lock</code> when
-you exit R (auto-snapshot). Auto-restore on startup is disabled in the
-container; packages are baked into the image at build time.</p>
+<p>When you exit R, <code>make r</code>’s post-session check adds the
+packages your code uses to <code>DESCRIPTION</code> and
+<code>renv.lock</code>; review the diff before committing. The
+<code>.Rprofile</code> exit snapshot is off by default (opt in with
+<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>). Auto-restore on
+startup is disabled in the container; packages are baked into the image
+at build time.</p>
 </div>
 </div>
 <div class="section level2">
@@ -1155,7 +1159,7 @@ is on private GitHub anyway.</p>
 <span id="cb64-2"><a href="#cb64-2" tabindex="-1"></a><span class="ex">zzc</span> update                       <span class="co"># Refresh stale framework files after a pull</span></span>
 <span id="cb64-3"><a href="#cb64-3" tabindex="-1"></a><span class="fu">make</span> r                           <span class="co"># Enter container (packages baked in)</span></span>
 <span id="cb64-4"><a href="#cb64-4" tabindex="-1"></a><span class="co"># ... work, install new packages with install.packages() if needed ...</span></span>
-<span id="cb64-5"><a href="#cb64-5" tabindex="-1"></a><span class="bu">exit</span>                             <span class="co"># Auto-snapshot writes updated renv.lock</span></span>
+<span id="cb64-5"><a href="#cb64-5" tabindex="-1"></a><span class="bu">exit</span>                             <span class="co"># Post-session check updates renv.lock</span></span>
 <span id="cb64-6"><a href="#cb64-6" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 </div>
 </div>

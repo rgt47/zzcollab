@@ -73,7 +73,7 @@
 <li>Two-layer architecture separating team infrastructure from individual package management</li>
 <li>Four Docker profiles ranging from ~650 MB to ~4.2 GB</li>
 <li>Pure-shell dependency validation (no host R required)</li>
-<li>Automatic renv snapshot on container exit</li>
+<li>Dependency check after each <code>make r</code> session (records packages used)</li>
 <li>Content-addressable Docker build caching</li>
 <li>GitHub Actions CI/CD for testing and validation</li>
 </ul></div>
@@ -81,7 +81,7 @@
 <h3 id="architecture-overview">Architecture Overview<a class="anchor" aria-label="anchor" href="#architecture-overview"></a></h3>
 <p>ZZCOLLAB uses a two-layer reproducibility model:</p>
 <p><strong>Layer 1 – Docker Profile (team/shared).</strong> The team lead selects a Docker profile that defines the base image, system libraries, and pre-installed R packages. This layer is fixed once chosen and shared by all team members via Docker Hub.</p>
-<p><strong>Layer 2 – renv.lock (personal/collaborative).</strong> Any team member can add R packages inside the container using standard <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> calls. The <code>.Rprofile</code> auto-snapshots <code>renv.lock</code> on exit, and the lock file accumulates packages from all contributors.</p>
+<p><strong>Layer 2 – renv.lock (personal/collaborative).</strong> Any team member can add R packages inside the container using standard <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> calls. After a <code>make r</code> session, the post-session check records the packages the code uses in DESCRIPTION and <code>renv.lock</code>; otherwise run <code>make snapshot</code> and review the lockfile diff. The lock file accumulates packages from all contributors.</p>
 <p>The <strong>five pillars</strong> of a zzcollab workspace are: Dockerfile + renv.lock + .Rprofile + source code + data.</p>
 </div>
 </div>
@@ -124,7 +124,7 @@
 <h3 id="daily-development">Daily Development<a class="anchor" aria-label="anchor" href="#daily-development"></a></h3>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">make</span> r                          <span class="co"># enter container</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co"># ... work in R ...</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">q()</span>                             <span class="co"># exit (auto-snapshots renv.lock)</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">q()</span>                             <span class="co"># exit; post-session check runs</span></span>
 <span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">make</span> docker-test                <span class="co"># run tests</span></span>
 <span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">git</span> add . <span class="kw">&amp;&amp;</span> <span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add analysis"</span> <span class="kw">&amp;&amp;</span> <span class="fu">git</span> push</span></code></pre></div>
 </div>
@@ -203,7 +203,7 @@
 ├── Makefile                    # Build automation
 ├── Dockerfile                  # Container definition
 ├── renv.lock                   # Package dependency lock file
-├── .Rprofile                   # renv activation + auto-snapshot
+├── .Rprofile                   # renv activation + opt-in snapshot
 ├── .gitignore                  # Git exclusions
 ├── .Rbuildignore               # R CMD build exclusions
 ├── R/                          # Reusable R functions
@@ -265,12 +265,8 @@
 <h3 id="exiting">Exiting<a class="anchor" aria-label="anchor" href="#exiting"></a></h3>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p>On exit, two things happen automatically:</p>
-<ol style="list-style-type: decimal"><li>
-<strong>Auto-snapshot</strong> (inside container): The <code>.Rprofile</code> <code>.Last()</code> hook runs <code>renv::snapshot(prompt = FALSE)</code> to update <code>renv.lock</code>.</li>
-<li>
-<strong>Post-session validation</strong> (on host): The Makefile runs <code>zzcollab validate --fix --strict --verbose</code> to verify that DESCRIPTION and renv.lock are consistent with code usage.</li>
-</ol></div>
+<p>On exit from <code>make r</code>, the Makefile runs <strong>post-session validation</strong> (on the host, or in the container when the host has no R): <code>zzrenvcheck::check_packages(auto_fix = TRUE)</code> adds packages the code uses to DESCRIPTION and renv.lock. Review the diff before committing. The <code>.Rprofile</code> exit snapshot is off by default (see Auto-Snapshot on Exit below).</p>
+</div>
 <div class="section level3">
 <h3 id="rstudio-server">RStudio Server<a class="anchor" aria-label="anchor" href="#rstudio-server"></a></h3>
 <div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">make</span> rstudio</span></code></pre></div>
@@ -299,14 +295,15 @@
 <div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="fu">make</span> r</span></code></pre></div>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"survival"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span>                             <span class="co"># auto-snapshot writes renv.lock</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/quit.html" class="external-link">q</a></span><span class="op">(</span><span class="op">)</span>                             <span class="co"># post-session check updates renv.lock</span></span></code></pre></div>
 <p>For GitHub packages:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/install.html" class="external-link">install</a></span><span class="op">(</span><span class="st">"user/package"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="auto-snapshot-on-exit">Auto-Snapshot on Exit<a class="anchor" aria-label="anchor" href="#auto-snapshot-on-exit"></a></h3>
-<p>Controlled by the environment variable <code>ZZCOLLAB_AUTO_SNAPSHOT</code> (default: <code>true</code>). When R exits inside a container, the <code>.Last()</code> function in <code>.Rprofile</code> runs <code>renv::snapshot(prompt = FALSE)</code>.</p>
+<h3 id="auto-snapshot-on-exit-opt-in">Auto-Snapshot on Exit (Opt-In)<a class="anchor" aria-label="anchor" href="#auto-snapshot-on-exit-opt-in"></a></h3>
+<p>Controlled by the environment variable <code>ZZCOLLAB_AUTO_SNAPSHOT</code> (default: <code>false</code>). When it is set to <code>true</code> and R exits inside a container, the <code>.Last()</code> function in <code>.Rprofile</code> runs <code>renv::snapshot(prompt = FALSE)</code>. The hook is off by default because what enters <code>renv.lock</code> should be the analyst’s decision: run <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> (or <code>make snapshot</code>), then review the lockfile diff. To opt in for one session, run <code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>, or <code>export ZZCOLLAB_AUTO_SNAPSHOT=true</code> before <code>make</code>; the Makefile passes the variable to <code>make r</code>, <code>make docker-rstudio</code>, and the other container targets.</p>
+<p><code>make docker-rstudio</code> has no post-session check, so packages installed in an RStudio session are not recorded unless you run <code>make snapshot</code> or <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> (then review the diff), or <code>make fix-renv</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="auto-restore-on-startup">Auto-Restore on Startup<a class="anchor" aria-label="anchor" href="#auto-restore-on-startup"></a></h3>

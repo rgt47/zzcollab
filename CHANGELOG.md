@@ -10,6 +10,20 @@ is archived in `CHANGELOG-2.x.md`.
 
 ### Fixed
 
+- **New projects use implicit renv snapshots.** `renv_init_quiet()` in
+  the `.Rprofile` template initialized renv with
+  `snapshot.type = "explicit"`, which records only `DESCRIPTION`’s
+  packages. A compendium’s `analysis/`-only packages belong in
+  `renv.lock` but not in `DESCRIPTION` (zzrenvcheck’s compendium rule),
+  so they were never locked, and a
+  [`renv::status()`](https://rstudio.github.io/renv/reference/status.html)
+  check could not see that drift. It now uses `"implicit"`, matching the
+  comment in `zzc add` that already assumed it. Existing projects keep
+  their setting; switch one with
+  `renv::settings$snapshot.type("implicit")`. Verified with renv 1.3.1:
+  an `analysis/`-only package is absent from `renv.lock` under
+  `explicit` and present under `implicit`.
+
 - **`make docker-build PLATFORM=...` now builds for that platform.** The
   Makefile documented ‘Override with make PLATFORM=linux/amd64’, but the
   build (`zzc rebuild`) chose `--platform` from `uname -m` and ignored
@@ -115,6 +129,44 @@ is archived in `CHANGELOG-2.x.md`.
   `zzc doctor --force` refreshes its Makefile.
 
 ### Changed
+
+- **The `analysis` profile alias warns, and help stops recommending
+  it.** `analysis` is a deprecated alias for the `tidyverse` profile and
+  collides with the `analysis` archetype. Typing it (as a profile
+  command, with `--profile`, or in `config set profile-name`) now warns
+  that it will be removed in the next release. A config file that
+  already names it still maps silently to `tidyverse`; the removal will
+  need to migrate those. The main help listed `analysis` as the
+  recommended profile and said a profile command switches an existing
+  project, which the code refuses; it now recommends `tidyverse` and
+  points to `zzcollab docker --profile NAME`. `make r` suggested
+  `--profile analysis` and labeled a tidyverse image ‘analysis’; both
+  now say `tidyverse`.
+
+- **The `CITATION.cff` template no longer claims all data are
+  included.** Its abstract said the compendium ‘Contains all data’,
+  false for any deposit that withholds restricted data. It now describes
+  the code and environment, points to the data availability statement,
+  and a comment asks the author to edit it.
+
+- **Both repositories ship a `LICENSE.md`** (GPL-3, matching
+  `DESCRIPTION`), so GitHub shows the license.
+
+- **The auto-snapshot-on-exit hook is off by default.** The `.Rprofile`
+  `.Last()` hook ran `renv::snapshot(prompt = FALSE)` on every container
+  R exit unless `ZZCOLLAB_AUTO_SNAPSHOT` was false. The Makefile already
+  set it false for `make r`, the `DOCKER_RUN` targets, and CI, but not
+  for `make docker-rstudio` or host sessions, so whether `renv.lock`
+  changed depended on how R was started. The hook now defaults to off:
+  what enters `renv.lock` is the analyst’s call
+  ([`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html),
+  `make snapshot`, or `make fix-renv`, then review the diff). Opt in
+  with `make r ZZCOLLAB_AUTO_SNAPSHOT=true` (or export the variable);
+  every container run target, now including `docker-rstudio`, passes the
+  Makefile’s `ZZCOLLAB_AUTO_SNAPSHOT ?= false`, which also keeps a
+  project whose `.Rprofile` predates this change off. `make r`’s
+  post-session dependency check, which records packages the code uses,
+  is unchanged.
 
 - **`make check-renv` no longer edits files; `make fix-renv` repairs.**
   `check-renv`, `check-renv-no-strict`, and `check-renv-slim` ran

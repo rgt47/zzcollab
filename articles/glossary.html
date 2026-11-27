@@ -207,10 +207,14 @@ hydrating.</li>
 project records exact package versions; a single mutually-exclusive
 choice.</li>
 <li>
-<strong>Auto-snapshot / auto-restore</strong>: zzcollab
-automatically records installed packages to <code>renv.lock</code> on
-container exit, and installs missing packages on start, replacing manual
-<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> / <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code>.</li>
+<strong>Auto-snapshot / auto-restore</strong>: optional
+<code>.Rprofile</code> hooks that run <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> on
+container exit and <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code> on start. Auto-snapshot
+is off unless opted in (<code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>); by
+default packages enter <code>renv.lock</code> through
+<code>make r</code>’s post-session check or an explicit
+<code>make snapshot</code>, followed by review of the lockfile
+diff.</li>
 <li>
 <strong>Container runtime</strong>: the engine that runs the image:
 Docker, Podman (daemonless), or Apptainer (HPC, single-file

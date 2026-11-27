@@ -125,10 +125,12 @@ install.packages("tidymodels")
 install.packages("plotly")
 ```
 
-When you exit the container, packages are automatically captured in
-`renv.lock`. The lock file accumulates packages from **all team
-members** (union model), ensuring everyone has access to all required
-packages while maintaining flexibility.
+When you exit a `make r` session, its post-session dependency check adds
+the packages your code uses to `DESCRIPTION` and `renv.lock` (in
+RStudio, run `make snapshot` and review the diff). The lock file
+accumulates packages from **all team members** (union model), ensuring
+everyone has access to all required packages while maintaining
+flexibility.
 
 **For GitHub packages:**
 
@@ -274,9 +276,10 @@ make r
 # Inside R - add packages using standard R
 > install.packages("tidymodels")
 > install.packages("here")
-> q()  # Exit R → returns to host (auto-snapshot runs on exit)
+> q()  # Exit R → returns to host; post-session check runs
 
-# renv.lock automatically updated and validated!
+# Packages the code uses are added to DESCRIPTION and renv.lock;
+# review the diff (git diff renv.lock DESCRIPTION)
 
 # Commit the updated renv.lock
 git add renv.lock
@@ -284,8 +287,13 @@ git commit -m "Add tidymodels and here packages"
 git push
 ```
 
-Packages are automatically captured in `renv.lock` when you exit the
-container - no manual snapshot needed!
+The capture comes from the `make r` post-session check, which records
+only packages that the code uses. The `.Rprofile` exit snapshot is off
+by default; opt in with `make r ZZCOLLAB_AUTO_SNAPSHOT=true`. For
+anything else (an RStudio session, or a package not yet used in code),
+run `make snapshot` or
+[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+and review the lockfile diff.
 
 ## Configuration System
 
@@ -402,7 +410,7 @@ init_project(project_name = "covid-analysis")
 # 2. Add required packages (inside container via make r)
 # In container:
 #   install.packages(c("tidyverse", "lubridate", "plotly"))
-# Packages automatically captured on exit
+# Packages the code uses are recorded by the post-session check
 
 # 3. Create feature branch
 create_branch("feature/exploratory-analysis")
@@ -648,7 +656,8 @@ docker run -e RSTUDIO_AUTH=none -p 8787:8787 your-image
 
 - Team lead defines Docker profile (R version, system dependencies)
 - Team members add R packages independently using standard R commands
-- Packages automatically captured and shared via renv.lock
+- Packages recorded in renv.lock (post-session check or `make snapshot`)
+  and shared through it
 - Consistent base environment across all team members
 - Version control integration with Git/GitHub
 

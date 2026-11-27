@@ -577,9 +577,12 @@ matching how the render glob in the parent site discovers
 <span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co"># Exit container</span></span>
 <span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
 <p>Capturing packages is now an explicit step: run
-<code>make snapshot</code> after installing new packages. The
-<code>make r</code> gate validates dependencies on entry and exit; it
-does not auto-snapshot on exit.</p>
+<code>make snapshot</code> after installing new packages, then review
+the <code>renv.lock</code> diff. On exit, <code>make r</code> runs a
+post-session check that adds packages the code uses to
+<code>DESCRIPTION</code> and <code>renv.lock</code>; the
+<code>.Rprofile</code> exit snapshot is off unless opted in
+(<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>).</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">make</span> snapshot</span></code></pre></div>
 <p><code>make snapshot</code> runs <code><a href="https://rstudio.github.io/renv/reference/hydrate.html" class="external-link">renv::hydrate()</a></code>, then
 <code>renv::snapshot(prompt = FALSE)</code>, then

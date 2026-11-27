@@ -579,17 +579,21 @@ zzc dockerhub           # push for team members
 ### Layer 2: Dynamic renv (Personal/Flexible)
 
 **What**: packages installed inside the container with
-[`install.packages()`](https://rdrr.io/r/utils/install.packages.html),
-snapshotted to `renv.lock` automatically on exit via `.Last()` in
-`.Rprofile`. **Control**: whoever is working in the container, at any
-time. **Purpose**: analysis-specific packages, without rebuilding the
-image.
+[`install.packages()`](https://rdrr.io/r/utils/install.packages.html)
+and recorded in `renv.lock` when you choose: after `make r`, the
+post-session check adds packages the code uses to `DESCRIPTION` and
+`renv.lock`; otherwise run `make snapshot` or
+[`renv::snapshot()`](https://rstudio.github.io/renv/reference/snapshot.html)
+and review the diff. The `.Last()` exit snapshot in `.Rprofile` is off
+unless opted in (`ZZCOLLAB_AUTO_SNAPSHOT=true`). **Control**: whoever is
+working in the container, at any time. **Purpose**: analysis-specific
+packages, without rebuilding the image.
 
 ``` bash
 make r
 
 install.packages("tidymodels")
-q()   # exit R — snapshot to renv.lock happens automatically
+q()   # exit R; post-session check records packages the code uses
 
 # back on host
 git add renv.lock DESCRIPTION
@@ -888,7 +892,7 @@ git clone ... && cd study && make docker-build # member
 
 # Package management (inside container)
 install.packages("package")
-q()   # auto-snapshot on exit
+q()   # make r's post-session check records packages used
 
 # Before committing a dependency change
 make snapshot

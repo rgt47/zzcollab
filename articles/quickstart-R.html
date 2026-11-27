@@ -103,8 +103,9 @@ a deprecated alias for <code>tidyverse</code>).</li>
 project records exact package versions; a single mutually-exclusive
 choice.</li>
 <li>
-<strong>Auto-snapshot / auto-restore</strong>: zzcollab records
-installed packages to <code>renv.lock</code> on exit and installs
+<strong>Auto-snapshot / auto-restore</strong>: optional hooks that
+record installed packages to <code>renv.lock</code> on exit (off unless
+opted in with <code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>) and install
 missing ones on start.</li>
 <li>
 <strong>Docker / container / image</strong>: a tool that packages
@@ -455,7 +456,7 @@ image:</p>
 <span><span class="co"># Create analysis files, write code, etc.</span></span>
 <span><span class="co"># See vignette("quickstart") for analysis details</span></span>
 <span></span>
-<span><span class="co"># 5. ADD PACKAGES (auto-captured in renv.lock on container exit)</span></span>
+<span><span class="co"># 5. ADD PACKAGES (add_package() runs renv::snapshot() after install)</span></span>
 <span><span class="fu"><a href="../reference/add_package.html">add_package</a></span><span class="op">(</span><span class="st">"palmerpenguins"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/add_package.html">add_package</a></span><span class="op">(</span><span class="st">"ggplot2"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/add_package.html">add_package</a></span><span class="op">(</span><span class="st">"dplyr"</span><span class="op">)</span></span>
@@ -537,7 +538,9 @@ containers:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"user/package"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Exit container - packages automatically captured in renv.lock</span></span>
+<span><span class="co"># Record them: renv::snapshot() (or make snapshot), then review the</span></span>
+<span><span class="co"># renv.lock diff. On exit from make r, the post-session check also</span></span>
+<span><span class="co"># adds packages the code uses; make docker-rstudio has no such check.</span></span>
 <span><span class="co"># Auto-restore installs them automatically next time you start R</span></span></code></pre></div>
 <p><strong>Alternative: R Function Interface</strong></p>
 <p>You can also use ZZCOLLAB’s R functions:</p>
@@ -556,15 +559,19 @@ containers:</p>
 <p><strong>Auto-Snapshot &amp; Auto-Restore Architecture</strong>:</p>
 <ul>
 <li>
-<strong>Auto-snapshot</strong>: Packages captured in renv.lock when
-you exit containers (no manual <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code>
-needed)</li>
+<strong>Auto-snapshot</strong>: opt-in
+(<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>); off by default, so
+run <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> or <code>make snapshot</code> and
+review the renv.lock diff. After <code>make r</code>, the post-session
+check records packages the code uses.</li>
 <li>
 <strong>Auto-restore</strong>: Missing packages installed
 automatically when you start R (no manual <code><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">renv::restore()</a></code>
 needed)</li>
-<li>Both <code><a href="../reference/add_package.html">add_package()</a></code> (R function) and
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> (standard R) work identically</li>
+<li>
+<code><a href="../reference/add_package.html">add_package()</a></code> (R function) installs and then runs
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code>; <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> (standard
+R) installs only</li>
 </ul>
 </div>
 </div>
@@ -677,7 +684,7 @@ needed)</li>
 <span><span class="co"># Add dependencies (standard R command)</span></span>
 <span><span class="co"># Inside container:</span></span>
 <span><span class="co"># install.packages("usethis")</span></span>
-<span><span class="co"># Exit container - auto-captured in renv.lock</span></span>
+<span><span class="co"># Exit make r - the post-session check records packages the code uses</span></span>
 <span></span>
 <span><span class="co"># Validate and commit</span></span>
 <span><span class="fu"><a href="../reference/validate_repro.html">validate_repro</a></span><span class="op">(</span><span class="op">)</span></span>

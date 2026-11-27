@@ -137,9 +137,12 @@ project is, from ‘just findable’ (L0) up to ‘rebuilt and verified’
 exact package versions in <code>renv.lock</code> so installs are
 repeatable.</li>
 <li>
-<strong>Auto-snapshot</strong>: the automatic
+<strong>Auto-snapshot</strong>: an optional
 <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> that runs when you exit R in the
-container, capturing new packages into <code>renv.lock</code>.</li>
+container. It is off unless opted in
+(<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>); by default,
+<code>make r</code>’s post-session check records the packages the code
+uses.</li>
 <li>
 <strong>Five Pillars</strong>: Dockerfile, renv.lock, .Rprofile,
 source code, and research data, the necessary and sufficient parts of a
@@ -471,8 +474,9 @@ data.</p>
 <span>    <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>Install required packages:</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Packages will be captured in renv.lock when you exit the container</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'install.packages(c("dplyr", "here"))'</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Packages the code uses are recorded in renv.lock by make r's</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="co"># post-session check when you exit the container</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'install.packages(c("dplyr", "here"))'</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="create-unit-tests">Create Unit Tests<a class="anchor" aria-label="anchor" href="#create-unit-tests"></a>
@@ -683,28 +687,28 @@ The analysis reveals distinct bill dimension patterns across penguin species:
 <div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Render the report</span></span>
 <span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'rmarkdown::render("analysis/report/report.Rmd")'</span></span>
 <span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a></span>
-<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="co"># Exit container (auto-snapshot runs here!)</span></span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="co"># Exit container (post-session dependency check runs here)</span></span>
 <span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="bu">exit</span></span></code></pre></div>
-<p><strong>Auto-Snapshot Architecture</strong></p>
-<p>When you <strong>exit R</strong> (inside the container), zzcollab
-automatically:</p>
-<ol style="list-style-type: decimal">
-<li>Runs <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> to capture package dependencies
-in <code>renv.lock</code>
-</li>
-<li>Reports success and reminds you to commit changes</li>
-</ol>
-<p><strong>You do not need to manually run
-<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code></strong> — just exit R and commit the
-updated <code>renv.lock</code>.</p>
+<p><strong>Auto-Snapshot Architecture (Opt-In)</strong></p>
+<p>When you exit a <code>make r</code> session, the Makefile’s
+post-session check (zzrenvcheck, with auto-fix) adds the packages your
+code uses to <code>DESCRIPTION</code> and <code>renv.lock</code>. Review
+the diff, then commit both files.</p>
+<p>The <code>.Rprofile</code> exit hook that runs
+<code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> is off by default, because what enters
+<code>renv.lock</code> should be your decision rather than a side effect
+of quitting R. Opt in with
+<code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>, or snapshot explicitly
+with <code>make snapshot</code> (or <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code>) and
+review the lockfile diff.</p>
 <p><strong>Package restoration</strong>: The container image is built
 with all packages from <code>renv.lock</code> baked in at
 <code>/opt/renv/library</code>. Auto-restore on startup is intentionally
 disabled (<code>ZZCOLLAB_AUTO_RESTORE=false</code> in the Dockerfile) so
 the baked library is authoritative and the container does not re-resolve
 packages from the network on every startup. If you add packages with
-<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> inside the container, exit R
-(auto-snapshot runs), rebuild the image
+<code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code> inside the container, exit R (the
+post-session check records packages the code uses), rebuild the image
 (<code>make docker-build</code>), and the new packages will be baked
 in.</p>
 </div>
@@ -714,18 +718,19 @@ in.</p>
 </h3>
 <p>Validate everything works in a clean environment:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Exit the Docker container (if still inside from Step 4)</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co"># This automatically runs renv::snapshot() and validates packages!</span></span>
-<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a><span class="co"># Run tests in clean environment</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
-<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a></span>
-<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># Grow the manifest from the image before committing: hydrate,</span></span>
-<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co"># renv::snapshot(), then zzrenvcheck (strict + auto-fix)</span></span>
-<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
-<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a></span>
-<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a><span class="co"># Optional: Manually validate dependencies (runs zzrenvcheck in the container)</span></span>
-<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="co"># make r's post-session check adds packages the code uses to</span></span>
+<span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a><span class="co"># DESCRIPTION and renv.lock</span></span>
+<span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a><span class="co"># Run tests in clean environment</span></span>
+<span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a><span class="fu">make</span> docker-test</span>
+<span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a><span class="co"># Grow the manifest from the image before committing: hydrate,</span></span>
+<span id="cb24-10"><a href="#cb24-10" tabindex="-1"></a><span class="co"># renv::snapshot(), then zzrenvcheck (strict + auto-fix)</span></span>
+<span id="cb24-11"><a href="#cb24-11" tabindex="-1"></a><span class="fu">make</span> snapshot</span>
+<span id="cb24-12"><a href="#cb24-12" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" tabindex="-1"></a><span class="co"># Optional: Manually validate dependencies (runs zzrenvcheck in the container)</span></span>
+<span id="cb24-14"><a href="#cb24-14" tabindex="-1"></a><span class="fu">make</span> check-renv</span></code></pre></div>
 <p><code>renv.lock</code> and <code>DESCRIPTION</code> play
 complementary roles: <code>renv.lock</code> pins the exact package
 closure (versions), while <code>DESCRIPTION</code> declares dependency
@@ -976,7 +981,7 @@ ensure seed reproducibility across R versions</li>
 <span>  digits <span class="op">=</span> <span class="fl">7</span>,</span>
 <span>  OutDec <span class="op">=</span> <span class="st">"."</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co"># renv activation and auto-snapshot-on-exit are handled automatically.</span></span>
+<span><span class="co"># renv activation and the opt-in exit snapshot are in the template.</span></span>
 <span><span class="co"># Do not add source("renv/activate.R") manually; it is in the template.</span></span></code></pre></div>
 <p><strong>Important</strong>: zzcollab’s <code>.Rprofile</code>
 template pins the RNG kind and critical session options. These settings
@@ -1147,8 +1152,8 @@ collaboration patterns, see
 <ul>
 <li>Critical options version controlled and copied into Docker</li>
 <li>RNGkind pinned for seed reproducibility across R versions</li>
-<li>renv activation and auto-snapshot managed by the template
-automatically</li>
+<li>renv activation and the exit-snapshot hook (opt-in, off by default)
+managed by the template</li>
 </ul>
 <p><strong>Pillar 4 - Source Code</strong>:</p>
 <ul>
@@ -1309,7 +1314,8 @@ to push images.</p>
 <li>Build or pull Docker image for identical environment</li>
 <li>Add packages as needed using <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>
 </li>
-<li>Exit container - packages automatically captured in renv.lock</li>
+<li>Exit <code>make r</code> - the post-session check records packages
+the code uses in renv.lock (review the diff before committing)</li>
 </ol>
 <p><strong>Environment Consistency:</strong></p>
 <ul>
@@ -1457,8 +1463,11 @@ in <code><a href="../articles/quickstart3.html">vignette("quickstart3")</a></cod
 <li>Packages are added dynamically using <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>
 inside containers.</li>
 <li>
-<strong>Auto-snapshot</strong>: packages are captured in
-<code>renv.lock</code> when you exit R in the container.</li>
+<strong>Capture on exit</strong>: when you exit <code>make r</code>,
+the post-session check records the packages the code uses in
+<code>renv.lock</code>. The <code>.Rprofile</code> auto-snapshot is
+opt-in (<code>ZZCOLLAB_AUTO_SNAPSHOT=true</code>); otherwise run
+<code>make snapshot</code> and review the diff.</li>
 <li>The <code>renv.lock</code> file accumulates packages from all team
 members automatically.</li>
 </ul>
@@ -1513,7 +1522,8 @@ environment</li>
 <ul>
 <li>
 <strong>Controlled by</strong>: <code><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages()</a></code>
-inside containers (auto-captured on exit)</li>
+inside containers (recorded by <code>make r</code>’s post-session check,
+or by <code>make snapshot</code>)</li>
 <li>
 <strong>Purpose</strong>: Add packages as needed for specific
 analyses</li>
@@ -1542,12 +1552,14 @@ all contributors</li>
 <span id="cb50-9"><a href="#cb50-9" tabindex="-1"></a></span>
 <span id="cb50-10"><a href="#cb50-10" tabindex="-1"></a><span class="co"># Inside container - add packages as needed</span></span>
 <span id="cb50-11"><a href="#cb50-11" tabindex="-1"></a><span class="ex">install.packages</span><span class="er">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
-<span id="cb50-12"><a href="#cb50-12" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Auto-snapshot captures in renv.lock!</span></span>
-<span id="cb50-13"><a href="#cb50-13" tabindex="-1"></a></span>
-<span id="cb50-14"><a href="#cb50-14" tabindex="-1"></a><span class="co"># Commit changes</span></span>
-<span id="cb50-15"><a href="#cb50-15" tabindex="-1"></a><span class="fu">git</span> add renv.lock</span>
-<span id="cb50-16"><a href="#cb50-16" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add tidymodels"</span></span>
-<span id="cb50-17"><a href="#cb50-17" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<span id="cb50-12"><a href="#cb50-12" tabindex="-1"></a><span class="co"># ... use it in code ...</span></span>
+<span id="cb50-13"><a href="#cb50-13" tabindex="-1"></a><span class="bu">exit</span>  <span class="co"># Post-session check records it in renv.lock and DESCRIPTION</span></span>
+<span id="cb50-14"><a href="#cb50-14" tabindex="-1"></a></span>
+<span id="cb50-15"><a href="#cb50-15" tabindex="-1"></a><span class="co"># Review and commit changes</span></span>
+<span id="cb50-16"><a href="#cb50-16" tabindex="-1"></a><span class="fu">git</span> diff renv.lock DESCRIPTION</span>
+<span id="cb50-17"><a href="#cb50-17" tabindex="-1"></a><span class="fu">git</span> add renv.lock DESCRIPTION</span>
+<span id="cb50-18"><a href="#cb50-18" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add tidymodels"</span></span>
+<span id="cb50-19"><a href="#cb50-19" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
 <p><strong>Key Insight</strong>: The Docker image provides the
 foundation, but <code>renv.lock</code> ensures complete reproducibility
 by specifying exact versions of ALL packages.</p>

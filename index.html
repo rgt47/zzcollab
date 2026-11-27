@@ -211,7 +211,7 @@
 <code class="sourceCode R"><span><span class="co"># Inside the Docker container</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"tidymodels"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"plotly"</span><span class="op">)</span></span></code></pre></div>
-<p>When you exit the container, packages are automatically captured in <code>renv.lock</code>. The lock file accumulates packages from <strong>all team members</strong> (union model), ensuring everyone has access to all required packages while maintaining flexibility.</p>
+<p>When you exit a <code>make r</code> session, its post-session dependency check adds the packages your code uses to <code>DESCRIPTION</code> and <code>renv.lock</code> (in RStudio, run <code>make snapshot</code> and review the diff). The lock file accumulates packages from <strong>all team members</strong> (union model), ensuring everyone has access to all required packages while maintaining flexibility.</p>
 <p><strong>For GitHub packages:</strong></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
@@ -348,15 +348,16 @@
 <span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Inside R - add packages using standard R</span></span>
 <span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="op">&gt;</span> install.packages<span class="kw">(</span><span class="st">"tidymodels"</span><span class="kw">)</span></span>
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="op">&gt;</span> install.packages<span class="kw">(</span><span class="st">"here"</span><span class="kw">)</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span>  <span class="co"># Exit R → returns to host (auto-snapshot runs on exit)</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="op">&gt;</span> q<span class="kw">()</span>  <span class="co"># Exit R → returns to host; post-session check runs</span></span>
 <span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># renv.lock automatically updated and validated!</span></span>
-<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a></span>
-<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a><span class="co"># Commit the updated renv.lock</span></span>
-<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="fu">git</span> add renv.lock</span>
-<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add tidymodels and here packages"</span></span>
-<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
-<p>Packages are automatically captured in <code>renv.lock</code> when you exit the container - no manual snapshot needed!</p>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co"># Packages the code uses are added to DESCRIPTION and renv.lock;</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co"># review the diff (git diff renv.lock DESCRIPTION)</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a><span class="co"># Commit the updated renv.lock</span></span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a><span class="fu">git</span> add renv.lock</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Add tidymodels and here packages"</span></span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a><span class="fu">git</span> push</span></code></pre></div>
+<p>The capture comes from the <code>make r</code> post-session check, which records only packages that the code uses. The <code>.Rprofile</code> exit snapshot is off by default; opt in with <code>make r ZZCOLLAB_AUTO_SNAPSHOT=true</code>. For anything else (an RStudio session, or a package not yet used in code), run <code>make snapshot</code> or <code><a href="https://rstudio.github.io/renv/reference/snapshot.html" class="external-link">renv::snapshot()</a></code> and review the lockfile diff.</p>
 </div>
 </div>
 <div class="section level2">
@@ -497,7 +498,7 @@
 <span><span class="co"># 2. Add required packages (inside container via make r)</span></span>
 <span><span class="co"># In container:</span></span>
 <span><span class="co">#   install.packages(c("tidyverse", "lubridate", "plotly"))</span></span>
-<span><span class="co"># Packages automatically captured on exit</span></span>
+<span><span class="co"># Packages the code uses are recorded by the post-session check</span></span>
 <span></span>
 <span><span class="co"># 3. Create feature branch</span></span>
 <span><span class="fu"><a href="reference/create_branch.html">create_branch</a></span><span class="op">(</span><span class="st">"feature/exploratory-analysis"</span><span class="op">)</span></span>
@@ -745,7 +746,7 @@
 <ul>
 <li>Team lead defines Docker profile (R version, system dependencies)</li>
 <li>Team members add R packages independently using standard R commands</li>
-<li>Packages automatically captured and shared via renv.lock</li>
+<li>Packages recorded in renv.lock (post-session check or <code>make snapshot</code>) and shared through it</li>
 <li>Consistent base environment across all team members</li>
 <li>Version control integration with Git/GitHub</li>
 </ul>
@@ -938,7 +939,8 @@
 <div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li>GPL (&gt;= 3)</li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small>GPL (&gt;= 3)</small></li>
 </ul>
 </div>
 

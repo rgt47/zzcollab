@@ -453,9 +453,12 @@ Exit R when done:
 q()
 ```
 
-Packages are automatically captured to `renv.lock` when you exit R
-(auto-snapshot). Auto-restore on startup is disabled in the container;
-packages are baked into the image at build time.
+When you exit R, `make r`’s post-session check adds the packages your
+code uses to `DESCRIPTION` and `renv.lock`; review the diff before
+committing. The `.Rprofile` exit snapshot is off by default (opt in with
+`make r ZZCOLLAB_AUTO_SNAPSHOT=true`). Auto-restore on startup is
+disabled in the container; packages are baked into the image at build
+time.
 
 ## Part 4: Initial Analysis Report (Developer 1)
 
@@ -1175,7 +1178,7 @@ git pull                         # Get latest code and any updated digest
 zzc update                       # Refresh stale framework files after a pull
 make r                           # Enter container (packages baked in)
 # ... work, install new packages with install.packages() if needed ...
-exit                             # Auto-snapshot writes updated renv.lock
+exit                             # Post-session check updates renv.lock
 git add . && git commit && git push
 ```
 
