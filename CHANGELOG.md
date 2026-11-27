@@ -35,7 +35,9 @@ archived in `CHANGELOG-2.x.md`.
   read. The version is now taken from the `FROM <image>:<version>` tag
   (the `ARG` is still read for older Dockerfiles), so a Dockerfile whose
   R version disagrees with `renv.lock` fails coherence. `zzc doctor`
-  reads the same tag when there is no `renv.lock`.
+  reads the same tag when there is no `renv.lock`, and its state
+  back-fill no longer aborts under `set -euo pipefail` when a read finds
+  nothing (for example a `renv.lock` without an `R` section).
 - **`make lint` fails when lintr reports anything.** It printed the
   lints and exited 0, so it could not serve as a gate. It now exits 1
   when any lint remains in `R/` or `analysis/`; the new `make
@@ -51,7 +53,8 @@ archived in `CHANGELOG-2.x.md`.
   `renv.lock` and then passed, which made the target users reach for
   unsuitable as a CI or pre-commit gate. They now run with
   `auto_fix = FALSE, error_on_fail = TRUE`, edit nothing, exit nonzero
-  on any finding, and print 'To repair: make fix-renv'. The repairing
+  on any finding, and name the matching repair target (`fix-renv`,
+  `fix-renv-no-strict`, or `fix-renv-slim`). The repairing
   behavior moves to `fix-renv`, `fix-renv-no-strict`, and
   `fix-renv-slim`. `check-renv-no-fix` remains as a deprecated alias of
   `check-renv`; `docker-check-renv` and `docker-check-renv-fix` alias
