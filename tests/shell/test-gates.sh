@@ -113,12 +113,14 @@ test_lint_target_fails_on_lints() {
         return 0
     fi
     setup_test
-    local expr="$collect; if (length(l) > 0L) quit(status = 1)" rc
+    local expr="$collect; if (n > 0L) quit(status = 1)" rc
     mkdir -p R analysis
     printf 'f <- function(x){x=1;x}\n' > R/a.R
     printf 'y <- 2\n' > analysis/b.R
     rc=0; Rscript -e "$expr" >/dev/null 2>&1 || rc=$?
     assert_equals "1" "$rc" "lints in R/ fail the gate"
+    assert_false "Rscript -e \"$collect\" 2>&1 | grep -q '^\\[\\[1\\]\\]'" \
+        "the listing prints as lints, not as a bare list"
 
     printf 'f <- function(x) {\n  x\n}\n' > R/a.R
     printf 'y = 2\n' > analysis/b.R
@@ -170,6 +172,23 @@ test_check_renv_is_a_non_editing_gate() {
     out=$(_dry "$ZZCOLLAB_ROOT/templates/Makefile" fix-renv-slim)
     assert_true "grep -q 'auto_fix = TRUE.*skip_image_pkgs = TRUE' <<< \"\$out\"" \
         "fix-renv-slim repairs"
+    teardown_test
+}
+
+# Following the hint must not widen the scope: each check variant names the
+# repair with the same strictness and image exemption.
+test_fix_hint_matches_variant() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile"
+    assert_true "grep -q 'make fix-renv ' <<< \"\$(_dry '$mk' check-renv)\"" \
+        "check-renv hints fix-renv"
+    assert_true "grep -q 'make fix-renv-no-strict ' <<< \"\$(_dry '$mk' check-renv-no-strict)\"" \
+        "check-renv-no-strict hints fix-renv-no-strict"
+    assert_true "grep -q 'make fix-renv-slim ' <<< \"\$(_dry '$mk' check-renv-slim)\"" \
+        "check-renv-slim hints fix-renv-slim"
+    mk="$ZZCOLLAB_ROOT/Makefile"
+    assert_true "grep -q 'make fix-renv-no-strict ' <<< \"\$(_dry '$mk' check-renv-no-strict)\"" \
+        "root check-renv-no-strict hints fix-renv-no-strict"
     teardown_test
 }
 

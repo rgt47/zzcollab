@@ -74,7 +74,8 @@ deps:
 
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
 # nonzero on any finding. fix-renv* repair the files (auto-fix).
-FIX_HINT := { echo "Dependency check failed. To repair: make fix-renv (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
+# $(call fix_hint,<target>) names the repair matching each check variant.
+fix_hint = { echo "Dependency check failed. To repair: make $(1) (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
 
 # Full validation: strict mode, no edits
 check-renv:
@@ -83,7 +84,7 @@ check-renv:
 		-w /home/analyst/project \
 		$(PACKAGE_NAME) \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" \
-	|| $(FIX_HINT)
+	|| $(call fix_hint,fix-renv)
 
 # Non-strict: skip tests/ and vignettes/ directories; no edits
 check-renv-no-strict:
@@ -92,7 +93,7 @@ check-renv-no-strict:
 		-w /home/analyst/project \
 		$(PACKAGE_NAME) \
 		Rscript -e "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" \
-	|| $(FIX_HINT)
+	|| $(call fix_hint,fix-renv-no-strict)
 
 # Deprecated alias: check-renv no longer edits files
 check-renv-no-fix: check-renv

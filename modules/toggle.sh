@@ -148,7 +148,7 @@ _toggle_feature_info() {
         validate-fix) printf '%s\n' \
             "Validation: auto-fix" \
             "Effect: writes missing deps to DESCRIPTION" \
-            "Scope:  zzrenvcheck on validate / check-renv" \
+            "Scope:  zzc validate (make fix-renv always fixes)" \
             "Default: off" ;;
         git) printf '%s\n' \
             "Version control (git)" \
@@ -663,8 +663,9 @@ run_feature_wizard() {
     [[ "$want_cloud" != "$cur_cloud" ]] && { [[ "$want_cloud" == on ]] && cmd_cloud || cmd_rm_cloud; }
 
     # Dependency-validation defaults are config (not artifacts): persist them
-    # project-local so this compendium's `zzc validate` / `make check-renv`
-    # picks them up. Explicit --strict/--fix flags still override per-invocation.
+    # project-local so this compendium's `zzc validate` picks them up (the
+    # make targets hardcode their settings: check-renv never fixes, fix-renv
+    # always does). Explicit --strict/--fix flags still override per-invocation.
     if [[ "$want_vstrict" != "$cur_vstrict" ]]; then
         config_set validate-strict "$([[ "$want_vstrict" == on ]] && echo true || echo false)" true >/dev/null
     fi

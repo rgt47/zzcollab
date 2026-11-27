@@ -134,16 +134,17 @@ ensure-zzrenvcheck: ## Install zzrenvcheck if missing (host R, else a tools libr
 # check-renv* are gates: they never edit DESCRIPTION or renv.lock and exit
 # nonzero on any finding, so they are safe in CI and pre-commit hooks.
 # fix-renv* repair the files (auto-fix) and fail only if issues remain.
-FIX_HINT := { echo "Dependency check failed. To repair: make fix-renv (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
+# $(call fix_hint,<target>) names the repair matching each check variant.
+fix_hint = { echo "Dependency check failed. To repair: make $(1) (edits DESCRIPTION and renv.lock; review the diff)." >&2; exit 1; }
 
 check-renv: ensure-zzrenvcheck ## Validate deps on host: strict, no edits; nonzero on failure
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" || $(FIX_HINT)
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv)
 
 check-renv-no-strict: ensure-zzrenvcheck ## Validate deps on host, skipping tests/ and vignettes/; no edits
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" || $(FIX_HINT)
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = FALSE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-no-strict)
 
 check-renv-slim: ensure-zzrenvcheck ## Validate deps, skipping packages already in the image; no edits
-	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, skip_image_pkgs = TRUE, error_on_fail = TRUE)" || $(FIX_HINT)
+	@$(HOST_CHECK) "zzrenvcheck::check_packages(auto_fix = FALSE, strict = TRUE, skip_image_pkgs = TRUE, error_on_fail = TRUE)" || $(call fix_hint,fix-renv-slim)
 
 check-renv-no-fix: check-renv ## Deprecated alias: check-renv no longer edits files
 	@echo "Note: check-renv-no-fix is deprecated; check-renv now validates without editing."
@@ -170,10 +171,12 @@ style: ## Format R code with styler (in container; needs code-quality enabled)
 # lint is a gate: it exits nonzero when lintr reports anything, so it can
 # stand in CI or a pre-commit hook. lint-report prints the same listing
 # without failing.
-LINT_COLLECT := l <- lintr::lint_dir('R'); if (dir.exists('analysis')) l <- c(l, lintr::lint_dir('analysis')); print(l)
+# Each directory's lints are printed on their own: c() on two lints objects
+# drops the class, and the listing then prints as a bare list.
+LINT_COLLECT := l <- lintr::lint_dir('R'); print(l); n <- length(l); if (dir.exists('analysis')) { la <- lintr::lint_dir('analysis'); print(la); n <- n + length(la) }
 
 lint: ## Lint R code with lintr (in container; nonzero if any lints)
-	$(DOCKER_RUN) Rscript -e "$(LINT_COLLECT); if (length(l) > 0L) quit(status = 1)"
+	$(DOCKER_RUN) Rscript -e "$(LINT_COLLECT); if (n > 0L) quit(status = 1)"
 
 lint-report: ## List lintr findings without failing (in container)
 	$(DOCKER_RUN) Rscript -e "$(LINT_COLLECT)"
