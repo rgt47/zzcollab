@@ -704,6 +704,17 @@ test_help_recommends_tidyverse_and_docker_profile() {
         "help no longer claims a profile command switches a project"
 }
 
+test_help_profiles_topic_matches() {
+    local out
+    out=$(bash "$ZZCOLLAB_ROOT/zzcollab.sh" help profiles 2>&1 || true)
+    assert_true "grep -q '^  tidyverse  *Tidyverse data analysis.*recommended' <<< \"\$out\"" \
+        "help profiles recommends tidyverse"
+    assert_false "grep -q '^  analysis ' <<< \"\$out\"" \
+        "help profiles does not list the deprecated alias as a profile"
+    assert_true "grep -q 'zzc docker --profile NAME' <<< \"\$out\"" \
+        "help profiles says how to switch an existing project"
+}
+
 test_config_set_analysis_profile_warns() {
     setup_test
     _seed_bare_config

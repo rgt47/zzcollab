@@ -146,11 +146,15 @@ show_help_profiles() {
 PROFILES
 
   minimal     Base R, command-line only          (~650MB)
-  analysis    Tidyverse data analysis            (~1.2GB)  [recommended]
+  tidyverse   Tidyverse data analysis            (~1.2GB)  [recommended]
   rstudio     RStudio Server                     (~980MB)
   publishing  Manuscript rendering (LaTeX)       (~4.2GB)
 
+  'analysis' is a deprecated alias for tidyverse; it warns and will be
+  removed in the next release.
+
   zzc <profile>          New project: init + renv + docker
+  zzc docker --profile NAME
                          Existing project: switch profile, regenerate Dockerfile
   zzc list profiles      Show profiles with base images and sizes
   zzc list libs          Show system library bundles
