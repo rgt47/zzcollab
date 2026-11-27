@@ -622,6 +622,72 @@ test_template_snapshot_records_analysis_packages() {
 }
 
 ##############################################################################
+# Auto-snapshot on exit is off unless opted in
+##############################################################################
+
+# Extract the template's .Last() from the parsed .Rprofile, replace
+# renv::snapshot with a stub that records the call, and run it in a project
+# that has renv.lock and renv/activate.R. Echoes SNAPSHOT or NO_SNAPSHOT.
+_run_last_hook() {
+    local setting="$1"
+    Rscript --vanilla -e "
+      exprs <- parse('$ZZCOLLAB_ROOT/templates/.Rprofile')
+      find_last <- function(e) {
+        if (is.call(e)) {
+          if (identical(e[[1]], as.name('<-')) && identical(e[[2]], as.name('.Last')))
+            return(e[[3]])
+          for (x in as.list(e)[-1]) { r <- find_last(x); if (!is.null(r)) return(r) }
+        }
+        NULL
+      }
+      def <- NULL
+      for (e in exprs) { def <- find_last(e); if (!is.null(def)) break }
+      if (is.null(def)) { cat('NO_LAST_FOUND\n'); quit(status = 1) }
+      src <- gsub('renv::snapshot', 'snap_stub', paste(deparse(def), collapse = '\n'), fixed = TRUE)
+      env <- new.env()
+      env\$in_ci <- FALSE
+      env\$called <- FALSE
+      env\$snap_stub <- function(...) assign('called', TRUE, envir = env)
+      f <- eval(parse(text = src), envir = env)
+      if (nzchar('$setting')) Sys.setenv(ZZCOLLAB_AUTO_SNAPSHOT = '$setting') else Sys.unsetenv('ZZCOLLAB_AUTO_SNAPSHOT')
+      suppressMessages(f())
+      cat(if (env\$called) 'SNAPSHOT' else 'NO_SNAPSHOT', '\n')" 2>&1
+}
+
+test_auto_snapshot_off_by_default() {
+    if ! command -v Rscript >/dev/null 2>&1; then
+        echo "SKIP: Rscript not available"
+        return 0
+    fi
+    setup_test
+    mkdir -p renv
+    printf '{}\n' > renv.lock
+    touch renv/activate.R
+    assert_true "grep -q '^NO_SNAPSHOT' <<< \"\$(_run_last_hook '')\"" \
+        "unset: the exit hook does not snapshot"
+    assert_true "grep -q '^SNAPSHOT' <<< \"\$(_run_last_hook true)\"" \
+        "ZZCOLLAB_AUTO_SNAPSHOT=true opts in"
+    assert_true "grep -q '^NO_SNAPSHOT' <<< \"\$(_run_last_hook false)\"" \
+        "ZZCOLLAB_AUTO_SNAPSHOT=false keeps it off"
+    teardown_test
+}
+
+test_auto_snapshot_passed_to_runs() {
+    setup_test
+    local mk="$ZZCOLLAB_ROOT/templates/Makefile" out t
+    printf 'FROM rocker/r-ver:4.5.0\n' > Dockerfile
+    for t in docker-test docker-rstudio; do
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker "$t" 2>&1 || true)
+        assert_true "grep -q 'ZZCOLLAB_AUTO_SNAPSHOT=false' <<< \"\$out\"" \
+            "$t passes the off default to the container"
+        out=$(make -n -f "$mk" CONTAINER_RUNTIME=docker ZZCOLLAB_AUTO_SNAPSHOT=true "$t" 2>&1 || true)
+        assert_true "grep -q 'ZZCOLLAB_AUTO_SNAPSHOT=true' <<< \"\$out\"" \
+            "make $t ZZCOLLAB_AUTO_SNAPSHOT=true opts in"
+    done
+    teardown_test
+}
+
+##############################################################################
 # RUN ALL TESTS
 ##############################################################################
 
