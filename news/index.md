@@ -1,5 +1,10 @@
 # Changelog
 
+## zzcollab 0.4.1
+
+No R package changes; the CLI raises its zzrenvcheck minimum to v0.11.1
+(see `CHANGELOG.md`).
+
 ## zzcollab 0.4.0
 
 The R package and the CLI share one version again. The package had

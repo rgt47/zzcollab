@@ -547,7 +547,7 @@ Create `analysis/report/report.Rmd`:
     ---
     title: "Palmer Penguins Bill Dimensions Analysis"
     author: "Reproducible Research Team"
-    date: "2026-11-27"
+    date: "2026-11-28"
     output:
       html_document:
         toc: true
