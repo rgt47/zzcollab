@@ -6,6 +6,19 @@ archived in `CHANGELOG-2.x.md`.
 
 ---
 
+## 0.4.1 (2026-11-27)
+
+### Fixed
+
+- **zzrenvcheck minimum raised to v0.11.1.** 0.4.0 still required only
+  v0.11.0 (`ZZRENVCHECK_MIN` in the Makefile template, the default
+  `ZZRENVCHECK_TAG`), so a host that already had 0.11.0 kept it, and
+  its fix advice still said `q()  # Auto-snapshot on exit`, which 0.4.0
+  no longer does by default. v0.11.1 says to run `renv::snapshot()` and
+  review the diff, and separates declared from code-only packages in
+  its lockfile warning. A test now checks that an installed 0.11.0 is
+  upgraded.
+
 ## 0.4.0 (2026-11-27)
 
 The CLI (0.3.0 in `lib/constants.sh` and `install.sh`) and the R package

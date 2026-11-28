@@ -923,7 +923,7 @@ EOF
 # This file serves as the content-addressed record called for by R-5.
 write_tooling_lock() {
     local r_version="$1" image_digest="${2:-}"
-    local tag="${ZZRENVCHECK_TAG:-v0.11.0}"
+    local tag="${ZZRENVCHECK_TAG:-v0.11.1}"
     local snapshot="${PPM_SNAPSHOT:-$(date -d '1 day ago' +%Y-%m-%d 2>/dev/null || date -v-1d +%Y-%m-%d)}"
     local digest_field
     if [[ -n "$image_digest" ]]; then

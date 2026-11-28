@@ -157,7 +157,7 @@ BARE_GUARD := if [ ! -f DESCRIPTION ]; then echo "No DESCRIPTION (bare compendiu
 # An installed release at or above the wanted one is kept: the host library
 # is shared across projects, so an exact pin would reinstall on every switch
 # and overwrite a development install.
-ZZRENVCHECK_MIN  := v0.11.0
+ZZRENVCHECK_MIN  := v0.11.1
 ZZRENVCHECK_LOCK := $(shell sed -n 's/.*"tag": *"\(v[0-9][0-9.]*\)".*/\1/p' tooling.lock 2>/dev/null | head -1)
 ZZRENVCHECK_INSTALL := lock <- '$(ZZRENVCHECK_LOCK)'; min <- '$(ZZRENVCHECK_MIN)'; v <- function(x) package_version(sub('^v', '', x)); want <- if (nzchar(lock) && v(lock) >= v(min)) lock else min; if (nzchar(lock) && want != lock) message('tooling.lock records zzrenvcheck ', lock, ', older than the ', min, ' these targets need; using ', min, '. Rerun zzc docker to update tooling.lock.'); if (!requireNamespace('zzrenvcheck', quietly = TRUE) || utils::packageVersion('zzrenvcheck') < v(want)) { if (!requireNamespace('remotes', quietly = TRUE)) install.packages('remotes'); remotes::install_github(paste0('rgt47/zzrenvcheck@', want), upgrade = 'never') }
 

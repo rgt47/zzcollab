@@ -562,7 +562,7 @@ test_zzrenvcheck_version_rule() {
 
     printf '{ "tools": { "zzrenvcheck": { "tag": "v0.3.1" } } }\n' > tooling.lock
     out=$(_wanted_tag v0.3.1 0.3.1)
-    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.1' <<< \"\$out\"" \
         "a v0.3.1 lock installs the minimum, never v0.3.1"
     assert_true "grep -q 'Rerun zzc docker' <<< \"\$out\"" \
         "a stale lock says how to update it"
@@ -577,9 +577,14 @@ test_zzrenvcheck_version_rule() {
     assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.12.0' <<< \"\$out\"" \
         "a newer lock tag than the minimum is honored"
 
+    printf '{ "tools": { "zzrenvcheck": { "tag": "v0.11.0" } } }\n' > tooling.lock
+    out=$(_wanted_tag v0.11.0 0.11.0)
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.1' <<< \"\$out\"" \
+        "an installed 0.11.0 (old fix advice) is upgraded to the minimum"
+
     rm -f tooling.lock
     out=$(_wanted_tag "" 0.10.0)
-    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.0' <<< \"\$out\"" \
+    assert_true "grep -q 'INSTALL rgt47/zzrenvcheck@v0.11.1' <<< \"\$out\"" \
         "without a lock the minimum is installed"
     teardown_test
 }

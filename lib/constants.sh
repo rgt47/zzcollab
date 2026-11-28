@@ -58,7 +58,7 @@ readonly ZZCOLLAB_CONFIG_SYSTEM="${ZZCOLLAB_CONFIG_SYSTEM:-/etc/zzcollab/config.
 # Single source of truth for the zzcollab version. The CLI --version, the
 # template stamp, and the R package DESCRIPTION all track this number.
 # install.sh rewrites ZZCOLLAB_VERSION in the installed copy.
-readonly ZZCOLLAB_VERSION="0.4.0"
+readonly ZZCOLLAB_VERSION="0.4.1"
 readonly ZZCOLLAB_TEMPLATE_VERSION="$ZZCOLLAB_VERSION"
 # rocker/tidyverse rather than rocker/r-ver: it is the only rocker base that
 # ships pandoc, Quarto and the tidyverse while also publishing an arm64
@@ -84,7 +84,7 @@ readonly ZZCOLLAB_DEFAULT_RPROJROOT_VERSION="2.1.1"
 # records, or this one if the lock's is older. Bump this constant, and
 # ZZRENVCHECK_MIN in templates/Makefile (a test checks they agree), when
 # upgrading zzrenvcheck.
-readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.11.0}"
+readonly ZZRENVCHECK_TAG="${ZZRENVCHECK_TAG:-v0.11.1}"
 
 # Author information (should be set via environment variables or config file)
 readonly ZZCOLLAB_AUTHOR_NAME="${ZZCOLLAB_AUTHOR_NAME:-Your Name}"
